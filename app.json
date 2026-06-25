@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "ReviveX",
+    "slug": "hybridtrack",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "scheme": "hybridtrack",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.hybridtrack.app"
+    },
+    "android": {
+      "package": "com.hybridtrack.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0F1114"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
