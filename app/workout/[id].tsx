@@ -52,6 +52,19 @@ export default function WorkoutDetailScreen() {
     );
   };
 
+  const openShareCard = () => {
+    if (!workout) return;
+    router.push({
+      pathname: '/share/[type]/[id]',
+      params: { type: 'workout', id: workout.id },
+    });
+  };
+
+  const openEditWorkout = () => {
+    if (!workout) return;
+    router.push({ pathname: '/workout/edit/[id]', params: { id: workout.id } });
+  };
+
   if (!id || !workout) {
     return (
       <ScreenContainer>
@@ -119,6 +132,20 @@ export default function WorkoutDetailScreen() {
         label="Repeat Workout"
         variant="primary"
         onPress={handleRepeat}
+        style={{ marginTop: spacing.md }}
+      />
+
+      <PrimaryButton
+        label="Edit Workout"
+        variant="outline"
+        onPress={openEditWorkout}
+        style={{ marginTop: spacing.md }}
+      />
+
+      <PrimaryButton
+        label="View Share Card"
+        variant="tech"
+        onPress={openShareCard}
         style={{ marginTop: spacing.md }}
       />
 

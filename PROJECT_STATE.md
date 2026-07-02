@@ -1,6 +1,6 @@
 # ReviveX Project State
 
-Last updated: 2026-06-20
+Last updated: 2026-06-23
 
 ## Current Master Direction
 
@@ -174,6 +174,39 @@ Previous Phase 6 recovery baseline remains available:
 - Active Workout set table shows the preferred weight unit label without converting saved data.
 - Community is represented only as a “coming later” placeholder. No real social features exist yet.
 
+### Phase 10: Local Activity Feed + Share Cards v1
+
+- Local/private Activity Feed combines completed workouts, runs, and hybrid sessions.
+- Home Recent Activity uses the shared local feed and real saved data only.
+- Full Activity screen shows all combined training activity newest first.
+- Feed cards route to the matching Workout, Run, or Hybrid detail screen.
+- Workout, Run, and Hybrid detail screens include a View Share Card action.
+- Share Card preview screen creates ReviveX-branded recap cards for:
+  - strength workouts
+  - runs
+  - hybrid sessions
+- Built-in text sharing uses React Native `Share`.
+- No public feed, followers, likes, comments, clubs, leaderboards, cloud profiles, or backend social features were added.
+
+### Phase 11: Edit + Manage Logged Data v1
+
+- Saved runs can be edited from Run Detail.
+- Saved hybrid sessions can be edited from Hybrid Detail.
+- Saved routines can be edited from Routine Detail.
+- Completed workouts support lightweight metadata edits:
+  - title
+  - date
+  - notes
+- Context update functions preserve existing IDs and storage keys.
+- Edited items flow through derived dashboards automatically:
+  - Run tab and stats
+  - Hybrid tab and stats
+  - Train routine cards
+  - Progress snapshots
+  - Activity Feed
+  - Share Cards
+- Full completed workout set-by-set editing remains deferred.
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`
@@ -184,6 +217,14 @@ Previous Phase 6 recovery baseline remains available:
   - Local/private Profile screen.
 - `app/profile/edit.tsx`
   - Edit Profile and preferences screen.
+- `app/activity/index.tsx`
+  - Full local/private Activity Feed screen.
+- `app/share/[type]/[id].tsx`
+  - ReviveX-branded activity recap/share preview screen.
+- `src/components/ActivityFeedCard.tsx`
+  - Shared activity feed card used by Home and Activity Feed.
+- `src/utils/activityFeed.ts`
+  - Combines workouts, runs, and hybrid sessions into sorted local feed items and share text.
 - `app/(tabs)/train.tsx`
   - Train dashboard, routine list, recent strength workouts, exercise preview.
 - `app/(tabs)/progress.tsx`
@@ -197,9 +238,11 @@ Previous Phase 6 recovery baseline remains available:
 - `app/run/history.tsx`
   - Run History screen.
 - `app/run/[id].tsx`
-  - Run Detail and delete flow.
+  - Run Detail, edit entry point, share card entry point, and delete flow.
+- `app/run/edit/[id].tsx`
+  - Edit saved run title, date, distance, unit, duration, type, location, and notes.
 - `src/context/RunContext.tsx`
-  - Run persistence and run operations.
+  - Run persistence, add/update/delete operations, and stat calculation.
 - `src/utils/runStats.ts`
   - Running stat, pace, distance, PR helpers.
 - `app/hybrid/start.tsx`
@@ -209,9 +252,11 @@ Previous Phase 6 recovery baseline remains available:
 - `app/hybrid/history.tsx`
   - Hybrid History screen.
 - `app/hybrid/[id].tsx`
-  - Hybrid Detail and delete flow.
+  - Hybrid Detail, edit entry point, share card entry point, and delete flow.
+- `app/hybrid/edit/[id].tsx`
+  - Edit saved hybrid session metadata and segment details.
 - `src/context/HybridContext.tsx`
-  - Hybrid persistence and hybrid operations.
+  - Hybrid persistence, add/update/delete operations, and stat calculation.
 - `src/context/ProfileContext.tsx`
   - Local profile persistence, onboarding completion state, preferences.
 - `src/data/profileOptions.ts`
@@ -223,13 +268,17 @@ Previous Phase 6 recovery baseline remains available:
 - `app/routine/create.tsx`
   - Routine builder.
 - `app/routine/[id].tsx`
-  - Routine detail, start, delete.
+  - Routine detail, edit entry point, start, and delete.
+- `app/routine/edit/[id].tsx`
+  - Edit saved routine metadata, goal, exercises, targets, and rest.
 - `app/workout/active.tsx`
   - Active workout logger reused by empty workouts and routine workouts.
 - `app/workout/[id].tsx`
-  - Workout Detail, repeat, and delete flow.
+  - Workout Detail, metadata edit entry point, repeat, share card entry point, and delete flow.
+- `app/workout/edit/[id].tsx`
+  - Lightweight completed workout metadata editor.
 - `src/context/WorkoutContext.tsx`
-  - Active workout, history, routines, AsyncStorage, start routine, repeat workout, delete workout.
+  - Active workout, history, routines, AsyncStorage, routine/workout update operations, start routine, repeat workout, delete workout.
 - `src/theme/theme.ts`
   - ReviveX color tokens, gradients, spacing, type scale.
 - `src/utils/progress.ts`
@@ -266,20 +315,20 @@ Do not run EAS build unless explicitly requested.
 
 ## Known Limitations
 
-- Routine editing is deferred.
+- Full completed workout set-by-set editing is deferred.
 - Full PR history is deferred.
 - Exercise-specific progress graphs are deferred.
+- Share cards are preview screens plus text sharing only; image export is deferred.
+- Activity Feed is local/private only; no public social/community features exist yet.
 - Clean ReviveX icon/logo PNG files are still needed.
 - npm audit reports moderate dependency warnings; do not run `npm audit fix --force` without a specific reason.
 
-## Suggested Phase 10
+## Suggested Phase 12
 
-Profile + Preferences Improvements v2:
+Completed Workout Editing v2:
 
-- Add optional avatar image selection.
-- Add full unit handling for strength sets with per-workout/per-set metadata.
-- Add profile reset/export controls.
-- Improve onboarding replay/testing controls.
+- Add safe completed workout set-by-set editing.
+- Recalculate completed workout totals after set edits.
+- Add exercise add/remove support for saved completed workouts if safe.
+- Keep Activity Feed, Share Cards, and Progress derived from edited workout data.
 - Keep GPS and Apple Health for later phases.
-- Do not add real social/community features until backend/auth is planned.
-- Keep it local and Expo Go compatible.

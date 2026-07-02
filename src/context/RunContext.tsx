@@ -36,7 +36,10 @@ function normalizeRunInput(input: CreateRunInput, existing?: Run): Run {
   const date = input.date || existing?.date || now;
   const runType = input.runType || existing?.runType || 'Easy Run';
   const title = input.title?.trim() || existing?.title || `${runType} Run`;
-  const distance = Math.max(0, Number.isFinite(input.distance) ? input.distance : existing?.distance ?? 0);
+  const distance = Math.max(
+    0,
+    Number.isFinite(input.distance) ? input.distance : existing?.distance ?? 0
+  );
   const durationSeconds = Math.max(
     0,
     Math.floor(
@@ -47,6 +50,9 @@ function normalizeRunInput(input: CreateRunInput, existing?: Run): Run {
   );
   const distanceUnit = input.distanceUnit || existing?.distanceUnit || 'mi';
   const pace = calculatePace(distance, distanceUnit, durationSeconds);
+  const location =
+    input.location !== undefined ? input.location.trim() || undefined : existing?.location;
+  const notes = input.notes !== undefined ? input.notes.trim() || undefined : existing?.notes;
 
   return {
     id: existing?.id ?? makeRunId(),
@@ -58,9 +64,10 @@ function normalizeRunInput(input: CreateRunInput, existing?: Run): Run {
     paceSecondsPerMile: pace.paceSecondsPerMile,
     paceSecondsPerKm: pace.paceSecondsPerKm,
     runType,
-    location: input.location?.trim() || existing?.location || undefined,
-    notes: input.notes?.trim() || existing?.notes || undefined,
+    location,
+    notes,
     createdAt: existing?.createdAt ?? now,
+    updatedAt: existing ? now : undefined,
   };
 }
 

@@ -40,6 +40,19 @@ export default function HybridDetailScreen() {
     );
   };
 
+  const openShareCard = () => {
+    if (!session) return;
+    router.push({
+      pathname: '/share/[type]/[id]',
+      params: { type: 'hybrid', id: session.id },
+    });
+  };
+
+  const openEditSession = () => {
+    if (!session) return;
+    router.push({ pathname: '/hybrid/edit/[id]', params: { id: session.id } });
+  };
+
   if (!id || !session) {
     return (
       <ScreenContainer>
@@ -102,9 +115,19 @@ export default function HybridDetailScreen() {
         ))}
       </AppCard>
 
-      <AppCard style={{ marginTop: spacing.md }}>
-        <Text style={styles.editNote}>Editing hybrid sessions will come in a later phase.</Text>
-      </AppCard>
+      <PrimaryButton
+        label="Edit Hybrid Session"
+        variant="outline"
+        onPress={openEditSession}
+        style={{ marginTop: spacing.md }}
+      />
+
+      <PrimaryButton
+        label="View Share Card"
+        variant="tech"
+        onPress={openShareCard}
+        style={{ marginTop: spacing.md }}
+      />
 
       <PrimaryButton
         label="Delete Hybrid Session"
@@ -303,11 +326,6 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     lineHeight: 19,
     marginTop: spacing.xs,
-  },
-  editNote: {
-    color: colors.textMuted,
-    fontSize: fontSize.sm,
-    textAlign: 'center',
   },
   emptyTitle: {
     color: colors.textPrimary,

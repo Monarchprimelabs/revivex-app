@@ -61,6 +61,10 @@ interface WorkoutContextValue {
   history: Workout[];
   historyLoaded: boolean;
   deleteWorkout: (workoutId: string) => void;
+  updateWorkoutMetadata: (
+    workoutId: string,
+    patch: UpdateWorkoutMetadataInput
+  ) => Workout | undefined;
   getWorkoutById: (workoutId: string) => Workout | undefined;
   repeatWorkout: (workoutId: string) => boolean;
 
@@ -68,9 +72,16 @@ interface WorkoutContextValue {
   routines: Routine[];
   routinesLoaded: boolean;
   createRoutine: (input: CreateRoutineInput) => Routine;
+  updateRoutine: (routineId: string, input: CreateRoutineInput) => Routine | undefined;
   deleteRoutine: (routineId: string) => void;
   getRoutineById: (routineId: string) => Routine | undefined;
   startWorkoutFromRoutine: (routineId: string) => boolean;
+}
+
+interface UpdateWorkoutMetadataInput {
+  title?: string;
+  date?: string;
+  notes?: string;
 }
 
 const WorkoutContext = createContext<WorkoutContextValue | undefined>(undefined);
@@ -95,6 +106,24 @@ function computeWorkoutTotals(exercises: WorkoutExercise[]) {
     }
   }
   return { totalSets, totalVolume };
+}
+
+function sortWorkouts(workouts: Workout[]): Workout[] {
+  return [...workouts].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+}
+
+function normalizeRoutineExercises(exercises: Routine['exercises']): Routine['exercises'] {
+  return exercises.map((ex, index) => ({
+    ...ex,
+    id: ex.id || makeId(`rtex_${index + 1}`),
+    targetSets: Math.max(1, Math.floor(ex.targetSets || 1)),
+    targetReps:
+      ex.targetReps === undefined ? undefined : Math.max(0, Math.floor(ex.targetReps)),
+    targetWeight:
+      ex.targetWeight === undefined ? undefined : Math.max(0, ex.targetWeight),
+    restSeconds:
+      ex.restSeconds === undefined ? undefined : Math.max(0, Math.floor(ex.restSeconds)),
+  }));
 }
 
 interface ProviderProps {
@@ -218,6 +247,35 @@ export function WorkoutProvider({ children }: ProviderProps) {
   const deleteWorkout = useCallback((workoutId: string) => {
     setHistory((prev) => prev.filter((workout) => workout.id !== workoutId));
   }, []);
+
+  const updateWorkoutMetadata = useCallback(
+    (workoutId: string, patch: UpdateWorkoutMetadataInput) => {
+      let updatedWorkout: Workout | undefined;
+
+      setHistory((prev) => {
+        const next = prev.map((workout) => {
+          if (workout.id !== workoutId) return workout;
+
+          const date = patch.date || workout.date;
+          updatedWorkout = {
+            ...workout,
+            title: patch.title?.trim() || workout.title,
+            date,
+            startedAt: workout.startedAt ? date : workout.startedAt,
+            notes: patch.notes !== undefined ? patch.notes.trim() || undefined : workout.notes,
+            updatedAt: new Date().toISOString(),
+          };
+
+          return updatedWorkout;
+        });
+
+        return sortWorkouts(next);
+      });
+
+      return updatedWorkout;
+    },
+    []
+  );
 
   const getWorkoutById = useCallback(
     (workoutId: string) => history.find((workout) => workout.id === workoutId),
@@ -376,23 +434,36 @@ export function WorkoutProvider({ children }: ProviderProps) {
       name: input.name.trim(),
       description: input.description?.trim() || undefined,
       goal: input.goal,
-      exercises: input.exercises.map((ex, index) => ({
-        ...ex,
-        id: ex.id || makeId(`rtex_${index + 1}`),
-        targetSets: Math.max(1, Math.floor(ex.targetSets || 1)),
-        targetReps:
-          ex.targetReps === undefined ? undefined : Math.max(0, Math.floor(ex.targetReps)),
-        targetWeight:
-          ex.targetWeight === undefined ? undefined : Math.max(0, ex.targetWeight),
-        restSeconds:
-          ex.restSeconds === undefined ? undefined : Math.max(0, Math.floor(ex.restSeconds)),
-      })),
+      exercises: normalizeRoutineExercises(input.exercises),
       createdAt: now,
       updatedAt: now,
     };
 
     setRoutines((prev) => [routine, ...prev]);
     return routine;
+  }, []);
+
+  const updateRoutine = useCallback((routineId: string, input: CreateRoutineInput) => {
+    let updatedRoutine: Routine | undefined;
+
+    setRoutines((prev) =>
+      prev.map((routine) => {
+        if (routine.id !== routineId) return routine;
+
+        updatedRoutine = {
+          ...routine,
+          name: input.name.trim() || routine.name,
+          description: input.description?.trim() || undefined,
+          goal: input.goal,
+          exercises: normalizeRoutineExercises(input.exercises),
+          updatedAt: new Date().toISOString(),
+        };
+
+        return updatedRoutine;
+      })
+    );
+
+    return updatedRoutine;
   }, []);
 
   const deleteRoutine = useCallback((routineId: string) => {
@@ -461,11 +532,13 @@ export function WorkoutProvider({ children }: ProviderProps) {
       history,
       historyLoaded,
       deleteWorkout,
+      updateWorkoutMetadata,
       getWorkoutById,
       repeatWorkout,
       routines,
       routinesLoaded,
       createRoutine,
+      updateRoutine,
       deleteRoutine,
       getRoutineById,
       startWorkoutFromRoutine,
@@ -486,11 +559,13 @@ export function WorkoutProvider({ children }: ProviderProps) {
       history,
       historyLoaded,
       deleteWorkout,
+      updateWorkoutMetadata,
       getWorkoutById,
       repeatWorkout,
       routines,
       routinesLoaded,
       createRoutine,
+      updateRoutine,
       deleteRoutine,
       getRoutineById,
       startWorkoutFromRoutine,

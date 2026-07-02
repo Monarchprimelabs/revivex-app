@@ -80,6 +80,11 @@ export default function RoutineDetailScreen() {
     );
   };
 
+  const handleEdit = () => {
+    if (!routineId || !routine) return;
+    router.push({ pathname: '/routine/edit/[id]', params: { id: routineId } });
+  };
+
   if (!routineId || !routine) {
     return <MissingRoutineScreen />;
   }
@@ -106,7 +111,12 @@ export default function RoutineDetailScreen() {
           style={{ marginTop: spacing.lg }}
         />
 
-        <Text style={styles.editNote}>Editing routines will come in a later phase.</Text>
+        <PrimaryButton
+          label="Edit Routine"
+          variant="outline"
+          onPress={handleEdit}
+          style={{ marginTop: spacing.md }}
+        />
 
         <Text style={styles.sectionTitle}>Exercises</Text>
         {routine.exercises.length === 0 ? (
@@ -312,12 +322,6 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.bold,
     marginTop: 2,
     textTransform: 'uppercase',
-  },
-  editNote: {
-    color: colors.textMuted,
-    fontSize: fontSize.sm,
-    marginTop: spacing.md,
-    textAlign: 'center',
   },
   sectionTitle: {
     color: colors.textPrimary,

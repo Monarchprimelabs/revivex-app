@@ -44,6 +44,18 @@ export default function RootLayout() {
                     }}
                   />
                   <Stack.Screen
+                    name="activity/index"
+                    options={{
+                      animation: 'slide_from_right',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="share/[type]/[id]"
+                    options={{
+                      animation: 'slide_from_right',
+                    }}
+                  />
+                  <Stack.Screen
                     name="workout/active"
                     options={{
                       presentation: 'modal',
@@ -64,7 +76,21 @@ export default function RootLayout() {
                     }}
                   />
                   <Stack.Screen
+                    name="workout/edit/[id]"
+                    options={{
+                      presentation: 'modal',
+                      animation: 'slide_from_bottom',
+                    }}
+                  />
+                  <Stack.Screen
                     name="routine/create"
+                    options={{
+                      presentation: 'modal',
+                      animation: 'slide_from_bottom',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="routine/edit/[id]"
                     options={{
                       presentation: 'modal',
                       animation: 'slide_from_bottom',
@@ -96,6 +122,13 @@ export default function RootLayout() {
                     }}
                   />
                   <Stack.Screen
+                    name="run/edit/[id]"
+                    options={{
+                      presentation: 'modal',
+                      animation: 'slide_from_bottom',
+                    }}
+                  />
+                  <Stack.Screen
                     name="hybrid/start"
                     options={{
                       animation: 'slide_from_right',
@@ -118,6 +151,13 @@ export default function RootLayout() {
                     name="hybrid/[id]"
                     options={{
                       animation: 'slide_from_right',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="hybrid/edit/[id]"
+                    options={{
+                      presentation: 'modal',
+                      animation: 'slide_from_bottom',
                     }}
                   />
                 </Stack>

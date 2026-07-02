@@ -4,6 +4,33 @@
 
 export type ActivityType = 'strength' | 'run' | 'hybrid';
 
+export type ActivityFeedType = 'workout' | 'run' | 'hybrid';
+
+export interface ActivityFeedRoute {
+  pathname: '/workout/[id]' | '/run/[id]' | '/hybrid/[id]';
+  params: { id: string };
+}
+
+export interface ActivityFeedStat {
+  label: string;
+  value: string;
+}
+
+export interface ActivityFeedItem {
+  id: string;
+  sourceId: string;
+  type: ActivityFeedType;
+  title: string;
+  date: string;
+  dateLabel: string;
+  subtitle: string;
+  stats: ActivityFeedStat[];
+  chipLabel: string;
+  route: ActivityFeedRoute;
+  createdAt?: string;
+  timestamp: number;
+}
+
 export type MuscleGroup =
   | 'Chest'
   | 'Back'
@@ -60,6 +87,7 @@ export interface Workout {
   notes?: string;
   totalSets: number;
   totalVolume: number;  // sum of weight × reps across all completed sets
+  updatedAt?: string;
 }
 
 // =======================
@@ -133,6 +161,7 @@ export interface Run {
   location?: string;
   notes?: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface CreateRunInput {
@@ -181,6 +210,7 @@ export interface HybridSession {
   notes?: string;
   segments: HybridSegment[];
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface CreateHybridSessionInput {

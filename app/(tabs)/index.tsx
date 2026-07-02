@@ -8,25 +8,15 @@ import StatCard from '../../src/components/StatCard';
 import PrimaryButton from '../../src/components/PrimaryButton';
 import SectionHeader from '../../src/components/SectionHeader';
 import BrandTagline from '../../src/components/BrandTagline';
+import ActivityFeedCard from '../../src/components/ActivityFeedCard';
 import { colors, fontSize, fontWeight, spacing } from '../../src/theme/theme';
 import { useWorkout } from '../../src/context/WorkoutContext';
 import { useRuns } from '../../src/context/RunContext';
 import { useHybridSessions } from '../../src/context/HybridContext';
 import { useProfile } from '../../src/context/ProfileContext';
-import { formatDurationShort, formatRelativeDate } from '../../src/utils/format';
-import { formatDistance, getRunsThisWeek } from '../../src/utils/runStats';
-import { formatSegmentTime } from '../../src/utils/hybridStats';
+import { getRunsThisWeek } from '../../src/utils/runStats';
 import { getWorkoutsThisWeek } from '../../src/utils/progress';
-import type { ActivityType } from '../../src/types';
-
-interface HomeActivity {
-  id: string;
-  type: ActivityType;
-  title: string;
-  subtitle: string;
-  date: string;
-  timestamp: number;
-}
+import { getRecentActivity } from '../../src/utils/activityFeed';
 
 /**
  * Home screen
@@ -41,43 +31,10 @@ export default function HomeScreen() {
   const { hybridSessions } = useHybridSessions();
   const { profile } = useProfile();
 
-  const recentActivities = useMemo<HomeActivity[]>(() => {
-    const workoutActivities: HomeActivity[] = history.map((workout) => ({
-      id: `workout-${workout.id}`,
-      type: 'strength',
-      title: workout.title,
-      subtitle: `${workout.exercises.length} exercises • ${formatDurationShort(workout.duration)}`,
-      date: formatRelativeDate(workout.date),
-      timestamp: new Date(workout.date).getTime(),
-    }));
-
-    const runActivities: HomeActivity[] = runs.map((run) => ({
-      id: `run-${run.id}`,
-      type: 'run',
-      title: run.title,
-      subtitle: `${formatDistance(run.distance, run.distanceUnit)} • ${formatDurationShort(
-        run.durationSeconds
-      )}`,
-      date: formatRelativeDate(run.date),
-      timestamp: new Date(run.date).getTime(),
-    }));
-
-    const hybridActivities: HomeActivity[] = hybridSessions.map((session) => ({
-      id: `hybrid-${session.id}`,
-      type: 'hybrid',
-      title: session.title,
-      subtitle: `${session.segments.length} segments • ${formatSegmentTime(
-        session.totalDurationSeconds
-      )}`,
-      date: formatRelativeDate(session.date),
-      timestamp: new Date(session.date).getTime(),
-    }));
-
-    return [...workoutActivities, ...runActivities, ...hybridActivities]
-      .filter((activity) => Number.isFinite(activity.timestamp))
-      .sort((a, b) => b.timestamp - a.timestamp)
-      .slice(0, 4);
-  }, [history, runs, hybridSessions]);
+  const recentActivities = useMemo(
+    () => getRecentActivity(history, runs, hybridSessions, 4),
+    [history, runs, hybridSessions]
+  );
 
   const weeklySessions =
     getWorkoutsThisWeek(history) +
@@ -171,37 +128,31 @@ export default function HomeScreen() {
       </View>
 
       {/* Recent activity */}
-      <SectionHeader title="Recent activity" />
+      <SectionHeader
+        title="Recent activity"
+        actionLabel={recentActivities.length > 0 ? 'See all' : undefined}
+        onActionPress={() => router.push('/activity')}
+      />
       {recentActivities.length === 0 ? (
         <AppCard>
           <Text style={styles.placeholder}>
             Start with a workout, run, or hybrid session. Your recent work will show here.
           </Text>
+          <PrimaryButton
+            label="Open Activity Feed"
+            variant="outline"
+            onPress={() => router.push('/activity')}
+            style={{ marginTop: spacing.md }}
+          />
         </AppCard>
       ) : (
         recentActivities.map((item) => (
-          <AppCard key={item.id} style={{ marginBottom: spacing.md }}>
-            <View style={styles.activityRow}>
-              <View style={styles.iconWrap}>
-                <Ionicons
-                  name={
-                    item.type === 'strength'
-                      ? 'barbell-outline'
-                      : item.type === 'run'
-                      ? 'walk-outline'
-                      : 'flash-outline'
-                  }
-                  size={22}
-                  color={colors.primary}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.activityTitle}>{item.title}</Text>
-                <Text style={styles.activitySub}>{item.subtitle}</Text>
-              </View>
-              <Text style={styles.activityDate}>{item.date}</Text>
-            </View>
-          </AppCard>
+          <ActivityFeedCard
+            key={item.id}
+            item={item}
+            compact
+            onPress={() => router.push(item.route)}
+          />
         ))
       )}
     </ScreenContainer>
@@ -339,34 +290,6 @@ const styles = StyleSheet.create({
   },
   quickBtn: {
     width: '100%',
-  },
-  activityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.surfaceAlt,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.md,
-  },
-  activityTitle: {
-    color: colors.textPrimary,
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
-  },
-  activitySub: {
-    color: colors.textSecondary,
-    fontSize: fontSize.sm,
-    marginTop: 2,
-  },
-  activityDate: {
-    color: colors.textMuted,
-    fontSize: fontSize.xs,
-    marginLeft: spacing.sm,
   },
   placeholder: {
     color: colors.textMuted,

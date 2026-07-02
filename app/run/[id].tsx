@@ -31,6 +31,19 @@ export default function RunDetailScreen() {
     ]);
   };
 
+  const openShareCard = () => {
+    if (!run) return;
+    router.push({
+      pathname: '/share/[type]/[id]',
+      params: { type: 'run', id: run.id },
+    });
+  };
+
+  const openEditRun = () => {
+    if (!run) return;
+    router.push({ pathname: '/run/edit/[id]', params: { id: run.id } });
+  };
+
   if (!id || !run) {
     return (
       <ScreenContainer>
@@ -83,9 +96,19 @@ export default function RunDetailScreen() {
         {run.notes ? <DetailRow label="Notes" value={run.notes} multiline /> : null}
       </AppCard>
 
-      <AppCard style={{ marginTop: spacing.md }}>
-        <Text style={styles.editNote}>Editing runs will come in a later phase.</Text>
-      </AppCard>
+      <PrimaryButton
+        label="Edit Run"
+        variant="outline"
+        onPress={openEditRun}
+        style={{ marginTop: spacing.md }}
+      />
+
+      <PrimaryButton
+        label="View Share Card"
+        variant="tech"
+        onPress={openShareCard}
+        style={{ marginTop: spacing.md }}
+      />
 
       <PrimaryButton
         label="Delete Run"
@@ -205,11 +228,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 20,
     textAlign: 'left',
-  },
-  editNote: {
-    color: colors.textMuted,
-    fontSize: fontSize.sm,
-    textAlign: 'center',
   },
   emptyTitle: {
     color: colors.textPrimary,

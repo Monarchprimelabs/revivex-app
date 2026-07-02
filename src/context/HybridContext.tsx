@@ -7,7 +7,12 @@ import React, {
   useState,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { CreateHybridSessionInput, HybridSegment, HybridSession } from '../types';
+import type {
+  CreateHybridSessionInput,
+  HybridSegment,
+  HybridSession,
+  HybridSessionType,
+} from '../types';
 import { calculateHybridTotalTime, getHybridSessionStats, type HybridStats } from '../utils/hybridStats';
 
 const HYBRID_STORAGE_KEY = 'revivex.hybridSessions.v1';
@@ -16,10 +21,22 @@ interface HybridContextValue {
   hybridSessions: HybridSession[];
   hybridSessionsLoaded: boolean;
   addHybridSession: (input: CreateHybridSessionInput) => HybridSession;
+  updateHybridSession: (
+    sessionId: string,
+    input: UpdateHybridSessionInput
+  ) => HybridSession | undefined;
   deleteHybridSession: (sessionId: string) => void;
   getHybridSessionById: (sessionId: string) => HybridSession | undefined;
   getHybridSessions: () => HybridSession[];
   calculateHybridStats: () => HybridStats;
+}
+
+export interface UpdateHybridSessionInput {
+  title?: string;
+  date?: string;
+  sessionType?: HybridSessionType;
+  notes?: string;
+  segments?: HybridSegment[];
 }
 
 const HybridContext = createContext<HybridContextValue | undefined>(undefined);
@@ -44,6 +61,23 @@ function normalizeSegment(
 
   return {
     id: makeHybridId('hseg'),
+    order: index + 1,
+    name: segment.name.trim() || (segment.segmentType === 'run' ? 'Run' : 'Station'),
+    segmentType: segment.segmentType,
+    distance: distance && distance > 0 ? distance : undefined,
+    distanceUnit: distance && distance > 0 ? segment.distanceUnit : undefined,
+    durationSeconds,
+    notes: segment.notes?.trim() || undefined,
+  };
+}
+
+function normalizeExistingSegment(segment: HybridSegment, index: number): HybridSegment {
+  const durationSeconds = Math.max(0, Math.floor(safeNumber(segment.durationSeconds)));
+  const distance =
+    segment.distance === undefined ? undefined : Math.max(0, safeNumber(segment.distance));
+
+  return {
+    id: segment.id || makeHybridId('hseg'),
     order: index + 1,
     name: segment.name.trim() || (segment.segmentType === 'run' ? 'Run' : 'Station'),
     segmentType: segment.segmentType,
@@ -109,6 +143,37 @@ export function HybridProvider({ children }: { children: React.ReactNode }) {
     return session;
   }, []);
 
+  const updateHybridSession = useCallback(
+    (sessionId: string, input: UpdateHybridSessionInput) => {
+      let updatedSession: HybridSession | undefined;
+
+      setHybridSessions((prev) => {
+        const next = prev.map((session) => {
+          if (session.id !== sessionId) return session;
+
+          const segments = (input.segments ?? session.segments).map(normalizeExistingSegment);
+          updatedSession = {
+            ...session,
+            title: input.title?.trim() || session.title,
+            date: input.date || session.date,
+            sessionType: input.sessionType ?? session.sessionType,
+            notes: input.notes !== undefined ? input.notes.trim() || undefined : session.notes,
+            segments,
+            totalDurationSeconds: calculateHybridTotalTime(segments),
+            updatedAt: new Date().toISOString(),
+          };
+
+          return updatedSession;
+        });
+
+        return sortSessions(next);
+      });
+
+      return updatedSession;
+    },
+    []
+  );
+
   const deleteHybridSession = useCallback((sessionId: string) => {
     setHybridSessions((prev) => prev.filter((session) => session.id !== sessionId));
   }, []);
@@ -130,6 +195,7 @@ export function HybridProvider({ children }: { children: React.ReactNode }) {
       hybridSessions,
       hybridSessionsLoaded,
       addHybridSession,
+      updateHybridSession,
       deleteHybridSession,
       getHybridSessionById,
       getHybridSessions,
@@ -139,6 +205,7 @@ export function HybridProvider({ children }: { children: React.ReactNode }) {
       hybridSessions,
       hybridSessionsLoaded,
       addHybridSession,
+      updateHybridSession,
       deleteHybridSession,
       getHybridSessionById,
       getHybridSessions,
