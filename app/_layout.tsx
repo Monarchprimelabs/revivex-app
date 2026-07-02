@@ -8,6 +8,7 @@ import { WorkoutProvider } from '../src/context/WorkoutContext';
 import { RunProvider } from '../src/context/RunContext';
 import { HybridProvider } from '../src/context/HybridContext';
 import { ProfileProvider, useProfile } from '../src/context/ProfileContext';
+import { ActivityFeedProvider } from '../src/context/ActivityFeedContext';
 
 /**
  * Root layout for the whole app.
@@ -21,14 +22,15 @@ export default function RootLayout() {
           <WorkoutProvider>
             <RunProvider>
               <HybridProvider>
-                <StatusBar style="light" />
-                <OnboardingGate />
-                <Stack
-                  screenOptions={{
-                    headerShown: false,
-                    contentStyle: { backgroundColor: colors.background },
-                  }}
-                >
+                <ActivityFeedProvider>
+                  <StatusBar style="light" />
+                  <OnboardingGate />
+                  <Stack
+                    screenOptions={{
+                      headerShown: false,
+                      contentStyle: { backgroundColor: colors.background },
+                    }}
+                  >
                   <Stack.Screen name="(tabs)" />
                   <Stack.Screen name="onboarding" />
                   <Stack.Screen
@@ -160,7 +162,8 @@ export default function RootLayout() {
                       animation: 'slide_from_bottom',
                     }}
                   />
-                </Stack>
+                  </Stack>
+                </ActivityFeedProvider>
               </HybridProvider>
             </RunProvider>
           </WorkoutProvider>

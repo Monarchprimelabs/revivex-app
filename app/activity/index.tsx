@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -6,21 +6,11 @@ import ScreenContainer from '../../src/components/ScreenContainer';
 import AppCard from '../../src/components/AppCard';
 import ActivityFeedCard from '../../src/components/ActivityFeedCard';
 import PrimaryButton from '../../src/components/PrimaryButton';
-import { useWorkout } from '../../src/context/WorkoutContext';
-import { useRuns } from '../../src/context/RunContext';
-import { useHybridSessions } from '../../src/context/HybridContext';
-import { buildActivityFeed } from '../../src/utils/activityFeed';
+import { useActivityFeed } from '../../src/context/ActivityFeedContext';
 import { colors, fontSize, fontWeight, spacing } from '../../src/theme/theme';
 
 export default function ActivityFeedScreen() {
-  const { history } = useWorkout();
-  const { runs } = useRuns();
-  const { hybridSessions } = useHybridSessions();
-
-  const feed = useMemo(
-    () => buildActivityFeed(history, runs, hybridSessions),
-    [history, runs, hybridSessions]
-  );
+  const { activityFeed, activityFeedLoaded } = useActivityFeed();
 
   return (
     <ScreenContainer>
@@ -34,7 +24,11 @@ export default function ActivityFeedScreen() {
         </View>
       </View>
 
-      {feed.length === 0 ? (
+      {!activityFeedLoaded ? (
+        <AppCard style={{ marginTop: spacing.lg }}>
+          <Text style={styles.emptyText}>Loading activity...</Text>
+        </AppCard>
+      ) : activityFeed.length === 0 ? (
         <AppCard elevated tint="hybrid" style={{ marginTop: spacing.lg }}>
           <View style={styles.emptyIcon}>
             <Ionicons name="pulse-outline" size={28} color={colors.accentTeal} />
@@ -63,7 +57,7 @@ export default function ActivityFeedScreen() {
         </AppCard>
       ) : (
         <View style={{ marginTop: spacing.lg }}>
-          {feed.map((item) => (
+          {activityFeed.map((item) => (
             <ActivityFeedCard
               key={item.id}
               item={item}

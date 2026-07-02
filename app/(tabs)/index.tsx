@@ -14,9 +14,9 @@ import { useWorkout } from '../../src/context/WorkoutContext';
 import { useRuns } from '../../src/context/RunContext';
 import { useHybridSessions } from '../../src/context/HybridContext';
 import { useProfile } from '../../src/context/ProfileContext';
+import { useActivityFeed } from '../../src/context/ActivityFeedContext';
 import { getRunsThisWeek } from '../../src/utils/runStats';
 import { getWorkoutsThisWeek } from '../../src/utils/progress';
-import { getRecentActivity } from '../../src/utils/activityFeed';
 
 /**
  * Home screen
@@ -30,11 +30,9 @@ export default function HomeScreen() {
   const { runs } = useRuns();
   const { hybridSessions } = useHybridSessions();
   const { profile } = useProfile();
+  const { activityFeed } = useActivityFeed();
 
-  const recentActivities = useMemo(
-    () => getRecentActivity(history, runs, hybridSessions, 4),
-    [history, runs, hybridSessions]
-  );
+  const recentActivities = useMemo(() => activityFeed.slice(0, 4), [activityFeed]);
 
   const weeklySessions =
     getWorkoutsThisWeek(history) +
@@ -44,6 +42,11 @@ export default function HomeScreen() {
   const weeklyTarget = profile?.weeklyTrainingTarget ?? 4;
   const weeklyProgress = `${Math.min(weeklySessions, weeklyTarget)} / ${weeklyTarget}`;
   const focusCopy = getFocusCopy(profile?.trainingFocus);
+  const heroAction = getHeroAction(profile?.trainingFocus, {
+    startWorkout,
+    logRun,
+    startHybrid,
+  });
 
   return (
     <ScreenContainer>
@@ -80,9 +83,9 @@ export default function HomeScreen() {
         <Text style={styles.cardTitle}>{focusCopy.title}</Text>
         <Text style={styles.cardSub}>{focusCopy.subtitle}</Text>
         <PrimaryButton
-          label="Start Workout"
+          label={heroAction.label}
           variant="primary"
-          onPress={startWorkout}
+          onPress={heroAction.onPress}
           style={{ marginTop: spacing.md }}
         />
       </AppCard>
@@ -199,6 +202,34 @@ function getFocusCopy(trainingFocus?: string) {
   return {
     title: 'Ready to move today?',
     subtitle: 'Lift, run, condition, recover.',
+  };
+}
+
+function getHeroAction(
+  trainingFocus: string | undefined,
+  actions: {
+    startWorkout: () => void;
+    logRun: () => void;
+    startHybrid: () => void;
+  }
+) {
+  if (trainingFocus === 'Run') {
+    return {
+      label: 'Log Run',
+      onPress: actions.logRun,
+    };
+  }
+
+  if (trainingFocus === 'Hybrid') {
+    return {
+      label: 'Start Hybrid Session',
+      onPress: actions.startHybrid,
+    };
+  }
+
+  return {
+    label: 'Start Workout',
+    onPress: actions.startWorkout,
   };
 }
 

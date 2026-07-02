@@ -11,6 +11,7 @@ import { useWorkout } from '../../../src/context/WorkoutContext';
 import { useRuns } from '../../../src/context/RunContext';
 import { useHybridSessions } from '../../../src/context/HybridContext';
 import { useProfile } from '../../../src/context/ProfileContext';
+import { useActivityFeed } from '../../../src/context/ActivityFeedContext';
 import { colors, fontSize, fontWeight, gradients, radius, spacing } from '../../../src/theme/theme';
 import {
   buildActivityFeed,
@@ -21,18 +22,39 @@ import type { ActivityFeedItem, ActivityFeedType } from '../../../src/types';
 
 export default function SharePreviewScreen() {
   const { type, id } = useLocalSearchParams<{ type?: string; id?: string }>();
-  const { history } = useWorkout();
-  const { runs } = useRuns();
-  const { hybridSessions } = useHybridSessions();
+  const { history, historyLoaded } = useWorkout();
+  const { runs, runsLoaded } = useRuns();
+  const { hybridSessions, hybridSessionsLoaded } = useHybridSessions();
   const { profile } = useProfile();
+  const { getActivityBySource } = useActivityFeed();
 
   const activityType = normalizeActivityType(type);
   const activity = useMemo(() => {
     if (!activityType || !id) return undefined;
-    return buildActivityFeed(history, runs, hybridSessions).find(
+    const freshActivity = buildActivityFeed(history, runs, hybridSessions).find(
       (item) => item.type === activityType && item.sourceId === id
     );
-  }, [activityType, history, hybridSessions, id, runs]);
+    if (freshActivity) return freshActivity;
+
+    const sourceLoaded =
+      activityType === 'workout'
+        ? historyLoaded
+        : activityType === 'run'
+        ? runsLoaded
+        : hybridSessionsLoaded;
+
+    return sourceLoaded ? undefined : getActivityBySource(activityType, id);
+  }, [
+    activityType,
+    getActivityBySource,
+    history,
+    historyLoaded,
+    hybridSessions,
+    hybridSessionsLoaded,
+    id,
+    runs,
+    runsLoaded,
+  ]);
 
   const hybridSegmentHighlights = useMemo(() => {
     if (activityType !== 'hybrid' || !id) return [];

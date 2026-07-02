@@ -1,6 +1,6 @@
 # ReviveX Project State
 
-Last updated: 2026-06-23
+Last updated: 2026-07-02
 
 ## Current Master Direction
 
@@ -207,6 +207,21 @@ Previous Phase 6 recovery baseline remains available:
   - Share Cards
 - Full completed workout set-by-set editing remains deferred.
 
+### Phase 12: Persistence + Real Session Data v1
+
+- Local persistence was verified for:
+  - profile and preferences
+  - completed workouts
+  - routines
+  - logged runs
+  - logged hybrid sessions
+- Activity Feed now has its own persisted local snapshot.
+- Activity Feed rebuilds from real saved workout, run, and hybrid session data whenever those logs change.
+- Home Recent Activity and the full Activity screen read from the persisted Activity Feed context.
+- Share Cards prefer real saved session data and only fall back to the persisted feed snapshot while source logs are still loading.
+- Deleted or missing activity IDs continue to show safe missing-state screens.
+- Demo data remains limited to static exercise-library preview data, not fake saved activity.
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`
@@ -218,11 +233,13 @@ Previous Phase 6 recovery baseline remains available:
 - `app/profile/edit.tsx`
   - Edit Profile and preferences screen.
 - `app/activity/index.tsx`
-  - Full local/private Activity Feed screen.
+  - Full local/private Activity Feed screen backed by persisted feed context.
 - `app/share/[type]/[id].tsx`
-  - ReviveX-branded activity recap/share preview screen.
+  - ReviveX-branded activity recap/share preview screen using real persisted session data when available.
 - `src/components/ActivityFeedCard.tsx`
   - Shared activity feed card used by Home and Activity Feed.
+- `src/context/ActivityFeedContext.tsx`
+  - Persists the local/private activity feed snapshot and rebuilds it from saved logs.
 - `src/utils/activityFeed.ts`
   - Combines workouts, runs, and hybrid sessions into sorted local feed items and share text.
 - `app/(tabs)/train.tsx`
@@ -298,6 +315,7 @@ These AsyncStorage keys must be preserved across app updates unless a safe migra
 | `revivex.hybridSessions.v1` | Manually logged hybrid sessions and segments | Yes | Added in Phase 7. |
 | `revivex.profile.v1` | Local/private profile and preferences | Yes | Added in Phase 9. Does not create a cloud account. |
 | `revivex.onboarding.v1` | Local onboarding completion state | Yes | Added in Phase 9. Safe to reset for testing, but not required for normal updates. |
+| `revivex.activityFeed.v1` | Derived local/private activity feed snapshot | Yes | Added in Phase 12. Rebuilt from saved workouts, runs, and hybrid sessions. |
 
 Do not rename or clear these keys without a migration, or existing local data can disappear.
 
@@ -323,7 +341,7 @@ Do not run EAS build unless explicitly requested.
 - Clean ReviveX icon/logo PNG files are still needed.
 - npm audit reports moderate dependency warnings; do not run `npm audit fix --force` without a specific reason.
 
-## Suggested Phase 12
+## Suggested Phase 13
 
 Completed Workout Editing v2:
 
