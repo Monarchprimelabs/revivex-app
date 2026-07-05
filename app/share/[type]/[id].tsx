@@ -1,5 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { captureRef } from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -27,6 +29,8 @@ export default function SharePreviewScreen() {
   const { hybridSessions, hybridSessionsLoaded } = useHybridSessions();
   const { profile } = useProfile();
   const { getActivityBySource } = useActivityFeed();
+  const cardRef = useRef<View>(null);
+  const [exporting, setExporting] = useState(false);
 
   const activityType = normalizeActivityType(type);
   const activity = useMemo(() => {
@@ -68,6 +72,27 @@ export default function SharePreviewScreen() {
       slowest ? { label: 'Slowest Segment', value: `${slowest.name} • ${formatSegmentTime(slowest.durationSeconds)}` } : undefined,
     ].filter(Boolean) as { label: string; value: string }[];
   }, [activityType, hybridSessions, id]);
+
+  const handleShareImage = async () => {
+    if (!activity || exporting) return;
+
+    setExporting(true);
+    try {
+      const uri = await captureRef(cardRef, { format: 'png', quality: 1 });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'image/png',
+          dialogTitle: 'Share your ReviveX recap',
+        });
+      } else {
+        Alert.alert('Share unavailable', 'Image sharing is not available on this device.');
+      }
+    } catch {
+      Alert.alert('Export failed', 'ReviveX could not create the share image.');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const handleShareText = async () => {
     if (!activity) return;
@@ -118,7 +143,7 @@ export default function SharePreviewScreen() {
         </View>
       </View>
 
-      <View style={styles.cardShell}>
+      <View ref={cardRef} collapsable={false} style={styles.cardShell}>
         <LinearGradient
           colors={['rgba(0, 180, 179, 0.20)', 'rgba(198, 255, 0, 0.12)', 'transparent']}
           start={{ x: 0, y: 0 }}
@@ -172,10 +197,16 @@ export default function SharePreviewScreen() {
       </View>
 
       <PrimaryButton
-        label="Share Text"
+        label={exporting ? 'Creating Image...' : 'Share Image'}
         variant="primary"
-        onPress={handleShareText}
+        onPress={handleShareImage}
         style={{ marginTop: spacing.lg }}
+      />
+      <PrimaryButton
+        label="Share Text"
+        variant="outline"
+        onPress={handleShareText}
+        style={{ marginTop: spacing.md }}
       />
       <PrimaryButton
         label="Back to Activity"
