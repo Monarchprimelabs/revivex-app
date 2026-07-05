@@ -326,6 +326,14 @@ Previous Phase 6 recovery baseline remains available:
 - `WorkoutExercise` gained optional `restSeconds` (additive, storage-safe) carried over by `startWorkoutFromRoutine`.
 - The device vibrates once when rest hits zero. Timer is in-app only (no background notifications yet).
 
+### Phase 23: App Icon + Splash (RX brand assets)
+
+- Owner supplied the RX brand board (Concept 2 monogram identity); palette matches the existing theme tokens.
+- Generated 1024×1024 production assets from the brand icon tile:
+  - `assets/icon.png` (iOS, full-bleed dark), `assets/adaptive-icon.png` (Android foreground, safe-zone scaled), `assets/splash-icon.png` (splash logo).
+- `app.json` now wires icon, Android adaptiveIcon (`#111111` background), and splash (`#111111`, contain).
+- Assets were upscaled from a 156px screenshot tile — fine at device sizes; swap in a designer 1024px master (same filenames) before App Store submission. See `assets/README.md`.
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`
