@@ -275,6 +275,11 @@ Previous Phase 6 recovery baseline remains available:
 - `app.json` adds the HealthKit and Health Connect config plugins, iOS health usage descriptions, and Android `minSdkVersion` 26 via `expo-build-properties`.
 - Expo Go stays fully supported: native health modules are loaded lazily inside try/catch; in Expo Go the screen reports "needs the dev build" and sync stays dormant. Real syncing activates in a development/production build.
 
+### Phase 17: Share Card Image Export + EAS Build Config
+
+- Share Card screen exports the branded recap as a PNG via `react-native-view-shot` and shares it with `expo-sharing` (both bundled in Expo Go — works on device now). Share Text remains as a secondary action.
+- `eas.json` added with development/preview/production profiles; `docs/DEV_BUILD.md` documents the dev-build steps that activate Apple Health sync (run EAS from the Mac Mini, not from agents).
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`
@@ -386,7 +391,6 @@ Do not run EAS build unless explicitly requested.
 
 ## Known Limitations
 
-- Share cards are preview screens plus text sharing only; image export is deferred.
 - Activity Feed is local/private only; no public social/community features exist yet.
 - Clean ReviveX icon/logo PNG files are still needed.
 - npm audit reports moderate dependency warnings; do not run `npm audit fix --force` without a specific reason.
