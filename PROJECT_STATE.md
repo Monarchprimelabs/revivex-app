@@ -313,6 +313,12 @@ Previous Phase 6 recovery baseline remains available:
   - week-over-week deltas (▲/▼ percent vs last calendar week) on every metric.
 - `src/utils/weeklySummary.ts` (pure, Node-tested): Sunday-start week ranges, per-week rollups, delta calculation, and distance conversions.
 
+### Phase 21: Watch Metrics on Share Cards
+
+- Share cards include watch-recorded Avg HR and Energy (kcal) stats when health sync is connected and data exists for the session window.
+- Metrics are fetched via `getSessionMetrics` using the source workout/run/hybrid session's time window and slot into the existing stat grid (still capped at 6 stats).
+- No change when disconnected or in Expo Go — cards render exactly as before.
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`
