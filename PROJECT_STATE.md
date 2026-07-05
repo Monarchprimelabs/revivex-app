@@ -1,6 +1,6 @@
 # ReviveX Project State
 
-Last updated: 2026-07-02
+Last updated: 2026-07-05
 
 ## Current Master Direction
 
@@ -222,6 +222,20 @@ Previous Phase 6 recovery baseline remains available:
 - Deleted or missing activity IDs continue to show safe missing-state screens.
 - Demo data remains limited to static exercise-library preview data, not fake saved activity.
 
+### Phase 13: Completed Workout Editing v2
+
+- Edit Workout screen now supports full set-by-set editing of completed workouts:
+  - edit weight and reps per set
+  - toggle set completion (Done) per set
+  - add and remove sets per exercise (last set per exercise is protected)
+  - remove exercises with confirmation
+  - add exercises via inline exercise-library search
+- Live summary shows total sets, completed sets, and volume while editing.
+- `updateWorkoutDetails` in WorkoutContext recalculates `totalSets` and `totalVolume` from edited sets on save.
+- Exercise and set IDs are preserved where possible; new items get fresh IDs.
+- Edited workouts flow through Progress, Activity Feed, and Share Cards automatically.
+- Saving requires at least one exercise; deleting the whole workout stays on the detail screen.
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`
@@ -333,7 +347,6 @@ Do not run EAS build unless explicitly requested.
 
 ## Known Limitations
 
-- Full completed workout set-by-set editing is deferred.
 - Full PR history is deferred.
 - Exercise-specific progress graphs are deferred.
 - Share cards are preview screens plus text sharing only; image export is deferred.
@@ -341,12 +354,11 @@ Do not run EAS build unless explicitly requested.
 - Clean ReviveX icon/logo PNG files are still needed.
 - npm audit reports moderate dependency warnings; do not run `npm audit fix --force` without a specific reason.
 
-## Suggested Phase 13
+## Suggested Phase 14
 
-Completed Workout Editing v2:
+PR History v1:
 
-- Add safe completed workout set-by-set editing.
-- Recalculate completed workout totals after set edits.
-- Add exercise add/remove support for saved completed workouts if safe.
-- Keep Activity Feed, Share Cards, and Progress derived from edited workout data.
+- Track per-exercise personal records over time from saved workout history.
+- PR list screen with best set (weight × reps) and estimated 1RM per exercise.
+- Surface recent PRs on the Progress dashboard.
 - Keep GPS and Apple Health for later phases.

@@ -65,6 +65,10 @@ interface WorkoutContextValue {
     workoutId: string,
     patch: UpdateWorkoutMetadataInput
   ) => Workout | undefined;
+  updateWorkoutDetails: (
+    workoutId: string,
+    patch: UpdateWorkoutDetailsInput
+  ) => Workout | undefined;
   getWorkoutById: (workoutId: string) => Workout | undefined;
   repeatWorkout: (workoutId: string) => boolean;
 
@@ -82,6 +86,27 @@ interface UpdateWorkoutMetadataInput {
   title?: string;
   date?: string;
   notes?: string;
+}
+
+interface UpdateWorkoutDetailsInput {
+  title?: string;
+  date?: string;
+  notes?: string;
+  exercises: WorkoutExercise[];
+}
+
+function normalizeWorkoutExercises(exercises: WorkoutExercise[]): WorkoutExercise[] {
+  return exercises.map((exercise) => ({
+    ...exercise,
+    id: exercise.id || makeId('we'),
+    sets: exercise.sets.map((set, index) => ({
+      ...set,
+      id: set.id || makeId('set'),
+      setNumber: index + 1,
+      weight: Math.max(0, Number.isFinite(set.weight) ? set.weight : 0),
+      reps: Math.max(0, Math.floor(Number.isFinite(set.reps) ? set.reps : 0)),
+    })),
+  }));
 }
 
 const WorkoutContext = createContext<WorkoutContextValue | undefined>(undefined);
@@ -263,6 +288,41 @@ export function WorkoutProvider({ children }: ProviderProps) {
             date,
             startedAt: workout.startedAt ? date : workout.startedAt,
             notes: patch.notes !== undefined ? patch.notes.trim() || undefined : workout.notes,
+            updatedAt: new Date().toISOString(),
+          };
+
+          return updatedWorkout;
+        });
+
+        return sortWorkouts(next);
+      });
+
+      return updatedWorkout;
+    },
+    []
+  );
+
+  const updateWorkoutDetails = useCallback(
+    (workoutId: string, patch: UpdateWorkoutDetailsInput) => {
+      let updatedWorkout: Workout | undefined;
+
+      setHistory((prev) => {
+        const next = prev.map((workout) => {
+          if (workout.id !== workoutId) return workout;
+
+          const date = patch.date || workout.date;
+          const exercises = normalizeWorkoutExercises(patch.exercises);
+          const { totalSets, totalVolume } = computeWorkoutTotals(exercises);
+
+          updatedWorkout = {
+            ...workout,
+            title: patch.title?.trim() || workout.title,
+            date,
+            startedAt: workout.startedAt ? date : workout.startedAt,
+            notes: patch.notes !== undefined ? patch.notes.trim() || undefined : workout.notes,
+            exercises,
+            totalSets,
+            totalVolume,
             updatedAt: new Date().toISOString(),
           };
 
@@ -533,6 +593,7 @@ export function WorkoutProvider({ children }: ProviderProps) {
       historyLoaded,
       deleteWorkout,
       updateWorkoutMetadata,
+      updateWorkoutDetails,
       getWorkoutById,
       repeatWorkout,
       routines,
@@ -560,6 +621,7 @@ export function WorkoutProvider({ children }: ProviderProps) {
       historyLoaded,
       deleteWorkout,
       updateWorkoutMetadata,
+      updateWorkoutDetails,
       getWorkoutById,
       repeatWorkout,
       routines,
