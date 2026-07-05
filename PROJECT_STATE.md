@@ -259,6 +259,22 @@ Previous Phase 6 recovery baseline remains available:
 - `src/utils/exerciseProgress.ts` derives per-session exercise stats from saved workouts, combining duplicate entries of the same exercise within one workout.
 - Entry points: PR History All-Time Bests rows and Progress tab Exercise PRs rows now open the exercise detail screen.
 
+### Phase 16: Health Sync Foundation (Apple Health + Health Connect)
+
+- Owner-approved direction change: Apple Health and Google Health Connect integration is now in scope (previous "do not add Apple Health" rule is retired).
+- New health layer in `src/health/`:
+  - `types.ts` — adapter contract, sync settings/state, safe session-range helpers.
+  - `appleHealthAdapter.ts` — HealthKit via `@kingstinct/react-native-healthkit` (strength → traditionalStrengthTraining, runs → running with distance, hybrid → HIIT).
+  - `healthConnectAdapter.ts` — Health Connect via `react-native-health-connect` (ExerciseSession records; runs also write a Distance record).
+  - `healthService.ts` — platform adapter selection.
+- `src/context/HealthContext.tsx` sync engine:
+  - persists settings, connection flag, synced IDs, and last-sync time under `revivex.health.v1`
+  - one-way auto-sync of new workouts, runs, and hybrid sessions while connected
+  - per-type sync toggles and manual Sync Now.
+- New Health Sync screen at `app/profile/health.tsx`, linked from a Connections section on the Profile screen.
+- `app.json` adds the HealthKit and Health Connect config plugins, iOS health usage descriptions, and Android `minSdkVersion` 26 via `expo-build-properties`.
+- Expo Go stays fully supported: native health modules are loaded lazily inside try/catch; in Expo Go the screen reports "needs the dev build" and sync stays dormant. Real syncing activates in a development/production build.
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`
@@ -375,11 +391,18 @@ Do not run EAS build unless explicitly requested.
 - Clean ReviveX icon/logo PNG files are still needed.
 - npm audit reports moderate dependency warnings; do not run `npm audit fix --force` without a specific reason.
 
-## Suggested Phase 16
+## Health Sync Status
 
-Share Card Image Export v1:
+- Health sync code is complete but dormant in Expo Go (native modules can't load there).
+- To activate on device: create a development build (`eas build --profile development`) — requires an Apple Developer account for HealthKit entitlements on iOS.
+- Storage key `revivex.health.v1` persists health sync settings and synced IDs.
+- Reading workouts back from HealthKit/Health Connect (e.g. watch-recorded sessions into the ReviveX log) is the planned follow-up phase after the dev build exists.
 
-- Export share cards as images using `react-native-view-shot` + `expo-sharing` (Expo Go compatible).
-- Keep the existing text-share fallback.
-- Alternatively: ReviveX icon/splash asset pass once clean PNGs exist.
-- Keep GPS and Apple Health for later phases.
+## Suggested Phase 17
+
+Pick based on owner priorities:
+
+- Dev build setup (EAS) to light up Apple Health/Health Connect sync end to end.
+- Health import v1: read watch/phone-recorded workouts from the health store into the ReviveX activity log.
+- Share Card Image Export v1 (`react-native-view-shot` + `expo-sharing`, Expo Go compatible).
+- ReviveX icon/splash asset pass once clean PNGs exist.

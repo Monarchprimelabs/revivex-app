@@ -86,8 +86,8 @@ SHA256:
 
 - Do not rebuild the app from scratch.
 - Do not change the existing 5-tab navigation.
-- Keep Expo Go compatibility.
-- Do not add Apple Health.
+- Keep Expo Go compatibility (health sync degrades gracefully there; see Phase 16 in PROJECT_STATE.md).
+- Apple Health + Health Connect integration is approved as of Phase 16 (owner decision, 2026-07-05). Native modules must stay lazily loaded so Expo Go keeps working.
 - Do not add GPS.
 - Do not add Supabase.
 - Do not add RevenueCat.
