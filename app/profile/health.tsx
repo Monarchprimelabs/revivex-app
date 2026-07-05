@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -19,11 +19,27 @@ export default function HealthSyncScreen() {
     syncedCount,
     pendingCount,
     lastSyncAt,
+    importedCount,
+    lastImportAt,
+    importing,
     connect,
     disconnect,
     updateSettings,
     syncNow,
+    importNow,
   } = useHealth();
+
+  const handleImport = async () => {
+    const count = await importNow();
+    Alert.alert(
+      count > 0 ? 'Import complete' : 'Nothing new to import',
+      count > 0
+        ? `${count} session${count === 1 ? '' : 's'} from ${providerName} ${
+            count === 1 ? 'was' : 'were'
+          } added to your training log.`
+        : `No new ${providerName} sessions from the last 30 days. Sessions ReviveX exported are skipped automatically.`
+    );
+  };
 
   const statusInfo = getStatusInfo(status, providerName, connected);
 
@@ -121,6 +137,30 @@ export default function HealthSyncScreen() {
               onPress={syncNow}
               style={{ marginTop: spacing.lg }}
             />
+
+            <SectionHeader title="Import from your watch" />
+            <AppCard>
+              <Text style={styles.importText}>
+                Pull workouts recorded by your Apple Watch or other apps in the last 30
+                days into ReviveX. Runs become runs, strength training becomes workouts,
+                and everything else lands as a hybrid session. Duplicates and sessions
+                ReviveX exported are skipped.
+              </Text>
+              <View style={styles.importMetaRow}>
+                <Text style={styles.importMeta}>
+                  {importedCount} imported all time
+                </Text>
+                <Text style={styles.importMeta}>
+                  {lastImportAt ? `Last: ${formatRelativeDate(lastImportAt)}` : 'Never run'}
+                </Text>
+              </View>
+              <PrimaryButton
+                label={importing ? 'Importing...' : `Import from ${providerName}`}
+                variant="primary"
+                onPress={handleImport}
+                style={{ marginTop: spacing.md }}
+              />
+            </AppCard>
             <PrimaryButton
               label="Disconnect"
               variant="outline"
@@ -350,6 +390,20 @@ const styles = StyleSheet.create({
   rowDivider: {
     borderTopWidth: 1,
     borderTopColor: colors.borderSubtle,
+  },
+  importText: {
+    color: colors.textSecondary,
+    fontSize: fontSize.sm,
+    lineHeight: 20,
+  },
+  importMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: spacing.md,
+  },
+  importMeta: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
   },
   disconnectHint: {
     color: colors.textMuted,

@@ -14,15 +14,36 @@ export type HealthAvailability =
   | 'needs-dev-build'
   | 'unsupported';
 
+/** Local activity kind a health-store session maps onto. */
+export type ImportedSessionKind = 'run' | 'strength' | 'hybrid';
+
+/** A workout/exercise session read back from the platform health store. */
+export interface ImportedHealthSession {
+  /** Stable platform ID (HealthKit UUID / Health Connect record id). */
+  externalId: string;
+  kind: ImportedSessionKind;
+  title: string;
+  dateIso: string;
+  durationSeconds: number;
+  distanceMeters?: number;
+  /** Recording app/device name when the platform provides it. */
+  sourceName?: string;
+}
+
 export interface HealthAdapter {
   /** User-facing provider name, e.g. "Apple Health" or "Health Connect". */
   providerName: string;
   checkAvailability(): Promise<HealthAvailability>;
-  /** Ask the OS for write permission. Resolves true when granted. */
+  /** Ask the OS for read + write permission. Resolves true when granted. */
   requestPermissions(): Promise<boolean>;
   writeStrengthWorkout(workout: Workout): Promise<boolean>;
   writeRun(run: Run): Promise<boolean>;
   writeHybridSession(session: HybridSession): Promise<boolean>;
+  /**
+   * Read sessions recorded since the given ISO date, excluding sessions
+   * this app wrote itself (so exports don't echo back as imports).
+   */
+  readRecentSessions(sinceIso: string): Promise<ImportedHealthSession[]>;
 }
 
 export interface HealthSyncSettings {
@@ -37,6 +58,9 @@ export interface HealthSyncState {
   /** IDs of local items already written to the platform health store. */
   syncedIds: string[];
   lastSyncAt?: string;
+  /** External health-store IDs already imported into local logs. */
+  importedIds: string[];
+  lastImportAt?: string;
 }
 
 export const DEFAULT_HEALTH_SYNC_STATE: HealthSyncState = {
@@ -47,6 +71,7 @@ export const DEFAULT_HEALTH_SYNC_STATE: HealthSyncState = {
     syncHybrid: true,
   },
   syncedIds: [],
+  importedIds: [],
 };
 
 /** Clamp a start/end pair so health stores never see end <= start. */

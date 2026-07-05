@@ -4,7 +4,14 @@ import {
   safeSessionRange,
   type HealthAdapter,
   type HealthAvailability,
+  type ImportedHealthSession,
+  type ImportedSessionKind,
 } from './types';
+
+/** Our own bundle id — sessions we exported must not echo back as imports. */
+const OWN_BUNDLE_ID = 'com.hybridtrack.app';
+
+const IMPORT_QUERY_LIMIT = 200;
 
 /**
  * Apple Health (HealthKit) adapter backed by @kingstinct/react-native-healthkit.
@@ -49,9 +56,88 @@ async function requestPermissions(): Promise<boolean> {
   try {
     return await healthKit.requestAuthorization({
       toShare: ['HKWorkoutTypeIdentifier'],
+      toRead: ['HKWorkoutTypeIdentifier'],
     });
   } catch {
     return false;
+  }
+}
+
+function distanceToMeters(quantity?: { unit: string; quantity: number }): number | undefined {
+  if (!quantity || !Number.isFinite(quantity.quantity) || quantity.quantity <= 0) {
+    return undefined;
+  }
+  switch (quantity.unit) {
+    case 'm':
+      return quantity.quantity;
+    case 'km':
+      return quantity.quantity * 1000;
+    case 'mi':
+      return quantity.quantity * 1609.344;
+    default:
+      return undefined;
+  }
+}
+
+async function readRecentSessions(sinceIso: string): Promise<ImportedHealthSession[]> {
+  const healthKit = loadHealthKit();
+  if (!healthKit) return [];
+
+  const since = new Date(sinceIso);
+  if (Number.isNaN(since.getTime())) return [];
+
+  try {
+    const workouts = await healthKit.queryWorkoutSamples({
+      limit: IMPORT_QUERY_LIMIT,
+      ascending: false,
+      filter: { date: { startDate: since } },
+    });
+
+    const sessions: ImportedHealthSession[] = [];
+    for (const workout of workouts) {
+      const bundleId = workout.sourceRevision?.source?.bundleIdentifier;
+      if (bundleId === OWN_BUNDLE_ID) continue;
+
+      const start = new Date(workout.startDate);
+      const end = new Date(workout.endDate);
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) continue;
+
+      const durationSeconds = Math.max(
+        0,
+        Math.floor((end.getTime() - start.getTime()) / 1000)
+      );
+      if (durationSeconds <= 0) continue;
+
+      const activityType = workout.workoutActivityType;
+      let kind: ImportedSessionKind;
+      let fallbackTitle: string;
+      if (activityType === healthKit.WorkoutActivityType.running) {
+        kind = 'run';
+        fallbackTitle = 'Imported Run';
+      } else if (
+        activityType === healthKit.WorkoutActivityType.traditionalStrengthTraining ||
+        activityType === healthKit.WorkoutActivityType.functionalStrengthTraining
+      ) {
+        kind = 'strength';
+        fallbackTitle = 'Imported Strength Workout';
+      } else {
+        kind = 'hybrid';
+        fallbackTitle = 'Imported Session';
+      }
+
+      sessions.push({
+        externalId: workout.uuid,
+        kind,
+        title: fallbackTitle,
+        dateIso: start.toISOString(),
+        durationSeconds,
+        distanceMeters: kind === 'run' ? distanceToMeters(workout.totalDistance) : undefined,
+        sourceName: workout.sourceRevision?.source?.name,
+      });
+    }
+    return sessions;
+  } catch {
+    return [];
   }
 }
 
@@ -79,6 +165,7 @@ export const appleHealthAdapter: HealthAdapter = {
   providerName: 'Apple Health',
   checkAvailability,
   requestPermissions,
+  readRecentSessions,
 
   async writeStrengthWorkout(workout: Workout): Promise<boolean> {
     const healthKit = loadHealthKit();

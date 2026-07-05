@@ -280,6 +280,21 @@ Previous Phase 6 recovery baseline remains available:
 - Share Card screen exports the branded recap as a PNG via `react-native-view-shot` and shares it with `expo-sharing` (both bundled in Expo Go — works on device now). Share Text remains as a secondary action.
 - `eas.json` added with development/preview/production profiles; `docs/DEV_BUILD.md` documents the dev-build steps that activate Apple Health sync (run EAS from the Mac Mini, not from agents).
 
+### Phase 18: Health Import v1
+
+- Both health adapters now read recent sessions back from the platform store:
+  - Apple Health: `queryWorkoutSamples` (last 30 days, capped at 200), excluding samples written by our own bundle id.
+  - Health Connect: `readRecords('ExerciseSession')` plus per-run Distance aggregation, excluding our own package's records.
+- Permission requests now include read access (HealthKit `toRead`, Health Connect read permissions for ExerciseSession + Distance).
+- `src/health/importMapping.ts` (pure, Node-testable) maps imported sessions:
+  - running → local Run (distance converted to the profile preferred unit)
+  - strength training → completed Workout (no exercises, duration + notes)
+  - everything else → Hybrid Session with a single imported segment.
+- `WorkoutContext.importCompletedWorkout` adds externally recorded workouts to history.
+- HealthContext `importNow()`: 30-day lookback, dedupes via persisted `importedIds`, and marks imported items as already-synced so the export engine never echoes them back to the health store (and vice versa — our exports are filtered out of imports by app id).
+- Health Sync screen has an "Import from your watch" section with imported count, last import time, and an Import button with result alerts.
+- Imported items flow through Home, Activity Feed, Run/Train/Hybrid tabs, Progress, and Share Cards automatically.
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`
@@ -400,13 +415,13 @@ Do not run EAS build unless explicitly requested.
 - Health sync code is complete but dormant in Expo Go (native modules can't load there).
 - To activate on device: create a development build (`eas build --profile development`) — requires an Apple Developer account for HealthKit entitlements on iOS.
 - Storage key `revivex.health.v1` persists health sync settings and synced IDs.
-- Reading workouts back from HealthKit/Health Connect (e.g. watch-recorded sessions into the ReviveX log) is the planned follow-up phase after the dev build exists.
+- Health Import v1 (Phase 18) reads watch/app-recorded sessions into the local log; like export, it activates in the dev build.
 
-## Suggested Phase 17
+## Suggested Phase 19
 
 Pick based on owner priorities:
 
-- Dev build setup (EAS) to light up Apple Health/Health Connect sync end to end.
-- Health import v1: read watch/phone-recorded workouts from the health store into the ReviveX activity log.
-- Share Card Image Export v1 (`react-native-view-shot` + `expo-sharing`, Expo Go compatible).
+- Run the EAS dev build (docs/DEV_BUILD.md) and verify health export + import end to end on device.
+- Auto-import on app open / after connect (currently manual Import button).
+- Heart rate + energy burned metrics on detail screens (read from health store).
 - ReviveX icon/splash asset pass once clean PNGs exist.

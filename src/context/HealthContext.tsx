@@ -15,9 +15,15 @@ import {
   type HealthSyncSettings,
   type HealthSyncState,
 } from '../health/types';
+import {
+  mapImportedHybrid,
+  mapImportedRun,
+  mapImportedWorkout,
+} from '../health/importMapping';
 import { useWorkout } from './WorkoutContext';
 import { useRuns } from './RunContext';
 import { useHybridSessions } from './HybridContext';
+import { useProfile } from './ProfileContext';
 
 /**
  * HealthContext
@@ -33,6 +39,9 @@ import { useHybridSessions } from './HybridContext';
 
 const HEALTH_STORAGE_KEY = 'revivex.health.v1';
 
+/** How far back the first import looks. */
+const IMPORT_LOOKBACK_DAYS = 30;
+
 type HealthStatus = 'checking' | HealthAvailability | 'no-adapter';
 
 interface HealthContextValue {
@@ -43,11 +52,16 @@ interface HealthContextValue {
   syncedCount: number;
   pendingCount: number;
   lastSyncAt?: string;
+  importedCount: number;
+  lastImportAt?: string;
+  importing: boolean;
   healthLoaded: boolean;
   connect: () => Promise<boolean>;
   disconnect: () => void;
   updateSettings: (patch: Partial<HealthSyncSettings>) => void;
   syncNow: () => Promise<void>;
+  /** Pull recent health-store sessions into local logs. Returns imported count. */
+  importNow: () => Promise<number>;
 }
 
 const HealthContext = createContext<HealthContextValue | undefined>(undefined);
@@ -58,14 +72,17 @@ interface ProviderProps {
 
 export function HealthProvider({ children }: ProviderProps) {
   const adapter = useMemo(() => getHealthAdapter(), []);
-  const { history, historyLoaded } = useWorkout();
-  const { runs, runsLoaded } = useRuns();
-  const { hybridSessions, hybridSessionsLoaded } = useHybridSessions();
+  const { history, historyLoaded, importCompletedWorkout } = useWorkout();
+  const { runs, runsLoaded, addRun } = useRuns();
+  const { hybridSessions, hybridSessionsLoaded, addHybridSession } = useHybridSessions();
+  const { profile } = useProfile();
 
   const [status, setStatus] = useState<HealthStatus>('checking');
   const [syncState, setSyncState] = useState<HealthSyncState>(DEFAULT_HEALTH_SYNC_STATE);
   const [healthLoaded, setHealthLoaded] = useState(false);
+  const [importing, setImporting] = useState(false);
   const syncingRef = useRef(false);
+  const importingRef = useRef(false);
 
   // Load persisted sync state once.
   useEffect(() => {
@@ -79,6 +96,7 @@ export function HealthProvider({ children }: ProviderProps) {
             ...parsed,
             settings: { ...DEFAULT_HEALTH_SYNC_STATE.settings, ...parsed.settings },
             syncedIds: Array.isArray(parsed.syncedIds) ? parsed.syncedIds : [],
+            importedIds: Array.isArray(parsed.importedIds) ? parsed.importedIds : [],
           });
         }
       } catch (err) {
@@ -135,7 +153,7 @@ export function HealthProvider({ children }: ProviderProps) {
     pendingItems.workouts.length + pendingItems.runs.length + pendingItems.sessions.length;
 
   const runSync = useCallback(async () => {
-    if (!adapter || syncingRef.current) return;
+    if (!adapter || syncingRef.current || importingRef.current) return;
     if (status !== 'available' || !syncState.connected) return;
     if (!historyLoaded || !runsLoaded || !hybridSessionsLoaded || !healthLoaded) return;
 
@@ -181,6 +199,71 @@ export function HealthProvider({ children }: ProviderProps) {
     runSync();
   }, [runSync]);
 
+  const importNow = useCallback(async () => {
+    if (!adapter || importingRef.current) return 0;
+    if (status !== 'available' || !syncState.connected) return 0;
+    if (!historyLoaded || !runsLoaded || !hybridSessionsLoaded || !healthLoaded) return 0;
+
+    importingRef.current = true;
+    setImporting(true);
+    try {
+      const sinceIso = new Date(
+        Date.now() - IMPORT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000
+      ).toISOString();
+      const sessions = await adapter.readRecentSessions(sinceIso);
+
+      const known = new Set(syncState.importedIds);
+      const preferredUnit = profile?.preferredDistanceUnit ?? 'mi';
+      const importedExternalIds: string[] = [];
+      const newLocalIds: string[] = [];
+
+      for (const session of sessions) {
+        if (known.has(session.externalId)) continue;
+
+        if (session.kind === 'run') {
+          const run = addRun(mapImportedRun(session, preferredUnit, adapter.providerName));
+          newLocalIds.push(run.id);
+        } else if (session.kind === 'strength') {
+          const workout = importCompletedWorkout(
+            mapImportedWorkout(session, adapter.providerName)
+          );
+          newLocalIds.push(workout.id);
+        } else {
+          const hybrid = addHybridSession(mapImportedHybrid(session, adapter.providerName));
+          newLocalIds.push(hybrid.id);
+        }
+        importedExternalIds.push(session.externalId);
+      }
+
+      setSyncState((current) => ({
+        ...current,
+        importedIds: [...current.importedIds, ...importedExternalIds],
+        // Imported items are marked as already-synced so the export engine
+        // never writes them back to the health store they came from.
+        syncedIds: [...current.syncedIds, ...newLocalIds],
+        lastImportAt: new Date().toISOString(),
+      }));
+
+      return importedExternalIds.length;
+    } finally {
+      importingRef.current = false;
+      setImporting(false);
+    }
+  }, [
+    adapter,
+    status,
+    syncState.connected,
+    syncState.importedIds,
+    historyLoaded,
+    runsLoaded,
+    hybridSessionsLoaded,
+    healthLoaded,
+    profile,
+    addRun,
+    importCompletedWorkout,
+    addHybridSession,
+  ]);
+
   const connect = useCallback(async () => {
     if (!adapter || status !== 'available') return false;
     const granted = await adapter.requestPermissions();
@@ -210,11 +293,15 @@ export function HealthProvider({ children }: ProviderProps) {
       syncedCount: syncState.syncedIds.length,
       pendingCount,
       lastSyncAt: syncState.lastSyncAt,
+      importedCount: syncState.importedIds.length,
+      lastImportAt: syncState.lastImportAt,
+      importing,
       healthLoaded,
       connect,
       disconnect,
       updateSettings,
       syncNow: runSync,
+      importNow,
     }),
     [
       status,
@@ -223,12 +310,16 @@ export function HealthProvider({ children }: ProviderProps) {
       syncState.settings,
       syncState.syncedIds.length,
       syncState.lastSyncAt,
+      syncState.importedIds.length,
+      syncState.lastImportAt,
+      importing,
       pendingCount,
       healthLoaded,
       connect,
       disconnect,
       updateSettings,
       runSync,
+      importNow,
     ]
   );
 

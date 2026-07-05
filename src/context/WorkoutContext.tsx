@@ -71,6 +71,7 @@ interface WorkoutContextValue {
   ) => Workout | undefined;
   getWorkoutById: (workoutId: string) => Workout | undefined;
   repeatWorkout: (workoutId: string) => boolean;
+  importCompletedWorkout: (input: ImportCompletedWorkoutInput) => Workout;
 
   // Routines
   routines: Routine[];
@@ -93,6 +94,14 @@ interface UpdateWorkoutDetailsInput {
   date?: string;
   notes?: string;
   exercises: WorkoutExercise[];
+}
+
+/** Minimal shape for workouts imported from an external source (e.g. Apple Health). */
+interface ImportCompletedWorkoutInput {
+  title: string;
+  date: string;
+  durationSeconds: number;
+  notes?: string;
 }
 
 function normalizeWorkoutExercises(exercises: WorkoutExercise[]): WorkoutExercise[] {
@@ -378,6 +387,23 @@ export function WorkoutProvider({ children }: ProviderProps) {
     [history]
   );
 
+  const importCompletedWorkout = useCallback((input: ImportCompletedWorkoutInput) => {
+    const imported: Workout = {
+      id: makeId('wk'),
+      title: input.title.trim() || 'Imported Workout',
+      date: input.date,
+      startedAt: input.date,
+      duration: Math.max(0, Math.floor(input.durationSeconds)),
+      exercises: [],
+      notes: input.notes?.trim() || undefined,
+      totalSets: 0,
+      totalVolume: 0,
+    };
+
+    setHistory((prev) => sortWorkouts([imported, ...prev]));
+    return imported;
+  }, []);
+
   const setWorkoutTitle = useCallback((title: string) => {
     setActiveWorkout((current) => (current ? { ...current, title } : current));
   }, []);
@@ -596,6 +622,7 @@ export function WorkoutProvider({ children }: ProviderProps) {
       updateWorkoutDetails,
       getWorkoutById,
       repeatWorkout,
+      importCompletedWorkout,
       routines,
       routinesLoaded,
       createRoutine,
@@ -624,6 +651,7 @@ export function WorkoutProvider({ children }: ProviderProps) {
       updateWorkoutDetails,
       getWorkoutById,
       repeatWorkout,
+      importCompletedWorkout,
       routines,
       routinesLoaded,
       createRoutine,

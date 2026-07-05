@@ -4,7 +4,12 @@ import {
   safeSessionRange,
   type HealthAdapter,
   type HealthAvailability,
+  type ImportedHealthSession,
+  type ImportedSessionKind,
 } from './types';
+
+/** Our own package name — sessions we exported must not echo back as imports. */
+const OWN_PACKAGE_NAME = 'com.hybridtrack.app';
 
 /**
  * Google Health Connect adapter backed by react-native-health-connect.
@@ -63,6 +68,8 @@ async function requestPermissions(): Promise<boolean> {
     const granted = await healthConnect.requestPermission([
       { accessType: 'write', recordType: 'ExerciseSession' },
       { accessType: 'write', recordType: 'Distance' },
+      { accessType: 'read', recordType: 'ExerciseSession' },
+      { accessType: 'read', recordType: 'Distance' },
     ]);
     return granted.some(
       (permission) =>
@@ -70,6 +77,90 @@ async function requestPermissions(): Promise<boolean> {
     );
   } catch {
     return false;
+  }
+}
+
+function sessionKindOf(
+  healthConnect: HealthConnectModule,
+  exerciseType: number
+): { kind: ImportedSessionKind; fallbackTitle: string } {
+  if (
+    exerciseType === healthConnect.ExerciseType.RUNNING ||
+    exerciseType === healthConnect.ExerciseType.RUNNING_TREADMILL
+  ) {
+    return { kind: 'run', fallbackTitle: 'Imported Run' };
+  }
+  if (exerciseType === healthConnect.ExerciseType.STRENGTH_TRAINING) {
+    return { kind: 'strength', fallbackTitle: 'Imported Strength Workout' };
+  }
+  return { kind: 'hybrid', fallbackTitle: 'Imported Session' };
+}
+
+async function readSessionDistanceMeters(
+  healthConnect: HealthConnectModule,
+  startTime: string,
+  endTime: string
+): Promise<number | undefined> {
+  try {
+    const result = await healthConnect.readRecords('Distance', {
+      timeRangeFilter: { operator: 'between', startTime, endTime },
+    });
+    const meters = result.records.reduce((sum, record) => {
+      if (record.metadata?.dataOrigin === OWN_PACKAGE_NAME) return sum;
+      const value = record.distance.inMeters;
+      return sum + (Number.isFinite(value) ? Math.max(0, value) : 0);
+    }, 0);
+    return meters > 0 ? meters : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function readRecentSessions(sinceIso: string): Promise<ImportedHealthSession[]> {
+  const healthConnect = loadHealthConnect();
+  if (!healthConnect) return [];
+  if (!(await ensureInitialized(healthConnect))) return [];
+
+  try {
+    const result = await healthConnect.readRecords('ExerciseSession', {
+      timeRangeFilter: { operator: 'after', startTime: sinceIso },
+    });
+
+    const sessions: ImportedHealthSession[] = [];
+    for (const record of result.records) {
+      const externalId = record.metadata?.id;
+      if (!externalId) continue;
+      if (record.metadata?.dataOrigin === OWN_PACKAGE_NAME) continue;
+
+      const start = new Date(record.startTime);
+      const end = new Date(record.endTime);
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) continue;
+
+      const durationSeconds = Math.max(
+        0,
+        Math.floor((end.getTime() - start.getTime()) / 1000)
+      );
+      if (durationSeconds <= 0) continue;
+
+      const { kind, fallbackTitle } = sessionKindOf(healthConnect, record.exerciseType);
+      const distanceMeters =
+        kind === 'run'
+          ? await readSessionDistanceMeters(healthConnect, record.startTime, record.endTime)
+          : undefined;
+
+      sessions.push({
+        externalId,
+        kind,
+        title: record.title?.trim() || fallbackTitle,
+        dateIso: start.toISOString(),
+        durationSeconds,
+        distanceMeters,
+        sourceName: record.metadata?.dataOrigin,
+      });
+    }
+    return sessions;
+  } catch {
+    return [];
   }
 }
 
@@ -109,6 +200,7 @@ export const healthConnectAdapter: HealthAdapter = {
   providerName: 'Health Connect',
   checkAvailability,
   requestPermissions,
+  readRecentSessions,
 
   async writeStrengthWorkout(workout: Workout): Promise<boolean> {
     const healthConnect = loadHealthConnect();
