@@ -346,6 +346,12 @@ Previous Phase 6 recovery baseline remains available:
 - Per exercise: targetSets = logged set count, targetReps = most common reps among completed sets, targetWeight = heaviest completed weight, restSeconds carried over. Exercises without sets are dropped.
 - `src/utils/workoutToRoutine.ts` is pure and Node-tested.
 
+### Phase 26: Last-Time History in Active Workout
+
+- Each exercise card in the Active Workout shows the previous session's numbers under the exercise name: `Last: 185×8, 185×8, 205×5 • 3d ago`.
+- Uses completed sets from the most recent saved workout containing that exercise (falls back to logged sets when none were marked complete); bodyweight sets render as reps; long lists collapse to the first 5.
+- `src/utils/lastPerformance.ts` is pure and Node-tested.
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`

@@ -21,7 +21,11 @@ import PrimaryButton from '../../src/components/PrimaryButton';
 import ExerciseLogCard from '../../src/components/workout/ExerciseLogCard';
 import RestTimerBar from '../../src/components/workout/RestTimerBar';
 import PlateCalculatorModal from '../../src/components/workout/PlateCalculatorModal';
-import { formatDuration } from '../../src/utils/format';
+import { formatDuration, formatRelativeDate } from '../../src/utils/format';
+import {
+  formatLastPerformance,
+  getLastPerformance,
+} from '../../src/utils/lastPerformance';
 
 const DEFAULT_REST_SECONDS = 90;
 
@@ -47,8 +51,20 @@ export default function ActiveWorkoutScreen() {
     addSet,
     updateSet,
     removeSet,
+    history,
   } = useWorkout();
   const { profile } = useProfile();
+
+  const lastPerformanceFor = useCallback(
+    (exerciseId: string, exerciseName: string) => {
+      const performance = getLastPerformance(history, exerciseId || exerciseName);
+      if (!performance) return undefined;
+      return `Last: ${formatLastPerformance(performance)} • ${formatRelativeDate(
+        performance.date
+      )}`;
+    },
+    [history]
+  );
 
   // If no active workout, start one (entered from "Start Empty Workout")
   useEffect(() => {
@@ -297,6 +313,7 @@ export default function ActiveWorkoutScreen() {
               }}
               onRemoveSet={(setId) => removeSet(ex.id, setId)}
               onOpenPlates={() => openPlates(ex.sets.map((set) => set.weight))}
+              lastPerformance={lastPerformanceFor(ex.exerciseId, ex.exerciseName)}
               weightUnit={profile?.preferredWeightUnit}
               onRemoveExercise={() => {
                 Alert.alert(
