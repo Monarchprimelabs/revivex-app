@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import ScreenContainer from '../../src/components/ScreenContainer';
@@ -520,8 +520,14 @@ function ExercisePRCard({ prs, weightUnit }: { prs: ExercisePR[]; weightUnit: st
   return (
     <AppCard>
       {prs.map((pr, index) => (
-        <View
+        <Pressable
           key={`${pr.exerciseId}-${pr.exerciseName}`}
+          onPress={() =>
+            router.push({
+              pathname: '/progress/exercise/[key]',
+              params: { key: pr.exerciseId || pr.exerciseName },
+            })
+          }
           style={[styles.prRow, index !== prs.length - 1 && styles.rowDivider]}
         >
           <View style={styles.prRank}>
@@ -537,7 +543,7 @@ function ExercisePRCard({ prs, weightUnit }: { prs: ExercisePR[]; weightUnit: st
             <Text style={styles.prWeight}>{formatWeight(pr.weight, weightUnit)}</Text>
             <Text style={styles.prReps}>x {pr.reps}</Text>
           </View>
-        </View>
+        </Pressable>
       ))}
     </AppCard>
   );

@@ -249,6 +249,16 @@ Previous Phase 6 recovery baseline remains available:
 - Progress tab Exercise PRs section has a View All link to PR History.
 - PR weight labels use the profile preferred weight unit (label only, no conversion), replacing the hardcoded kg label on the Progress tab PR card.
 
+### Phase 15: Exercise Progress Detail v1
+
+- New per-exercise progress screen at `app/progress/exercise/[key].tsx` (key is `exerciseId`, falling back to exercise name):
+  - summary of best set, best estimated 1RM, and total sessions
+  - trend chart over the last 12 sessions with an Est 1RM / Session Volume toggle (theme-native bars, no chart dependency)
+  - full session history with best set, completed/total sets, and volume per session
+  - session rows link to the source workout detail screen.
+- `src/utils/exerciseProgress.ts` derives per-session exercise stats from saved workouts, combining duplicate entries of the same exercise within one workout.
+- Entry points: PR History All-Time Bests rows and Progress tab Exercise PRs rows now open the exercise detail screen.
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`
@@ -360,16 +370,16 @@ Do not run EAS build unless explicitly requested.
 
 ## Known Limitations
 
-- Exercise-specific progress graphs are deferred.
 - Share cards are preview screens plus text sharing only; image export is deferred.
 - Activity Feed is local/private only; no public social/community features exist yet.
 - Clean ReviveX icon/logo PNG files are still needed.
 - npm audit reports moderate dependency warnings; do not run `npm audit fix --force` without a specific reason.
 
-## Suggested Phase 15
+## Suggested Phase 16
 
-Exercise Progress Detail v1:
+Share Card Image Export v1:
 
-- Per-exercise progress screen from PR History and Progress.
-- Session-by-session best set and volume trend using simple bar charts (no new chart dependency).
+- Export share cards as images using `react-native-view-shot` + `expo-sharing` (Expo Go compatible).
+- Keep the existing text-share fallback.
+- Alternatively: ReviveX icon/splash asset pass once clean PNGs exist.
 - Keep GPS and Apple Health for later phases.

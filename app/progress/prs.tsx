@@ -174,8 +174,8 @@ function ExerciseBestRow({
     <Pressable
       onPress={() =>
         router.push({
-          pathname: '/workout/[id]',
-          params: { id: summary.bestWeight.workoutId },
+          pathname: '/progress/exercise/[key]',
+          params: { key: summary.exerciseId || summary.exerciseName },
         })
       }
       style={[styles.bestRow, divider && styles.rowDivider]}
@@ -196,6 +196,7 @@ function ExerciseBestRow({
           est 1RM {formatEst1RM(summary.bestEst1RM.est1RM, weightUnit)}
         </Text>
       </View>
+      <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
     </Pressable>
   );
 }
