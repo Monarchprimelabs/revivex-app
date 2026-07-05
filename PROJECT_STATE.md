@@ -295,6 +295,15 @@ Previous Phase 6 recovery baseline remains available:
 - Health Sync screen has an "Import from your watch" section with imported count, last import time, and an Import button with result alerts.
 - Imported items flow through Home, Activity Feed, Run/Train/Hybrid tabs, Progress, and Share Cards automatically.
 
+### Phase 19: Auto-Import + Watch Metrics on Detail Screens
+
+- Auto-import: new `autoImport` setting (default on) runs a health import once per app session when connected, and immediately after connecting. Toggle lives in the Health Sync import card.
+- Both adapters expose `readSessionMetrics(dateIso, durationSeconds)`:
+  - Apple Health: heart rate discreteAverage/discreteMax (`count/min`) and active energy cumulativeSum (`kcal`) over the session window.
+  - Health Connect: HeartRate and ActiveCaloriesBurned aggregates over the session window.
+- Read permissions now include heart rate and active energy on both platforms.
+- New `src/components/HealthMetricsCard.tsx` shows Avg HR / Max HR / Energy ("From Apple Health") on the Workout, Run, and Hybrid detail screens. It renders nothing unless health sync is connected and data exists, so Expo Go and unconnected devices are unaffected.
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`
@@ -417,11 +426,11 @@ Do not run EAS build unless explicitly requested.
 - Storage key `revivex.health.v1` persists health sync settings and synced IDs.
 - Health Import v1 (Phase 18) reads watch/app-recorded sessions into the local log; like export, it activates in the dev build.
 
-## Suggested Phase 19
+## Suggested Phase 20
 
 Pick based on owner priorities:
 
-- Run the EAS dev build (docs/DEV_BUILD.md) and verify health export + import end to end on device.
-- Auto-import on app open / after connect (currently manual Import button).
-- Heart rate + energy burned metrics on detail screens (read from health store).
+- Run the EAS dev build (docs/DEV_BUILD.md) and verify export, import, auto-import, and watch metrics end to end on device.
+- Weekly training summary (volume + mileage + hybrid time in one Progress view).
+- Share Card upgrades: include watch HR/energy metrics on exported cards.
 - ReviveX icon/splash asset pass once clean PNGs exist.

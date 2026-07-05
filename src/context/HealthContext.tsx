@@ -12,6 +12,7 @@ import { getHealthAdapter } from '../health/healthService';
 import {
   DEFAULT_HEALTH_SYNC_STATE,
   type HealthAvailability,
+  type HealthSessionMetrics,
   type HealthSyncSettings,
   type HealthSyncState,
 } from '../health/types';
@@ -62,6 +63,11 @@ interface HealthContextValue {
   syncNow: () => Promise<void>;
   /** Pull recent health-store sessions into local logs. Returns imported count. */
   importNow: () => Promise<number>;
+  /** Heart rate / energy recorded during a session window, when connected. */
+  getSessionMetrics: (
+    dateIso: string,
+    durationSeconds: number
+  ) => Promise<HealthSessionMetrics | undefined>;
 }
 
 const HealthContext = createContext<HealthContextValue | undefined>(undefined);
@@ -83,6 +89,7 @@ export function HealthProvider({ children }: ProviderProps) {
   const [importing, setImporting] = useState(false);
   const syncingRef = useRef(false);
   const importingRef = useRef(false);
+  const autoImportRanRef = useRef(false);
 
   // Load persisted sync state once.
   useEffect(() => {
@@ -264,11 +271,33 @@ export function HealthProvider({ children }: ProviderProps) {
     addHybridSession,
   ]);
 
+  // Auto-import once per app session when connected and auto-import is on.
+  useEffect(() => {
+    if (autoImportRanRef.current) return;
+    if (!syncState.settings.autoImport || !syncState.connected) return;
+    if (status !== 'available') return;
+    if (!historyLoaded || !runsLoaded || !hybridSessionsLoaded || !healthLoaded) return;
+
+    autoImportRanRef.current = true;
+    importNow();
+  }, [
+    importNow,
+    status,
+    syncState.connected,
+    syncState.settings.autoImport,
+    historyLoaded,
+    runsLoaded,
+    hybridSessionsLoaded,
+    healthLoaded,
+  ]);
+
   const connect = useCallback(async () => {
     if (!adapter || status !== 'available') return false;
     const granted = await adapter.requestPermissions();
     if (granted) {
       setSyncState((current) => ({ ...current, connected: true }));
+      // Let the auto-import effect pick up the new connection immediately.
+      autoImportRanRef.current = false;
     }
     return granted;
   }, [adapter, status]);
@@ -283,6 +312,14 @@ export function HealthProvider({ children }: ProviderProps) {
       settings: { ...current.settings, ...patch },
     }));
   }, []);
+
+  const getSessionMetrics = useCallback(
+    async (dateIso: string, durationSeconds: number) => {
+      if (!adapter || status !== 'available' || !syncState.connected) return undefined;
+      return adapter.readSessionMetrics(dateIso, durationSeconds);
+    },
+    [adapter, status, syncState.connected]
+  );
 
   const value = useMemo<HealthContextValue>(
     () => ({
@@ -302,6 +339,7 @@ export function HealthProvider({ children }: ProviderProps) {
       updateSettings,
       syncNow: runSync,
       importNow,
+      getSessionMetrics,
     }),
     [
       status,
@@ -320,6 +358,7 @@ export function HealthProvider({ children }: ProviderProps) {
       updateSettings,
       runSync,
       importNow,
+      getSessionMetrics,
     ]
   );
 

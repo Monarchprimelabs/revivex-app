@@ -30,6 +30,13 @@ export interface ImportedHealthSession {
   sourceName?: string;
 }
 
+/** Heart rate / energy metrics for one session's time window. */
+export interface HealthSessionMetrics {
+  avgHeartRateBpm?: number;
+  maxHeartRateBpm?: number;
+  energyBurnedKcal?: number;
+}
+
 export interface HealthAdapter {
   /** User-facing provider name, e.g. "Apple Health" or "Health Connect". */
   providerName: string;
@@ -44,12 +51,22 @@ export interface HealthAdapter {
    * this app wrote itself (so exports don't echo back as imports).
    */
   readRecentSessions(sinceIso: string): Promise<ImportedHealthSession[]>;
+  /**
+   * Heart rate and active energy recorded during a session's time window
+   * (e.g. by a watch). Returns undefined when nothing was recorded.
+   */
+  readSessionMetrics(
+    dateIso: string,
+    durationSeconds: number
+  ): Promise<HealthSessionMetrics | undefined>;
 }
 
 export interface HealthSyncSettings {
   syncWorkouts: boolean;
   syncRuns: boolean;
   syncHybrid: boolean;
+  /** Automatically import new health-store sessions when the app opens. */
+  autoImport: boolean;
 }
 
 export interface HealthSyncState {
@@ -69,6 +86,7 @@ export const DEFAULT_HEALTH_SYNC_STATE: HealthSyncState = {
     syncWorkouts: true,
     syncRuns: true,
     syncHybrid: true,
+    autoImport: true,
   },
   syncedIds: [],
   importedIds: [],

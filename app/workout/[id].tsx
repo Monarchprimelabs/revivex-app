@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import ScreenContainer from '../../src/components/ScreenContainer';
 import AppCard from '../../src/components/AppCard';
+import HealthMetricsCard from '../../src/components/HealthMetricsCard';
 import PrimaryButton from '../../src/components/PrimaryButton';
 import { useWorkout } from '../../src/context/WorkoutContext';
 import { colors, fontSize, fontWeight, radius, spacing } from '../../src/theme/theme';
@@ -106,6 +107,8 @@ export default function WorkoutDetailScreen() {
           <Metric label="Duration" value={formatDuration(workout.duration)} />
         </View>
       </AppCard>
+
+      <HealthMetricsCard dateIso={workout.date} durationSeconds={workout.duration} />
 
       <AppCard style={{ marginTop: spacing.md }}>
         <DetailRow label="Date" value={formatFullDate(workout.date)} />

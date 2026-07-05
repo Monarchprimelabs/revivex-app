@@ -154,6 +154,14 @@ export default function HealthSyncScreen() {
                   {lastImportAt ? `Last: ${formatRelativeDate(lastImportAt)}` : 'Never run'}
                 </Text>
               </View>
+              <ToggleRow
+                label="Auto-import on app open"
+                hint="Pull new sessions automatically when ReviveX starts"
+                icon="refresh-outline"
+                value={settings.autoImport}
+                onValueChange={(autoImport) => updateSettings({ autoImport })}
+                divider
+              />
               <PrimaryButton
                 label={importing ? 'Importing...' : `Import from ${providerName}`}
                 variant="primary"

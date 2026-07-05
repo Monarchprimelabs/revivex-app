@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import ScreenContainer from '../../src/components/ScreenContainer';
 import AppCard from '../../src/components/AppCard';
+import HealthMetricsCard from '../../src/components/HealthMetricsCard';
 import PrimaryButton from '../../src/components/PrimaryButton';
 import { useHybridSessions } from '../../src/context/HybridContext';
 import { colors, fontSize, fontWeight, radius, spacing } from '../../src/theme/theme';
@@ -97,6 +98,8 @@ export default function HybridDetailScreen() {
           <Metric label="Run/Station" value={`${formatSegmentTime(runVsStation.runTotalTime)} / ${formatSegmentTime(runVsStation.stationTotalTime)}`} />
         </View>
       </AppCard>
+
+      <HealthMetricsCard dateIso={session.date} durationSeconds={session.totalDurationSeconds} />
 
       <AppCard style={{ marginTop: spacing.md }}>
         <DetailRow label="Date" value={formatFullDate(session.date)} />

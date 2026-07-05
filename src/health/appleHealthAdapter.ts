@@ -4,6 +4,7 @@ import {
   safeSessionRange,
   type HealthAdapter,
   type HealthAvailability,
+  type HealthSessionMetrics,
   type ImportedHealthSession,
   type ImportedSessionKind,
 } from './types';
@@ -56,11 +57,71 @@ async function requestPermissions(): Promise<boolean> {
   try {
     return await healthKit.requestAuthorization({
       toShare: ['HKWorkoutTypeIdentifier'],
-      toRead: ['HKWorkoutTypeIdentifier'],
+      toRead: [
+        'HKWorkoutTypeIdentifier',
+        'HKQuantityTypeIdentifierHeartRate',
+        'HKQuantityTypeIdentifierActiveEnergyBurned',
+      ],
     });
   } catch {
     return false;
   }
+}
+
+async function readSessionMetrics(
+  dateIso: string,
+  durationSeconds: number
+): Promise<HealthSessionMetrics | undefined> {
+  const healthKit = loadHealthKit();
+  if (!healthKit) return undefined;
+
+  const range = safeSessionRange(dateIso, durationSeconds);
+  if (!range) return undefined;
+
+  const dateFilter = {
+    date: { startDate: range.start, endDate: range.end },
+  };
+
+  try {
+    const [heartRate, energy] = await Promise.all([
+      healthKit
+        .queryStatisticsForQuantity(
+          'HKQuantityTypeIdentifierHeartRate',
+          ['discreteAverage', 'discreteMax'],
+          { filter: dateFilter, unit: 'count/min' }
+        )
+        .catch(() => undefined),
+      healthKit
+        .queryStatisticsForQuantity(
+          'HKQuantityTypeIdentifierActiveEnergyBurned',
+          ['cumulativeSum'],
+          { filter: dateFilter, unit: 'kcal' }
+        )
+        .catch(() => undefined),
+    ]);
+
+    const metrics: HealthSessionMetrics = {
+      avgHeartRateBpm: positiveOrUndefined(heartRate?.averageQuantity?.quantity),
+      maxHeartRateBpm: positiveOrUndefined(heartRate?.maximumQuantity?.quantity),
+      energyBurnedKcal: positiveOrUndefined(energy?.sumQuantity?.quantity),
+    };
+
+    return hasAnyMetric(metrics) ? metrics : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function positiveOrUndefined(value?: number): number | undefined {
+  return value !== undefined && Number.isFinite(value) && value > 0 ? value : undefined;
+}
+
+function hasAnyMetric(metrics: HealthSessionMetrics): boolean {
+  return (
+    metrics.avgHeartRateBpm !== undefined ||
+    metrics.maxHeartRateBpm !== undefined ||
+    metrics.energyBurnedKcal !== undefined
+  );
 }
 
 function distanceToMeters(quantity?: { unit: string; quantity: number }): number | undefined {
@@ -166,6 +227,7 @@ export const appleHealthAdapter: HealthAdapter = {
   checkAvailability,
   requestPermissions,
   readRecentSessions,
+  readSessionMetrics,
 
   async writeStrengthWorkout(workout: Workout): Promise<boolean> {
     const healthKit = loadHealthKit();

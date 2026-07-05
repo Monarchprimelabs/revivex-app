@@ -4,6 +4,7 @@ import {
   safeSessionRange,
   type HealthAdapter,
   type HealthAvailability,
+  type HealthSessionMetrics,
   type ImportedHealthSession,
   type ImportedSessionKind,
 } from './types';
@@ -70,6 +71,8 @@ async function requestPermissions(): Promise<boolean> {
       { accessType: 'write', recordType: 'Distance' },
       { accessType: 'read', recordType: 'ExerciseSession' },
       { accessType: 'read', recordType: 'Distance' },
+      { accessType: 'read', recordType: 'HeartRate' },
+      { accessType: 'read', recordType: 'ActiveCaloriesBurned' },
     ]);
     return granted.some(
       (permission) =>
@@ -196,11 +199,59 @@ async function insertExerciseSession(
   }
 }
 
+async function readSessionMetrics(
+  dateIso: string,
+  durationSeconds: number
+): Promise<HealthSessionMetrics | undefined> {
+  const healthConnect = loadHealthConnect();
+  if (!healthConnect) return undefined;
+  if (!(await ensureInitialized(healthConnect))) return undefined;
+
+  const range = safeSessionRange(dateIso, durationSeconds);
+  if (!range) return undefined;
+
+  const timeRangeFilter = {
+    operator: 'between' as const,
+    startTime: range.start.toISOString(),
+    endTime: range.end.toISOString(),
+  };
+
+  try {
+    const [heartRate, energy] = await Promise.all([
+      healthConnect
+        .aggregateRecord({ recordType: 'HeartRate', timeRangeFilter })
+        .catch(() => undefined),
+      healthConnect
+        .aggregateRecord({ recordType: 'ActiveCaloriesBurned', timeRangeFilter })
+        .catch(() => undefined),
+    ]);
+
+    const metrics: HealthSessionMetrics = {
+      avgHeartRateBpm: positiveOrUndefined(heartRate?.BPM_AVG),
+      maxHeartRateBpm: positiveOrUndefined(heartRate?.BPM_MAX),
+      energyBurnedKcal: positiveOrUndefined(energy?.ACTIVE_CALORIES_TOTAL?.inKilocalories),
+    };
+
+    return metrics.avgHeartRateBpm !== undefined ||
+      metrics.maxHeartRateBpm !== undefined ||
+      metrics.energyBurnedKcal !== undefined
+      ? metrics
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function positiveOrUndefined(value?: number): number | undefined {
+  return value !== undefined && Number.isFinite(value) && value > 0 ? value : undefined;
+}
+
 export const healthConnectAdapter: HealthAdapter = {
   providerName: 'Health Connect',
   checkAvailability,
   requestPermissions,
   readRecentSessions,
+  readSessionMetrics,
 
   async writeStrengthWorkout(workout: Workout): Promise<boolean> {
     const healthConnect = loadHealthConnect();
