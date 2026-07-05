@@ -20,6 +20,7 @@ import { colors, fontSize, fontWeight, radius, spacing } from '../../src/theme/t
 import PrimaryButton from '../../src/components/PrimaryButton';
 import ExerciseLogCard from '../../src/components/workout/ExerciseLogCard';
 import RestTimerBar from '../../src/components/workout/RestTimerBar';
+import PlateCalculatorModal from '../../src/components/workout/PlateCalculatorModal';
 import { formatDuration } from '../../src/utils/format';
 
 const DEFAULT_REST_SECONDS = 90;
@@ -118,6 +119,17 @@ export default function ActiveWorkoutScreen() {
   }, []);
 
   const skipRestTimer = useCallback(() => setRestTimer(null), []);
+
+  // Plate calculator — seeded with the exercise's heaviest entered weight.
+  const [plateModal, setPlateModal] = useState<{ visible: boolean; weight: number }>({
+    visible: false,
+    weight: 0,
+  });
+
+  const openPlates = useCallback((weights: number[]) => {
+    const heaviest = Math.max(0, ...weights.filter((value) => Number.isFinite(value)));
+    setPlateModal({ visible: true, weight: heaviest });
+  }, []);
 
   const handleCancel = () => {
     Alert.alert(
@@ -284,6 +296,7 @@ export default function ActiveWorkoutScreen() {
                 }
               }}
               onRemoveSet={(setId) => removeSet(ex.id, setId)}
+              onOpenPlates={() => openPlates(ex.sets.map((set) => set.weight))}
               weightUnit={profile?.preferredWeightUnit}
               onRemoveExercise={() => {
                 Alert.alert(
@@ -353,6 +366,13 @@ export default function ActiveWorkoutScreen() {
             onSkip={skipRestTimer}
           />
         ) : null}
+
+        <PlateCalculatorModal
+          visible={plateModal.visible}
+          initialWeight={plateModal.weight}
+          unit={profile?.preferredWeightUnit ?? 'lb'}
+          onClose={() => setPlateModal((current) => ({ ...current, visible: false }))}
+        />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

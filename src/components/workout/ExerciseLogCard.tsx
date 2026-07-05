@@ -37,6 +37,7 @@ interface Props {
   ) => void;
   onRemoveSet: (setId: string) => void;
   onRemoveExercise: () => void;
+  onOpenPlates?: () => void;
   weightUnit?: PreferredWeightUnit;
 }
 
@@ -51,6 +52,7 @@ export default function ExerciseLogCard({
   onUpdateSet,
   onRemoveSet,
   onRemoveExercise,
+  onOpenPlates,
   weightUnit = 'kg',
 }: Props) {
   const handleAddSet = () => {
@@ -71,6 +73,11 @@ export default function ExerciseLogCard({
           <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
           <Text style={styles.muscleGroup}>{exercise.muscleGroup}</Text>
         </View>
+        {onOpenPlates ? (
+          <Pressable onPress={onOpenPlates} hitSlop={10} style={styles.menuBtn}>
+            <Ionicons name="disc-outline" size={18} color={colors.accentTeal} />
+          </Pressable>
+        ) : null}
         <Pressable onPress={onRemoveExercise} hitSlop={10} style={styles.menuBtn}>
           <Ionicons
             name="trash-outline"

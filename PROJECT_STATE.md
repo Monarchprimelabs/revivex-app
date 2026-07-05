@@ -334,6 +334,12 @@ Previous Phase 6 recovery baseline remains available:
 - `app.json` now wires icon, Android adaptiveIcon (`#111111` background), and splash (`#111111`, contain).
 - Assets were upscaled from a 156px screenshot tile — fine at device sizes; swap in a designer 1024px master (same filenames) before App Store submission. See `assets/README.md`.
 
+### Phase 24: Plate Calculator
+
+- Each exercise card in the Active Workout has a plates button (disc icon) that opens a bottom-sheet Plate Calculator seeded with the exercise's heaviest entered weight.
+- Editable target weight, bar selector (45/35/15 lb or 20/15/10 kg by profile unit), per-side plate breakdown, achieved load, and a shortfall note when plates can't hit the target exactly.
+- `src/utils/plateMath.ts` is pure and Node-tested (greedy per-side breakdown, below-bar and non-exact cases).
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`
