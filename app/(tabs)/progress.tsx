@@ -10,6 +10,7 @@ import PrimaryButton from '../../src/components/PrimaryButton';
 import { useWorkout } from '../../src/context/WorkoutContext';
 import { useRuns } from '../../src/context/RunContext';
 import { useHybridSessions } from '../../src/context/HybridContext';
+import { useProfile } from '../../src/context/ProfileContext';
 import { colors, fontSize, fontWeight, glow, radius, spacing } from '../../src/theme/theme';
 import { formatRelativeDate, formatVolume } from '../../src/utils/format';
 import {
@@ -46,6 +47,8 @@ export default function ProgressScreen() {
   const { history, historyLoaded } = useWorkout();
   const { runs, runsLoaded } = useRuns();
   const { hybridSessions, hybridSessionsLoaded } = useHybridSessions();
+  const { profile } = useProfile();
+  const weightUnit = profile?.preferredWeightUnit ?? 'lb';
 
   const analytics = useMemo(() => {
     const totalWorkouts = getTotalWorkouts(history);
@@ -205,8 +208,12 @@ export default function ProgressScreen() {
                 maxSets={analytics.maxMuscleSets}
               />
 
-              <SectionHeader title="Exercise PRs" />
-              <ExercisePRCard prs={analytics.topPRs} />
+              <SectionHeader
+                title="Exercise PRs"
+                actionLabel="View All"
+                onActionPress={() => router.push('/progress/prs')}
+              />
+              <ExercisePRCard prs={analytics.topPRs} weightUnit={weightUnit} />
 
               <SectionHeader title="Progress Highlights" />
               <HighlightsCard
@@ -499,7 +506,7 @@ function MuscleGroupCard({
   );
 }
 
-function ExercisePRCard({ prs }: { prs: ExercisePR[] }) {
+function ExercisePRCard({ prs, weightUnit }: { prs: ExercisePR[]; weightUnit: string }) {
   if (prs.length === 0) {
     return (
       <AppCard>
@@ -527,7 +534,7 @@ function ExercisePRCard({ prs }: { prs: ExercisePR[] }) {
             </Text>
           </View>
           <View style={styles.prResult}>
-            <Text style={styles.prWeight}>{formatWeight(pr.weight)}</Text>
+            <Text style={styles.prWeight}>{formatWeight(pr.weight, weightUnit)}</Text>
             <Text style={styles.prReps}>x {pr.reps}</Text>
           </View>
         </View>
@@ -600,9 +607,9 @@ function formatCompactVolume(volume: number): string {
   return formatVolume(volume);
 }
 
-function formatWeight(weight: number): string {
+function formatWeight(weight: number, unit: string): string {
   const rounded = Number.isInteger(weight) ? weight.toFixed(0) : weight.toFixed(1);
-  return `${rounded} kg`;
+  return `${rounded} ${unit}`;
 }
 
 const styles = StyleSheet.create({

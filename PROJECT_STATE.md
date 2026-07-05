@@ -236,6 +236,19 @@ Previous Phase 6 recovery baseline remains available:
 - Edited workouts flow through Progress, Activity Feed, and Share Cards automatically.
 - Saving requires at least one exercise; deleting the whole workout stays on the detail screen.
 
+### Phase 14: PR History v1
+
+- New PR History screen at `app/progress/prs.tsx`:
+  - Recent PRs timeline (newest first) with new-top-weight and new-est-1RM events.
+  - All-Time Bests per exercise: best weight × reps, estimated 1RM (Epley), PR count, last PR date.
+  - Rows link to the source workout detail screen.
+- `src/utils/prHistory.ts` derives PR history from saved workouts:
+  - walks history oldest-first, tracks best weight and best estimated 1RM per exercise
+  - emits at most one PR event per exercise per workout
+  - only completed sets with weight and reps count.
+- Progress tab Exercise PRs section has a View All link to PR History.
+- PR weight labels use the profile preferred weight unit (label only, no conversion), replacing the hardcoded kg label on the Progress tab PR card.
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`
@@ -347,18 +360,16 @@ Do not run EAS build unless explicitly requested.
 
 ## Known Limitations
 
-- Full PR history is deferred.
 - Exercise-specific progress graphs are deferred.
 - Share cards are preview screens plus text sharing only; image export is deferred.
 - Activity Feed is local/private only; no public social/community features exist yet.
 - Clean ReviveX icon/logo PNG files are still needed.
 - npm audit reports moderate dependency warnings; do not run `npm audit fix --force` without a specific reason.
 
-## Suggested Phase 14
+## Suggested Phase 15
 
-PR History v1:
+Exercise Progress Detail v1:
 
-- Track per-exercise personal records over time from saved workout history.
-- PR list screen with best set (weight × reps) and estimated 1RM per exercise.
-- Surface recent PRs on the Progress dashboard.
+- Per-exercise progress screen from PR History and Progress.
+- Session-by-session best set and volume trend using simple bar charts (no new chart dependency).
 - Keep GPS and Apple Health for later phases.
