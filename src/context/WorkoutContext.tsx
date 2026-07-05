@@ -575,6 +575,7 @@ export function WorkoutProvider({ children }: ProviderProps) {
           exerciseId: exercise.exerciseId,
           exerciseName: exercise.exerciseName,
           muscleGroup: exercise.muscleGroup,
+          restSeconds: exercise.restSeconds,
           sets: Array.from({ length: targetSets }, (_, index) => ({
             id: makeId('set'),
             setNumber: index + 1,

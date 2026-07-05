@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  Vibration,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,7 +19,10 @@ import { useProfile } from '../../src/context/ProfileContext';
 import { colors, fontSize, fontWeight, radius, spacing } from '../../src/theme/theme';
 import PrimaryButton from '../../src/components/PrimaryButton';
 import ExerciseLogCard from '../../src/components/workout/ExerciseLogCard';
+import RestTimerBar from '../../src/components/workout/RestTimerBar';
 import { formatDuration } from '../../src/utils/format';
+
+const DEFAULT_REST_SECONDS = 90;
 
 /**
  * Active Workout screen.
@@ -71,6 +75,49 @@ export default function ActiveWorkoutScreen() {
     const handle = setInterval(tick, 1000);
     return () => clearInterval(handle);
   }, [activeWorkout?.startedAt]);
+
+  // Rest timer — starts when a set is marked done, counts down to a buzz.
+  const [restTimer, setRestTimer] = useState<{ endsAt: number; total: number } | null>(null);
+  const [restSecondsLeft, setRestSecondsLeft] = useState(0);
+  const restVibratedRef = useRef(false);
+
+  useEffect(() => {
+    if (!restTimer) {
+      setRestSecondsLeft(0);
+      return;
+    }
+
+    restVibratedRef.current = false;
+    const tick = () => {
+      const left = Math.max(0, Math.ceil((restTimer.endsAt - Date.now()) / 1000));
+      setRestSecondsLeft(left);
+      if (left === 0) {
+        if (!restVibratedRef.current) {
+          restVibratedRef.current = true;
+          Vibration.vibrate(600);
+        }
+        setRestTimer(null);
+      }
+    };
+    tick();
+    const handle = setInterval(tick, 250);
+    return () => clearInterval(handle);
+  }, [restTimer]);
+
+  const startRestTimer = useCallback((restSeconds?: number) => {
+    const total = Math.max(5, Math.floor(restSeconds ?? DEFAULT_REST_SECONDS));
+    setRestTimer({ endsAt: Date.now() + total * 1000, total });
+  }, []);
+
+  const extendRestTimer = useCallback(() => {
+    setRestTimer((current) =>
+      current
+        ? { endsAt: current.endsAt + 15_000, total: current.total + 15 }
+        : current
+    );
+  }, []);
+
+  const skipRestTimer = useCallback(() => setRestTimer(null), []);
 
   const handleCancel = () => {
     Alert.alert(
@@ -230,7 +277,12 @@ export default function ActiveWorkoutScreen() {
               key={ex.id}
               exercise={ex}
               onAddSet={() => addSet(ex.id)}
-              onUpdateSet={(setId, patch) => updateSet(ex.id, setId, patch)}
+              onUpdateSet={(setId, patch) => {
+                updateSet(ex.id, setId, patch);
+                if (patch.completed === true) {
+                  startRestTimer(ex.restSeconds);
+                }
+              }}
               onRemoveSet={(setId) => removeSet(ex.id, setId)}
               weightUnit={profile?.preferredWeightUnit}
               onRemoveExercise={() => {
@@ -292,6 +344,15 @@ export default function ActiveWorkoutScreen() {
           {/* Spacer at bottom */}
           <View style={{ height: spacing.xxl }} />
         </ScrollView>
+
+        {restTimer && restSecondsLeft > 0 ? (
+          <RestTimerBar
+            secondsLeft={restSecondsLeft}
+            totalSeconds={restTimer.total}
+            onAddTime={extendRestTimer}
+            onSkip={skipRestTimer}
+          />
+        ) : null}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

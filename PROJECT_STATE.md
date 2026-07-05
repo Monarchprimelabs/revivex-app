@@ -319,6 +319,13 @@ Previous Phase 6 recovery baseline remains available:
 - Metrics are fetched via `getSessionMetrics` using the source workout/run/hybrid session's time window and slot into the existing stat grid (still capped at 6 stats).
 - No change when disconnected or in Expo Go — cards render exactly as before.
 
+### Phase 22: Rest Timer v1
+
+- Marking a set done in the Active Workout starts a rest countdown in a sticky bar above the bottom of the screen (progress bar, M:SS, +15s, Skip).
+- Rest length uses the routine's per-exercise `restSeconds` when the workout was started from a routine; otherwise defaults to 90 seconds.
+- `WorkoutExercise` gained optional `restSeconds` (additive, storage-safe) carried over by `startWorkoutFromRoutine`.
+- The device vibrates once when rest hits zero. Timer is in-app only (no background notifications yet).
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`

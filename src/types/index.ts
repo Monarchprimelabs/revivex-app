@@ -74,6 +74,8 @@ export interface WorkoutExercise {
   exerciseName: string;
   muscleGroup: MuscleGroup;
   sets: WorkoutSet[];
+  /** Preferred rest between sets, carried over from a routine when present. */
+  restSeconds?: number;
 }
 
 /** A complete workout (in progress or saved). */
