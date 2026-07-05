@@ -7,6 +7,7 @@ import AppCard from '../../src/components/AppCard';
 import HealthMetricsCard from '../../src/components/HealthMetricsCard';
 import PrimaryButton from '../../src/components/PrimaryButton';
 import { useWorkout } from '../../src/context/WorkoutContext';
+import { workoutToRoutineInput } from '../../src/utils/workoutToRoutine';
 import { colors, fontSize, fontWeight, radius, spacing } from '../../src/theme/theme';
 import {
   formatDuration,
@@ -18,7 +19,7 @@ import type { WorkoutExercise } from '../../src/types';
 
 export default function WorkoutDetailScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const { deleteWorkout, getWorkoutById, repeatWorkout } = useWorkout();
+  const { deleteWorkout, getWorkoutById, repeatWorkout, createRoutine } = useWorkout();
   const workout = id ? getWorkoutById(id) : undefined;
 
   const handleRepeat = () => {
@@ -64,6 +65,36 @@ export default function WorkoutDetailScreen() {
   const openEditWorkout = () => {
     if (!workout) return;
     router.push({ pathname: '/workout/edit/[id]', params: { id: workout.id } });
+  };
+
+  const handleSaveAsRoutine = () => {
+    if (!workout) return;
+
+    const input = workoutToRoutineInput(workout);
+    if (input.exercises.length === 0) {
+      Alert.alert(
+        'Nothing to save',
+        'This workout has no exercises with sets, so a routine can’t be created from it.'
+      );
+      return;
+    }
+
+    Alert.alert(
+      'Save as routine?',
+      `Creates "${input.name}" with ${input.exercises.length} exercise${
+        input.exercises.length === 1 ? '' : 's'
+      }, using each exercise’s set count, most common reps, and top weight as targets.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Save Routine',
+          onPress: () => {
+            const routine = createRoutine(input);
+            router.push({ pathname: '/routine/[id]', params: { id: routine.id } });
+          },
+        },
+      ]
+    );
   };
 
   if (!id || !workout) {
@@ -135,6 +166,13 @@ export default function WorkoutDetailScreen() {
         label="Repeat Workout"
         variant="primary"
         onPress={handleRepeat}
+        style={{ marginTop: spacing.md }}
+      />
+
+      <PrimaryButton
+        label="Save as Routine"
+        variant="outline"
+        onPress={handleSaveAsRoutine}
         style={{ marginTop: spacing.md }}
       />
 

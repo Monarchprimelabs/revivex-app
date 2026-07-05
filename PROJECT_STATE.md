@@ -340,6 +340,12 @@ Previous Phase 6 recovery baseline remains available:
 - Editable target weight, bar selector (45/35/15 lb or 20/15/10 kg by profile unit), per-side plate breakdown, achieved load, and a shortfall note when plates can't hit the target exactly.
 - `src/utils/plateMath.ts` is pure and Node-tested (greedy per-side breakdown, below-bar and non-exact cases).
 
+### Phase 25: Save Workout as Routine
+
+- Workout Detail has a Save as Routine action that turns any completed workout into a routine template and opens it.
+- Per exercise: targetSets = logged set count, targetReps = most common reps among completed sets, targetWeight = heaviest completed weight, restSeconds carried over. Exercises without sets are dropped.
+- `src/utils/workoutToRoutine.ts` is pure and Node-tested.
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`
