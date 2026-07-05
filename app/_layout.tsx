@@ -10,6 +10,7 @@ import { HybridProvider } from '../src/context/HybridContext';
 import { ProfileProvider, useProfile } from '../src/context/ProfileContext';
 import { ActivityFeedProvider } from '../src/context/ActivityFeedContext';
 import { HealthProvider } from '../src/context/HealthContext';
+import { BodyWeightProvider } from '../src/context/BodyWeightContext';
 
 /**
  * Root layout for the whole app.
@@ -25,6 +26,7 @@ export default function RootLayout() {
               <HybridProvider>
                 <ActivityFeedProvider>
                   <HealthProvider>
+                  <BodyWeightProvider>
                   <StatusBar style="light" />
                   <OnboardingGate />
                   <Stack
@@ -182,7 +184,14 @@ export default function RootLayout() {
                       animation: 'slide_from_right',
                     }}
                   />
+                  <Stack.Screen
+                    name="profile/weight"
+                    options={{
+                      animation: 'slide_from_right',
+                    }}
+                  />
                   </Stack>
+                  </BodyWeightProvider>
                   </HealthProvider>
                 </ActivityFeedProvider>
               </HybridProvider>

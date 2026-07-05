@@ -352,6 +352,13 @@ Previous Phase 6 recovery baseline remains available:
 - Uses completed sets from the most recent saved workout containing that exercise (falls back to logged sets when none were marked complete); bodyweight sets render as reps; long lists collapse to the first 5.
 - `src/utils/lastPerformance.ts` is pure and Node-tested.
 
+### Phase 27: Body Weight Tracking v1
+
+- New local/private body weight log: `BodyWeightContext` persisted under `revivex.bodyWeight.v1` (new storage key — preserve it).
+- Body Weight screen at `app/profile/weight.tsx`: quick log input (profile preferred unit), current/change/entries summary, 14-entry trend bars, full history with delete.
+- Linked from a Body Weight section on the Profile screen.
+- Follow-up candidates: write weight entries to Apple Health/Health Connect; show weight trend on Progress.
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`
