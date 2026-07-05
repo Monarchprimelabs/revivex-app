@@ -304,6 +304,15 @@ Previous Phase 6 recovery baseline remains available:
 - Read permissions now include heart rate and active energy on both platforms.
 - New `src/components/HealthMetricsCard.tsx` shows Avg HR / Max HR / Energy ("From Apple Health") on the Workout, Run, and Hybrid detail screens. It renders nothing unless health sync is connected and data exists, so Expo Go and unconnected devices are unaffected.
 
+### Phase 20: Weekly Training Summary
+
+- Progress tab opens with a This Week card combining all three modalities:
+  - combined session count vs the profile weekly target with a progress bar
+  - active days plus lifts/runs/hybrid breakdown
+  - strength volume, run distance (profile preferred unit), and hybrid time
+  - week-over-week deltas (▲/▼ percent vs last calendar week) on every metric.
+- `src/utils/weeklySummary.ts` (pure, Node-tested): Sunday-start week ranges, per-week rollups, delta calculation, and distance conversions.
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`

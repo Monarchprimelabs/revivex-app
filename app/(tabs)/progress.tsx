@@ -38,6 +38,14 @@ import {
   formatSegmentTime,
   getHybridSessionStats,
 } from '../../src/utils/hybridStats';
+import {
+  getWeekRange,
+  getWeeklyDelta,
+  getWeeklySummary,
+  milesToPreferredUnit,
+  type WeeklyDelta,
+  type WeeklySummary,
+} from '../../src/utils/weeklySummary';
 
 /**
  * Progress screen
@@ -57,8 +65,17 @@ export default function ProgressScreen() {
     const muscleGroupStats = getMuscleGroupStats(history);
     const runStats = calculateRunStats(runs);
     const hybridStats = getHybridSessionStats(hybridSessions);
+    const weekNow = getWeeklySummary(history, runs, hybridSessions, getWeekRange());
+    const weekPrev = getWeeklySummary(history, runs, hybridSessions, getWeekRange(new Date(), -1));
 
     return {
+      weekNow,
+      weekDeltas: {
+        sessions: getWeeklyDelta(weekNow.sessions, weekPrev.sessions),
+        volume: getWeeklyDelta(weekNow.strengthVolume, weekPrev.strengthVolume),
+        distance: getWeeklyDelta(weekNow.runDistanceMiles, weekPrev.runDistanceMiles),
+        hybridTime: getWeeklyDelta(weekNow.hybridSeconds, weekPrev.hybridSeconds),
+      },
       totalWorkouts,
       totalVolume,
       totalSets,
@@ -113,6 +130,14 @@ export default function ProgressScreen() {
         />
       ) : (
         <>
+          <SectionHeader title="This Week" />
+          <WeeklySummaryCard
+            summary={analytics.weekNow}
+            deltas={analytics.weekDeltas}
+            weeklyTarget={profile?.weeklyTrainingTarget ?? 0}
+            distanceUnit={profile?.preferredDistanceUnit ?? 'mi'}
+          />
+
           <View style={styles.statGrid}>
             <View style={styles.statRow}>
               <StatCard
@@ -247,6 +272,113 @@ export default function ProgressScreen() {
         </>
       )}
     </ScreenContainer>
+  );
+}
+
+function WeeklySummaryCard({
+  summary,
+  deltas,
+  weeklyTarget,
+  distanceUnit,
+}: {
+  summary: WeeklySummary;
+  deltas: {
+    sessions: WeeklyDelta;
+    volume: WeeklyDelta;
+    distance: WeeklyDelta;
+    hybridTime: WeeklyDelta;
+  };
+  weeklyTarget: number;
+  distanceUnit: 'mi' | 'km';
+}) {
+  const target = Math.max(0, Math.floor(weeklyTarget));
+  const targetPercent =
+    target > 0 ? Math.min(100, Math.round((summary.sessions / target) * 100)) : 0;
+
+  return (
+    <AppCard elevated tint="hybrid">
+      <View style={styles.weekTopRow}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.weekSessions}>
+            {summary.sessions}
+            {target > 0 ? ` / ${target}` : ''}
+            <Text style={styles.weekSessionsUnit}>  sessions</Text>
+          </Text>
+          <Text style={styles.weekSub}>
+            {summary.activeDays} active {summary.activeDays === 1 ? 'day' : 'days'} •{' '}
+            {summary.strengthWorkouts} lift{summary.strengthWorkouts === 1 ? '' : 's'} •{' '}
+            {summary.runs} run{summary.runs === 1 ? '' : 's'} • {summary.hybridSessions}{' '}
+            hybrid
+          </Text>
+        </View>
+        <DeltaBadge delta={deltas.sessions} />
+      </View>
+
+      {target > 0 ? (
+        <View style={styles.weekTargetTrack}>
+          <View style={[styles.weekTargetFill, { width: `${targetPercent}%` }]} />
+        </View>
+      ) : null}
+
+      <View style={styles.weekMetricRow}>
+        <WeekMetric
+          label="Volume"
+          value={formatCompactVolume(summary.strengthVolume)}
+          delta={deltas.volume}
+        />
+        <WeekMetric
+          label="Distance"
+          value={`${milesToPreferredUnit(summary.runDistanceMiles, distanceUnit)} ${distanceUnit}`}
+          delta={deltas.distance}
+        />
+        <WeekMetric
+          label="Hybrid Time"
+          value={summary.hybridSeconds > 0 ? formatSegmentTime(summary.hybridSeconds) : '—'}
+          delta={deltas.hybridTime}
+        />
+      </View>
+    </AppCard>
+  );
+}
+
+function WeekMetric({
+  label,
+  value,
+  delta,
+}: {
+  label: string;
+  value: string;
+  delta: WeeklyDelta;
+}) {
+  return (
+    <View style={styles.weekMetric}>
+      <Text style={styles.weekMetricValue} numberOfLines={1}>
+        {value}
+      </Text>
+      <View style={styles.weekMetricBottom}>
+        <Text style={styles.weekMetricLabel}>{label}</Text>
+        <DeltaBadge delta={delta} compact />
+      </View>
+    </View>
+  );
+}
+
+function DeltaBadge({ delta, compact }: { delta: WeeklyDelta; compact?: boolean }) {
+  if (delta.direction === 'flat') {
+    return <Text style={[styles.deltaFlat, compact && styles.deltaCompact]}>—</Text>;
+  }
+
+  const up = delta.direction === 'up';
+  return (
+    <Text
+      style={[
+        up ? styles.deltaUp : styles.deltaDown,
+        compact && styles.deltaCompact,
+      ]}
+    >
+      {up ? '▲' : '▼'}
+      {delta.percent !== undefined ? ` ${delta.percent}%` : ''}
+    </Text>
   );
 }
 
@@ -623,6 +755,80 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontSize: fontSize.xxl,
     fontWeight: fontWeight.heavy,
+  },
+  weekTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+  },
+  weekSessions: {
+    color: colors.textPrimary,
+    fontSize: fontSize.xxl,
+    fontWeight: fontWeight.heavy,
+  },
+  weekSessionsUnit: {
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+  },
+  weekSub: {
+    color: colors.textSecondary,
+    fontSize: fontSize.xs,
+    marginTop: spacing.xs,
+  },
+  weekTargetTrack: {
+    height: 7,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.pill,
+    marginTop: spacing.md,
+    overflow: 'hidden',
+  },
+  weekTargetFill: {
+    height: 7,
+    borderRadius: radius.pill,
+    backgroundColor: colors.accentLime,
+  },
+  weekMetricRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.lg,
+  },
+  weekMetric: {
+    flex: 1,
+  },
+  weekMetricValue: {
+    color: colors.textPrimary,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.heavy,
+  },
+  weekMetricBottom: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: 2,
+  },
+  weekMetricLabel: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    textTransform: 'uppercase',
+  },
+  deltaUp: {
+    color: colors.success,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+  },
+  deltaDown: {
+    color: colors.danger,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+  },
+  deltaFlat: {
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+  },
+  deltaCompact: {
+    fontSize: 10,
   },
   subtitle: {
     color: colors.textSecondary,
