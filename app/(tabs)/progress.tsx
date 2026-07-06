@@ -11,6 +11,7 @@ import { useWorkout } from '../../src/context/WorkoutContext';
 import { useRuns } from '../../src/context/RunContext';
 import { useHybridSessions } from '../../src/context/HybridContext';
 import { useProfile } from '../../src/context/ProfileContext';
+import { useBodyWeight } from '../../src/context/BodyWeightContext';
 import { colors, fontSize, fontWeight, glow, radius, spacing } from '../../src/theme/theme';
 import { formatRelativeDate, formatVolume } from '../../src/utils/format';
 import {
@@ -56,6 +57,7 @@ export default function ProgressScreen() {
   const { runs, runsLoaded } = useRuns();
   const { hybridSessions, hybridSessionsLoaded } = useHybridSessions();
   const { profile } = useProfile();
+  const { entries: weightEntries } = useBodyWeight();
   const weightUnit = profile?.preferredWeightUnit ?? 'lb';
 
   const analytics = useMemo(() => {
@@ -210,6 +212,17 @@ export default function ProgressScreen() {
               accentColor={colors.primary}
             />
           </View>
+
+          {weightEntries.length > 0 ? (
+            <>
+              <SectionHeader
+                title="Body Weight"
+                actionLabel="View Log"
+                onActionPress={() => router.push('/profile/weight')}
+              />
+              <BodyWeightCard entries={weightEntries} />
+            </>
+          ) : null}
 
           <SectionHeader title="Running Snapshot" />
           <RunProgressCard stats={analytics.runStats} />
@@ -379,6 +392,65 @@ function DeltaBadge({ delta, compact }: { delta: WeeklyDelta; compact?: boolean 
       {up ? '▲' : '▼'}
       {delta.percent !== undefined ? ` ${delta.percent}%` : ''}
     </Text>
+  );
+}
+
+function BodyWeightCard({
+  entries,
+}: {
+  entries: ReturnType<typeof useBodyWeight>['entries'];
+}) {
+  const latest = entries[0];
+  const previous = entries[1];
+  const change =
+    previous !== undefined
+      ? Math.round((latest.weight - previous.weight) * 10) / 10
+      : undefined;
+  const oldest = entries[entries.length - 1];
+  const totalChange =
+    entries.length > 1
+      ? Math.round((latest.weight - oldest.weight) * 10) / 10
+      : undefined;
+
+  return (
+    <AppCard>
+      <View style={styles.runSnapshotGrid}>
+        <RunSnapshotMetric
+          label="Current"
+          value={`${latest.weight} ${latest.unit}`}
+          hint={formatRelativeDate(latest.date)}
+          icon="scale-outline"
+          color={colors.accentTeal}
+        />
+        <RunSnapshotMetric
+          label="Last Change"
+          value={
+            change === undefined ? '—' : `${change > 0 ? '+' : ''}${change} ${latest.unit}`
+          }
+          hint={previous ? `from ${previous.weight} ${previous.unit}` : 'first entry'}
+          icon={change !== undefined && change > 0 ? 'trending-up-outline' : 'trending-down-outline'}
+          color={colors.accentLime}
+        />
+        <RunSnapshotMetric
+          label="All Time"
+          value={
+            totalChange === undefined
+              ? '—'
+              : `${totalChange > 0 ? '+' : ''}${totalChange} ${latest.unit}`
+          }
+          hint={oldest ? `since ${formatRelativeDate(oldest.date)}` : 'no history yet'}
+          icon="analytics-outline"
+          color={colors.techCool}
+        />
+        <RunSnapshotMetric
+          label="Entries"
+          value={String(entries.length)}
+          hint="logged"
+          icon="list-outline"
+          color={colors.success}
+        />
+      </View>
+    </AppCard>
   );
 }
 
