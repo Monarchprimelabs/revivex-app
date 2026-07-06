@@ -78,7 +78,7 @@ export default function BodyWeightScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <AppCard elevated tint="hybrid">
+          <AppCard elevated tint="brand">
             <Text style={styles.label}>Log today's weight ({unit})</Text>
             <View style={styles.logRow}>
               <TextInput

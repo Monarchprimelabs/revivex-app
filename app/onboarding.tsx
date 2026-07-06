@@ -213,7 +213,7 @@ function WelcomeStep() {
         </View>
       </View>
 
-      <AppCard elevated tint="hybrid" style={{ marginTop: spacing.xl }}>
+      <AppCard elevated tint="brand" style={{ marginTop: spacing.xl }}>
         <Text style={styles.heroTitle}>Track lifting, running, conditioning, and progress in one place.</Text>
         <Text style={styles.heroSub}>
           Set up your profile so ReviveX can tune the dashboard around how you train.
@@ -395,7 +395,7 @@ function FinishStep({
         subtitle="Your local profile is ready. Time to train with a little more signal."
       />
 
-      <AppCard elevated tint="hybrid" style={{ marginTop: spacing.lg }}>
+      <AppCard elevated tint="brand" style={{ marginTop: spacing.lg }}>
         <SummaryRow label="Focus" value={trainingFocus} />
         <SummaryRow label="Goal" value={primaryGoal} />
         <SummaryRow label="Weekly target" value={formatWeeklyTarget(weeklyTrainingTarget)} />

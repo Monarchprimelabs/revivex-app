@@ -90,7 +90,7 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      <AppCard elevated tint="hybrid" style={{ marginTop: spacing.lg }}>
+      <AppCard elevated tint="brand" style={{ marginTop: spacing.lg }}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>{profile.displayName.slice(0, 1).toUpperCase()}</Text>
         </View>

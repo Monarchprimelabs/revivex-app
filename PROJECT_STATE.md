@@ -418,6 +418,15 @@ Previous Phase 6 recovery baseline remains available:
   - Indoor: timer-based treadmill mode — big elapsed-time hero, optional distance input in the preferred unit, saves as `Treadmill` with manual source; no location permission needed.
 - Denied location permission now offers "Track Indoors Instead" rather than a dead end.
 
+### Phase 37: Visual Identity Refresh v1
+
+- Owner feedback: screens felt bland/same-y. Researched Strava (route imagery on feed cards), Nike Run Club (huge hero numbers, restrained accent use), WHOOP (rings as anchors).
+- Modality identity colors: Lift = lime, Run = teal, Hybrid = NEW coral `#FF6B3D` (`colors.accentCoral`, `modalityStrength/Run/Hybrid`, coral glows, `gradients.hybrid` now coral→amber; original teal+lime crossover preserved as `gradients.brand`).
+- AppCard: `tint="hybrid"` is now coral heat; new `tint="brand"` keeps the teal+lime crossover — non-hybrid screens (profile, health, weight, onboarding, progress, activity) retagged to `brand`; hybrid screens recolored coral.
+- New `ProgressRing` (SVG) — WHOOP-style ring; Home's weekly target is now a ring card with sessions-to-go copy, replacing two flat stat cards.
+- Strava-style route thumbnails: GPS runs show a mini route trace on Run tab recent cards and Run History cards.
+- Follow-up (Phase 38+): hero stat typography on tab headers, hybrid tab deeper coral pass, feed-card route thumbnails, achievement celebration moments.
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`

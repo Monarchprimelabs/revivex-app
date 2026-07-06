@@ -7,6 +7,7 @@ import AppCard from '../../src/components/AppCard';
 import StatCard from '../../src/components/StatCard';
 import PrimaryButton from '../../src/components/PrimaryButton';
 import SectionHeader from '../../src/components/SectionHeader';
+import RouteMap from '../../src/components/RouteMap';
 import { useRuns } from '../../src/context/RunContext';
 import { colors, fontSize, fontWeight, spacing } from '../../src/theme/theme';
 import { formatRelativeDate } from '../../src/utils/format';
@@ -186,6 +187,12 @@ function RunCard({ run }: { run: Run }) {
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
         </View>
+
+        {run.routePoints && run.routePoints.length > 1 ? (
+          <View style={{ marginTop: spacing.md }}>
+            <RouteMap routePoints={run.routePoints} height={96} />
+          </View>
+        ) : null}
 
         <View style={styles.runStatsRow}>
           <MiniStat label="Distance" value={formatDistance(run.distance, run.distanceUnit)} />

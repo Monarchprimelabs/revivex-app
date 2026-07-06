@@ -54,7 +54,7 @@ export default function HealthSyncScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <AppCard elevated tint="hybrid">
+        <AppCard elevated tint="brand">
           <View style={styles.statusHeader}>
             <View
               style={[

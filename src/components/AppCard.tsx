@@ -10,7 +10,7 @@ import { colors, radius, spacing } from '../theme/theme';
  *  - 'tech'      → faint teal cue for run/analytics heroes
  *  - 'hybrid'    → teal + lime crossover, the ReviveX signature
  */
-export type CardTint = 'none' | 'strength' | 'tech' | 'hybrid';
+export type CardTint = 'none' | 'strength' | 'tech' | 'hybrid' | 'brand';
 
 interface AppCardProps {
   children: React.ReactNode;
@@ -63,9 +63,31 @@ export default function AppCard({
  */
 function TintOverlay({ tint }: { tint: Exclude<CardTint, 'none'> }) {
   if (tint === 'hybrid') {
+    // Hybrid heat: coral from top-right, amber from bottom-left.
     return (
       <>
-        {/* Lime from top-right */}
+        <LinearGradient
+          colors={['rgba(255, 107, 61, 0.12)', 'transparent']}
+          start={{ x: 1, y: 0 }}
+          end={{ x: 0.2, y: 0.7 }}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+        <LinearGradient
+          colors={['rgba(255, 176, 58, 0.08)', 'transparent']}
+          start={{ x: 0, y: 1 }}
+          end={{ x: 0.8, y: 0.3 }}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+      </>
+    );
+  }
+
+  if (tint === 'brand') {
+    // The ReviveX teal + lime crossover, for brand-level surfaces.
+    return (
+      <>
         <LinearGradient
           colors={['rgba(198, 255, 0, 0.08)', 'transparent']}
           start={{ x: 1, y: 0 }}
@@ -73,7 +95,6 @@ function TintOverlay({ tint }: { tint: Exclude<CardTint, 'none'> }) {
           style={StyleSheet.absoluteFill}
           pointerEvents="none"
         />
-        {/* Teal from bottom-left */}
         <LinearGradient
           colors={['rgba(0, 180, 179, 0.10)', 'transparent']}
           start={{ x: 0, y: 1 }}

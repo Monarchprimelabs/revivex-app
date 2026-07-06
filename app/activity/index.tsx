@@ -29,7 +29,7 @@ export default function ActivityFeedScreen() {
           <Text style={styles.emptyText}>Loading activity...</Text>
         </AppCard>
       ) : activityFeed.length === 0 ? (
-        <AppCard elevated tint="hybrid" style={{ marginTop: spacing.lg }}>
+        <AppCard elevated tint="brand" style={{ marginTop: spacing.lg }}>
           <View style={styles.emptyIcon}>
             <Ionicons name="pulse-outline" size={28} color={colors.accentTeal} />
           </View>

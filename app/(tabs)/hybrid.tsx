@@ -123,7 +123,7 @@ export default function HybridScreen() {
       {recentSessions.length === 0 ? (
         <AppCard>
           <View style={styles.emptyIcon}>
-            <Ionicons name="flash-outline" size={26} color={colors.accentLime} />
+            <Ionicons name="flash-outline" size={26} color={colors.accentCoral} />
           </View>
           <Text style={styles.emptyTitle}>Track your first hybrid session to measure your engine.</Text>
           <PrimaryButton
@@ -173,7 +173,7 @@ function HybridSessionCard({ session }: { session: HybridSession }) {
       <AppCard>
         <View style={styles.itemHeader}>
           <View style={styles.itemIcon}>
-            <Ionicons name="flash-outline" size={18} color={colors.accentLime} />
+            <Ionicons name="flash-outline" size={18} color={colors.accentCoral} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.itemTitle}>{session.title}</Text>
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
     marginRight: spacing.md,
   },
   stationBadgeText: {
-    color: colors.accentLime,
+    color: colors.accentCoral,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.bold,
   },

@@ -319,7 +319,7 @@ function WeeklySummaryCard({
     target > 0 ? Math.min(100, Math.round((summary.sessions / target) * 100)) : 0;
 
   return (
-    <AppCard elevated tint="hybrid">
+    <AppCard elevated tint="brand">
       <View style={styles.weekTopRow}>
         <View style={{ flex: 1 }}>
           <Text style={styles.weekSessions}>
@@ -548,7 +548,7 @@ function EmptyProgressState({
   onStartHybrid: () => void;
 }) {
   return (
-    <AppCard elevated tint="hybrid" style={styles.emptyCard}>
+    <AppCard elevated tint="brand" style={styles.emptyCard}>
       <View style={styles.emptyIcon}>
         <Ionicons name="stats-chart-outline" size={28} color={colors.tech} />
       </View>
