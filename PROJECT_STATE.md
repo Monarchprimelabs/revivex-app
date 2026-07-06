@@ -363,6 +363,19 @@ Previous Phase 6 recovery baseline remains available:
 
 - Progress tab shows a Body Weight snapshot card (only when entries exist): current weight, last change, all-time change, and entry count, with a View Log link to the full weight screen.
 
+### Phase 29: GPS Run Tracker v1 (foreground)
+
+- Owner-approved direction change: GPS is now in scope (previous "do not add GPS" rule is retired).
+- Start GPS Run on the Run tab opens a live foreground tracker (`app/run/track.tsx`, works in Expo Go):
+  - live distance in the profile preferred unit, moving time, rolling 60s pace, average pace
+  - auto-laps every mi/km with live split list; pause/resume with moving-time bookkeeping
+  - screen kept awake (`expo-keep-awake`); background tracking is a later dev-build phase.
+- `src/utils/gpsTracking.ts` (pure, Node-tested): haversine distance, accuracy filter (>25m dropped), teleport/jitter rejection, auto-lap reducer, rolling pace, route compression (max 600 stored points).
+- Run model extended additively: `source` ('manual' | 'gps' | 'imported'), `splits[]`, `routePoints[]`; RunContext passes them through.
+- Run Detail shows a Splits card and a "GPS tracked" source row for GPS runs.
+- `app.json`: `expo-location` plugin + iOS when-in-use location usage description.
+- New deps: `expo-location@~19.0.8`, `expo-keep-awake@~15.0.8` (both Expo Go compatible).
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`

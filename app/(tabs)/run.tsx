@@ -43,10 +43,17 @@ export default function RunScreen() {
       <Text style={styles.subtitle}>Track miles, engine work, and aerobic progress.</Text>
 
       <PrimaryButton
+        label="Start GPS Run"
+        variant="primary"
+        onPress={() => router.push('/run/track')}
+        style={{ marginTop: spacing.lg }}
+      />
+
+      <PrimaryButton
         label="Manual Run Log"
         variant="tech"
         onPress={handleLogRun}
-        style={{ marginTop: spacing.lg }}
+        style={{ marginTop: spacing.md }}
       />
 
       {!runsLoaded ? (

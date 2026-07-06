@@ -66,6 +66,9 @@ function normalizeRunInput(input: CreateRunInput, existing?: Run): Run {
     runType,
     location,
     notes,
+    source: input.source ?? existing?.source,
+    splits: input.splits ?? existing?.splits,
+    routePoints: input.routePoints ?? existing?.routePoints,
     createdAt: existing?.createdAt ?? now,
     updatedAt: existing ? now : undefined,
   };

@@ -116,6 +116,13 @@ export default function RootLayout() {
                     }}
                   />
                   <Stack.Screen
+                    name="run/track"
+                    options={{
+                      presentation: 'modal',
+                      animation: 'slide_from_bottom',
+                    }}
+                  />
+                  <Stack.Screen
                     name="run/history"
                     options={{
                       animation: 'slide_from_right',

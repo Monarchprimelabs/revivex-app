@@ -18,7 +18,8 @@
       "bundleIdentifier": "com.hybridtrack.app",
       "infoPlist": {
         "NSHealthShareUsageDescription": "ReviveX reads workout data so your watch and other training sessions stay in sync with your training log.",
-        "NSHealthUpdateUsageDescription": "ReviveX saves your workouts, runs, and hybrid sessions to Apple Health."
+        "NSHealthUpdateUsageDescription": "ReviveX saves your workouts, runs, and hybrid sessions to Apple Health.",
+        "NSLocationWhenInUseUsageDescription": "ReviveX uses your location to measure distance, pace, and splits while you track a run."
       }
     },
     "android": {
@@ -33,6 +34,12 @@
       "expo-font",
       "@kingstinct/react-native-healthkit",
       "react-native-health-connect",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "ReviveX uses your location to measure distance, pace, and splits while you track a run."
+        }
+      ],
       [
         "expo-build-properties",
         {
