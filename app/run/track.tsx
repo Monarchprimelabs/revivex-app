@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -28,6 +28,7 @@ import {
 import type { DistanceUnit } from '../../src/types';
 
 type Phase = 'requesting' | 'denied' | 'ready' | 'tracking' | 'paused';
+type RunMode = 'outdoor' | 'indoor';
 
 /**
  * GPS Run Tracker v1 (foreground).
@@ -41,9 +42,11 @@ export default function TrackRunScreen() {
   const { profile } = useProfile();
   const unit: DistanceUnit = profile?.preferredDistanceUnit ?? 'mi';
 
-  const [phase, setPhase] = useState<Phase>('requesting');
+  const [phase, setPhase] = useState<Phase>('ready');
+  const [mode, setMode] = useState<RunMode>('outdoor');
   const [track, setTrack] = useState<TrackState>(createTrackState);
   const [elapsedSec, setElapsedSec] = useState(0);
+  const [indoorDistanceStr, setIndoorDistanceStr] = useState('');
 
   const watchRef = useRef<Location.LocationSubscription | null>(null);
   const [backgroundMode, setBackgroundMode] = useState(false);
@@ -51,14 +54,10 @@ export default function TrackRunScreen() {
   // Moving-time bookkeeping across pauses.
   const movingMsRef = useRef(0);
   const segmentStartRef = useRef<number | null>(null);
-  const phaseRef = useRef<Phase>('requesting');
+  const phaseRef = useRef<Phase>('ready');
   phaseRef.current = phase;
 
   useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      setPhase(status === 'granted' ? 'ready' : 'denied');
-    })();
     return () => {
       watchRef.current?.remove();
       stopBackgroundTracking();
@@ -117,17 +116,29 @@ export default function TrackRunScreen() {
   }, [unit]);
 
   const handleStart = useCallback(async () => {
+    if (mode === 'outdoor') {
+      // Location is only needed (and requested) for outdoor runs.
+      setPhase('requesting');
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setPhase('denied');
+        return;
+      }
+    }
+
     startedAtRef.current = Date.now();
     segmentStartRef.current = Date.now();
     setPhase('tracking');
 
-    // Prefer background updates (dev build); fall back to foreground watch.
-    const background = await startBackgroundTracking();
-    setBackgroundMode(background);
-    if (!background) {
-      await startWatching();
+    if (mode === 'outdoor') {
+      // Prefer background updates (dev build); fall back to foreground watch.
+      const background = await startBackgroundTracking();
+      setBackgroundMode(background);
+      if (!background) {
+        await startWatching();
+      }
     }
-  }, [startWatching]);
+  }, [mode, startWatching]);
 
   const handlePause = useCallback(() => {
     if (segmentStartRef.current) {
@@ -154,8 +165,23 @@ export default function TrackRunScreen() {
     stopBackgroundTracking();
 
     const durationSeconds = Math.max(1, Math.floor(movingMsRef.current / 1000));
-    const distance = metersToDistance(track.distanceMeters, unit);
 
+    if (mode === 'indoor') {
+      const indoorDistance = Number.parseFloat(indoorDistanceStr.replace(',', '.'));
+      const run = addRun({
+        title: 'Indoor Run',
+        date: new Date(startedAtRef.current ?? endedAt).toISOString(),
+        distance: Number.isFinite(indoorDistance) ? Math.max(0, indoorDistance) : 0,
+        distanceUnit: unit,
+        durationSeconds,
+        runType: 'Treadmill',
+        source: 'manual',
+      });
+      router.replace({ pathname: '/run/[id]', params: { id: run.id } });
+      return;
+    }
+
+    const distance = metersToDistance(track.distanceMeters, unit);
     if (distance < 0.02) {
       Alert.alert('No distance recorded', 'Move a little further before finishing this run.', [
         { text: 'Keep Running', onPress: () => handleResume() },
@@ -165,7 +191,7 @@ export default function TrackRunScreen() {
     }
 
     const run = addRun({
-      title: 'GPS Run',
+      title: 'Outdoor Run',
       date: new Date(startedAtRef.current ?? endedAt).toISOString(),
       distance,
       distanceUnit: unit,
@@ -177,7 +203,7 @@ export default function TrackRunScreen() {
     });
 
     router.replace({ pathname: '/run/[id]', params: { id: run.id } });
-  }, [addRun, handleResume, track, unit]);
+  }, [addRun, handleResume, indoorDistanceStr, mode, track, unit]);
 
   const handleClose = useCallback(() => {
     if (phase === 'tracking' || phase === 'paused') {
@@ -198,8 +224,10 @@ export default function TrackRunScreen() {
     router.back();
   }, [phase]);
 
-  const distance = metersToDistance(track.distanceMeters, unit);
-  const livePace = currentPaceSecondsPerUnit(track.points, unit);
+  const isIndoor = mode === 'indoor';
+  const indoorDistance = Number.parseFloat(indoorDistanceStr.replace(',', '.')) || 0;
+  const distance = isIndoor ? indoorDistance : metersToDistance(track.distanceMeters, unit);
+  const livePace = isIndoor ? undefined : currentPaceSecondsPerUnit(track.points, unit);
   const avgPace =
     distance > 0.05 && elapsedSec > 0 ? Math.round(elapsedSec / distance) : undefined;
 
@@ -209,7 +237,7 @@ export default function TrackRunScreen() {
         <Pressable onPress={handleClose} hitSlop={8} style={styles.topBarBtn}>
           <Ionicons name="close" size={26} color={colors.textPrimary} />
         </Pressable>
-        <Text style={styles.topBarTitle}>GPS Run</Text>
+        <Text style={styles.topBarTitle}>Run</Text>
         <View style={styles.topBarBtn} />
       </View>
 
@@ -218,33 +246,83 @@ export default function TrackRunScreen() {
           <Ionicons name="location-outline" size={32} color={colors.textMuted} />
           <Text style={styles.deniedTitle}>Location permission needed</Text>
           <Text style={styles.deniedText}>
-            ReviveX needs location access to measure your run. Enable it in Settings, then
-            come back.
+            Outdoor runs use your location to measure distance and pace. Enable location in
+            Settings, or track this one indoors instead.
           </Text>
+          <PrimaryButton
+            label="Track Indoors Instead"
+            variant="primary"
+            onPress={() => {
+              setMode('indoor');
+              setPhase('ready');
+            }}
+            style={{ marginTop: spacing.lg, width: '100%' }}
+          />
           <PrimaryButton
             label="Back to Run"
             variant="outline"
             onPress={() => router.back()}
-            style={{ marginTop: spacing.lg, width: '100%' }}
+            style={{ marginTop: spacing.md, width: '100%' }}
           />
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <View style={styles.heroCard}>
-            <Text style={styles.heroDistance}>{distance.toFixed(2)}</Text>
-            <Text style={styles.heroUnit}>{unit}</Text>
-            <View style={styles.heroRow}>
-              <HeroMetric label="Time" value={formatDuration(elapsedSec)} />
-              <HeroMetric
-                label="Pace"
-                value={livePace ? `${formatPace(livePace)}/${unit}` : '—'}
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {phase === 'ready' || phase === 'requesting' ? (
+            <View style={styles.modeRow}>
+              <ModeChip
+                label="Outdoor"
+                icon="navigate-outline"
+                hint="GPS distance, pace, route"
+                selected={mode === 'outdoor'}
+                onPress={() => setMode('outdoor')}
               />
+              <ModeChip
+                label="Indoor"
+                icon="fitness-outline"
+                hint="Treadmill — timer + distance"
+                selected={mode === 'indoor'}
+                onPress={() => setMode('indoor')}
+              />
+            </View>
+          ) : null}
+
+          <View style={styles.heroCard}>
+            {isIndoor ? (
+              <>
+                <Text style={styles.heroDistance}>{formatDuration(elapsedSec)}</Text>
+                <Text style={styles.heroUnit}>time</Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.heroDistance}>{distance.toFixed(2)}</Text>
+                <Text style={styles.heroUnit}>{unit}</Text>
+              </>
+            )}
+            <View style={styles.heroRow}>
+              {isIndoor ? (
+                <HeroMetric
+                  label="Distance"
+                  value={indoorDistance > 0 ? `${indoorDistance} ${unit}` : '—'}
+                />
+              ) : (
+                <HeroMetric label="Time" value={formatDuration(elapsedSec)} />
+              )}
+              {!isIndoor ? (
+                <HeroMetric
+                  label="Pace"
+                  value={livePace ? `${formatPace(livePace)}/${unit}` : '—'}
+                />
+              ) : null}
               <HeroMetric
                 label="Avg"
                 value={avgPace ? `${formatPace(avgPace)}/${unit}` : '—'}
               />
             </View>
-            {phase === 'tracking' ? (
+            {phase === 'tracking' && !isIndoor ? (
               <View style={styles.liveRow}>
                 <View style={styles.liveDot} />
                 <Text style={styles.liveText}>
@@ -255,6 +333,21 @@ export default function TrackRunScreen() {
               </View>
             ) : null}
           </View>
+
+          {isIndoor && phase !== 'ready' && phase !== 'requesting' ? (
+            <View style={styles.indoorCard}>
+              <Text style={styles.indoorLabel}>Treadmill distance ({unit}) — optional</Text>
+              <TextInput
+                value={indoorDistanceStr}
+                onChangeText={setIndoorDistanceStr}
+                style={styles.indoorInput}
+                placeholder="0.0"
+                placeholderTextColor={colors.textMuted}
+                keyboardType="decimal-pad"
+                returnKeyType="done"
+              />
+            </View>
+          ) : null}
 
           {track.splits.length > 0 ? (
             <View style={styles.splitsCard}>
@@ -272,7 +365,13 @@ export default function TrackRunScreen() {
 
           {phase === 'ready' || phase === 'requesting' ? (
             <PrimaryButton
-              label={phase === 'requesting' ? 'Checking GPS...' : 'Start Run'}
+              label={
+                phase === 'requesting'
+                  ? 'Checking GPS...'
+                  : isIndoor
+                    ? 'Start Indoor Run'
+                    : 'Start Outdoor Run'
+              }
               variant="primary"
               onPress={handleStart}
               style={{ marginTop: spacing.lg }}
@@ -318,6 +417,37 @@ export default function TrackRunScreen() {
   );
 }
 
+function ModeChip({
+  label,
+  icon,
+  hint,
+  selected,
+  onPress,
+}: {
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  hint: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[styles.modeChip, selected && styles.modeChipSelected]}
+    >
+      <Ionicons
+        name={icon}
+        size={20}
+        color={selected ? colors.accentTeal : colors.textMuted}
+      />
+      <Text style={[styles.modeChipLabel, selected && styles.modeChipLabelSelected]}>
+        {label}
+      </Text>
+      <Text style={styles.modeChipHint}>{hint}</Text>
+    </Pressable>
+  );
+}
+
 function HeroMetric({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.heroMetric}>
@@ -352,6 +482,67 @@ const styles = StyleSheet.create({
   scroll: {
     padding: spacing.lg,
     paddingBottom: spacing.xxl,
+  },
+  modeRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  modeChip: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.md,
+    gap: spacing.xs,
+  },
+  modeChipSelected: {
+    borderColor: colors.accentTeal,
+    backgroundColor: 'rgba(0, 180, 179, 0.08)',
+  },
+  modeChipLabel: {
+    color: colors.textSecondary,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+  },
+  modeChipLabelSelected: {
+    color: colors.accentTeal,
+  },
+  modeChipHint: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    textAlign: 'center',
+  },
+  indoorCard: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    marginTop: spacing.md,
+  },
+  indoorLabel: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.7,
+    marginBottom: spacing.sm,
+  },
+  indoorInput: {
+    color: colors.textPrimary,
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.heavy,
+    textAlign: 'center',
   },
   heroCard: {
     backgroundColor: colors.surface,
