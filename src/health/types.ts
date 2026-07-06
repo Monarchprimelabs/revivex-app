@@ -1,4 +1,4 @@
-import type { HybridSession, Run, Workout } from '../types';
+import type { HybridSession, PreferredWeightUnit, Run, Workout } from '../types';
 
 /**
  * Health sync types shared by the Apple Health (iOS) and
@@ -46,6 +46,11 @@ export interface HealthAdapter {
   writeStrengthWorkout(workout: Workout): Promise<boolean>;
   writeRun(run: Run): Promise<boolean>;
   writeHybridSession(session: HybridSession): Promise<boolean>;
+  writeBodyWeight(entry: {
+    weight: number;
+    unit: PreferredWeightUnit;
+    date: string;
+  }): Promise<boolean>;
   /**
    * Read sessions recorded since the given ISO date, excluding sessions
    * this app wrote itself (so exports don't echo back as imports).
@@ -65,6 +70,7 @@ export interface HealthSyncSettings {
   syncWorkouts: boolean;
   syncRuns: boolean;
   syncHybrid: boolean;
+  syncWeight: boolean;
   /** Automatically import new health-store sessions when the app opens. */
   autoImport: boolean;
 }
@@ -86,6 +92,7 @@ export const DEFAULT_HEALTH_SYNC_STATE: HealthSyncState = {
     syncWorkouts: true,
     syncRuns: true,
     syncHybrid: true,
+    syncWeight: true,
     autoImport: true,
   },
   syncedIds: [],

@@ -129,6 +129,14 @@ export default function HealthSyncScreen() {
                 onValueChange={(syncHybrid) => updateSettings({ syncHybrid })}
                 divider
               />
+              <ToggleRow
+                label="Body weight"
+                hint="Logged weights saved to the health store"
+                icon="scale-outline"
+                value={settings.syncWeight}
+                onValueChange={(syncWeight) => updateSettings({ syncWeight })}
+                divider
+              />
             </AppCard>
 
             <PrimaryButton

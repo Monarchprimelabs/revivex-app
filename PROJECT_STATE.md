@@ -404,6 +404,12 @@ Previous Phase 6 recovery baseline remains available:
 - Run tab empty state leads with Start GPS Run, manual logging secondary.
 - CLAUDE_HANDOFF.md GPS rule retired; storage key table updated with `revivex.health.v1` and `revivex.bodyWeight.v1`.
 
+### Phase 35: Weight → Health Sync + Privacy Policy
+
+- Body weight entries now sync to Apple Health (`HKQuantityTypeIdentifierBodyMass`, lb/kg unit preserved) and Health Connect (Weight records) through the existing sync engine, with a Body weight toggle on the Health Sync screen and pending/synced counts covering weight.
+- Provider order updated: `BodyWeightProvider` now wraps `HealthProvider`.
+- `docs/PRIVACY_POLICY.md`: complete local-only privacy policy covering health data, location/GPS, sharing/export, retention, and CCPA — host it at a URL for external TestFlight / App Store review.
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`
