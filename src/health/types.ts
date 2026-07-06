@@ -37,6 +37,12 @@ export interface HealthSessionMetrics {
   energyBurnedKcal?: number;
 }
 
+/** Today's totals from the platform health store. */
+export interface HealthDailyActivity {
+  steps?: number;
+  energyBurnedKcal?: number;
+}
+
 export interface HealthAdapter {
   /** User-facing provider name, e.g. "Apple Health" or "Health Connect". */
   providerName: string;
@@ -64,6 +70,8 @@ export interface HealthAdapter {
     dateIso: string,
     durationSeconds: number
   ): Promise<HealthSessionMetrics | undefined>;
+  /** Steps and active energy recorded today (midnight → now). */
+  readDailyActivity(): Promise<HealthDailyActivity | undefined>;
 }
 
 export interface HealthSyncSettings {
