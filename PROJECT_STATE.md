@@ -376,6 +376,12 @@ Previous Phase 6 recovery baseline remains available:
 - `app.json`: `expo-location` plugin + iOS when-in-use location usage description.
 - New deps: `expo-location@~19.0.8`, `expo-keep-awake@~15.0.8` (both Expo Go compatible).
 
+### Phase 30: Route Visualization
+
+- GPS runs render their route as a dark-theme SVG trace (teal polyline, lime start dot, white finish dot) on Run Detail and on run share cards (so exported images include the route).
+- `src/utils/routeProjection.ts` (pure, Node-tested) projects lat/lng to canvas coordinates with latitude correction, uniform scaling, and centering.
+- New dep: `react-native-svg@15.12.1` (bundled in Expo Go).
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`
