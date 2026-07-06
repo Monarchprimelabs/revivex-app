@@ -359,6 +359,10 @@ Previous Phase 6 recovery baseline remains available:
 - Linked from a Body Weight section on the Profile screen.
 - Follow-up candidates: write weight entries to Apple Health/Health Connect; show weight trend on Progress.
 
+### Phase 28: Body Weight on Progress
+
+- Progress tab shows a Body Weight snapshot card (only when entries exist): current weight, last change, all-time change, and entry count, with a View Log link to the full weight screen.
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`
