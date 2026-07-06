@@ -92,9 +92,30 @@ export default function RunDetailScreen() {
 
       <HealthMetricsCard dateIso={run.date} durationSeconds={run.durationSeconds} />
 
+      {run.splits && run.splits.length > 0 ? (
+        <AppCard style={{ marginTop: spacing.md }}>
+          <Text style={styles.splitsTitle}>Splits</Text>
+          {run.splits.map((split) => {
+            const fullLap = split.distance >= 0.995;
+            return (
+              <View key={split.index} style={styles.splitRow}>
+                <Text style={styles.splitLabel}>
+                  {split.distanceUnit} {split.index}
+                  {fullLap ? '' : ` (${split.distance})`}
+                </Text>
+                <Text style={styles.splitValue}>
+                  {formatRunDuration(split.durationSeconds)}
+                </Text>
+              </View>
+            );
+          })}
+        </AppCard>
+      ) : null}
+
       <AppCard style={{ marginTop: spacing.md }}>
         <DetailRow label="Date" value={formatFullDate(run.date)} />
         <DetailRow label="Run Type" value={run.runType} />
+        {run.source === 'gps' ? <DetailRow label="Source" value="GPS tracked" /> : null}
         {run.location ? <DetailRow label="Location" value={run.location} /> : null}
         {run.notes ? <DetailRow label="Notes" value={run.notes} multiline /> : null}
       </AppCard>
@@ -150,6 +171,31 @@ function DetailRow({
 }
 
 const styles = StyleSheet.create({
+  splitsTitle: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.7,
+    marginBottom: spacing.sm,
+  },
+  splitRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+  },
+  splitLabel: {
+    color: colors.textSecondary,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    textTransform: 'uppercase',
+  },
+  splitValue: {
+    color: colors.textPrimary,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+    fontVariant: ['tabular-nums'],
+  },
   backButton: {
     width: 36,
     height: 36,

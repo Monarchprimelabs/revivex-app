@@ -150,6 +150,23 @@ export type RunType =
   | 'Race'
   | 'Other';
 
+export type RunSource = 'manual' | 'gps' | 'imported';
+
+/** One auto-lap split from a GPS-tracked run. */
+export interface RunSplit {
+  index: number;          // 1-based lap number
+  distance: number;       // lap distance in distanceUnit (usually 1, last lap partial)
+  distanceUnit: DistanceUnit;
+  durationSeconds: number;
+}
+
+/** A recorded GPS point, kept compact for storage. */
+export interface RoutePoint {
+  lat: number;
+  lng: number;
+  t: number;              // epoch ms
+}
+
 export interface Run {
   id: string;
   title: string;
@@ -162,6 +179,9 @@ export interface Run {
   runType: RunType;
   location?: string;
   notes?: string;
+  source?: RunSource;     // added Phase 29; absent = manual
+  splits?: RunSplit[];
+  routePoints?: RoutePoint[];
   createdAt: string;
   updatedAt?: string;
 }
@@ -175,6 +195,9 @@ export interface CreateRunInput {
   runType: RunType;
   location?: string;
   notes?: string;
+  source?: RunSource;
+  splits?: RunSplit[];
+  routePoints?: RoutePoint[];
 }
 
 // =======================
