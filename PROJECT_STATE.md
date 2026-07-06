@@ -410,6 +410,14 @@ Previous Phase 6 recovery baseline remains available:
 - Provider order updated: `BodyWeightProvider` now wraps `HealthProvider`.
 - `docs/PRIVACY_POLICY.md`: complete local-only privacy policy covering health data, location/GPS, sharing/export, retention, and CCPA — host it at a URL for external TestFlight / App Store review.
 
+### Phase 36: Run Mode Picker (Indoor/Outdoor)
+
+- "Start GPS Run" renamed to "Start Run" everywhere (Home quick actions, Run tab, empty state).
+- The run tracker opens with an Outdoor/Indoor choice:
+  - Outdoor: GPS tracking automatically (permission requested only when starting an outdoor run); saves as `Outdoor` with splits + route.
+  - Indoor: timer-based treadmill mode — big elapsed-time hero, optional distance input in the preferred unit, saves as `Treadmill` with manual source; no location permission needed.
+- Denied location permission now offers "Track Indoors Instead" rather than a dead end.
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`
