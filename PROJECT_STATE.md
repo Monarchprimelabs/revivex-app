@@ -1,6 +1,6 @@
 # ReviveX Project State
 
-Last updated: 2026-07-02
+Last updated: 2026-07-05
 
 ## Current Master Direction
 
@@ -222,6 +222,143 @@ Previous Phase 6 recovery baseline remains available:
 - Deleted or missing activity IDs continue to show safe missing-state screens.
 - Demo data remains limited to static exercise-library preview data, not fake saved activity.
 
+### Phase 13: Completed Workout Editing v2
+
+- Edit Workout screen now supports full set-by-set editing of completed workouts:
+  - edit weight and reps per set
+  - toggle set completion (Done) per set
+  - add and remove sets per exercise (last set per exercise is protected)
+  - remove exercises with confirmation
+  - add exercises via inline exercise-library search
+- Live summary shows total sets, completed sets, and volume while editing.
+- `updateWorkoutDetails` in WorkoutContext recalculates `totalSets` and `totalVolume` from edited sets on save.
+- Exercise and set IDs are preserved where possible; new items get fresh IDs.
+- Edited workouts flow through Progress, Activity Feed, and Share Cards automatically.
+- Saving requires at least one exercise; deleting the whole workout stays on the detail screen.
+
+### Phase 14: PR History v1
+
+- New PR History screen at `app/progress/prs.tsx`:
+  - Recent PRs timeline (newest first) with new-top-weight and new-est-1RM events.
+  - All-Time Bests per exercise: best weight × reps, estimated 1RM (Epley), PR count, last PR date.
+  - Rows link to the source workout detail screen.
+- `src/utils/prHistory.ts` derives PR history from saved workouts:
+  - walks history oldest-first, tracks best weight and best estimated 1RM per exercise
+  - emits at most one PR event per exercise per workout
+  - only completed sets with weight and reps count.
+- Progress tab Exercise PRs section has a View All link to PR History.
+- PR weight labels use the profile preferred weight unit (label only, no conversion), replacing the hardcoded kg label on the Progress tab PR card.
+
+### Phase 15: Exercise Progress Detail v1
+
+- New per-exercise progress screen at `app/progress/exercise/[key].tsx` (key is `exerciseId`, falling back to exercise name):
+  - summary of best set, best estimated 1RM, and total sessions
+  - trend chart over the last 12 sessions with an Est 1RM / Session Volume toggle (theme-native bars, no chart dependency)
+  - full session history with best set, completed/total sets, and volume per session
+  - session rows link to the source workout detail screen.
+- `src/utils/exerciseProgress.ts` derives per-session exercise stats from saved workouts, combining duplicate entries of the same exercise within one workout.
+- Entry points: PR History All-Time Bests rows and Progress tab Exercise PRs rows now open the exercise detail screen.
+
+### Phase 16: Health Sync Foundation (Apple Health + Health Connect)
+
+- Owner-approved direction change: Apple Health and Google Health Connect integration is now in scope (previous "do not add Apple Health" rule is retired).
+- New health layer in `src/health/`:
+  - `types.ts` — adapter contract, sync settings/state, safe session-range helpers.
+  - `appleHealthAdapter.ts` — HealthKit via `@kingstinct/react-native-healthkit` (strength → traditionalStrengthTraining, runs → running with distance, hybrid → HIIT).
+  - `healthConnectAdapter.ts` — Health Connect via `react-native-health-connect` (ExerciseSession records; runs also write a Distance record).
+  - `healthService.ts` — platform adapter selection.
+- `src/context/HealthContext.tsx` sync engine:
+  - persists settings, connection flag, synced IDs, and last-sync time under `revivex.health.v1`
+  - one-way auto-sync of new workouts, runs, and hybrid sessions while connected
+  - per-type sync toggles and manual Sync Now.
+- New Health Sync screen at `app/profile/health.tsx`, linked from a Connections section on the Profile screen.
+- `app.json` adds the HealthKit and Health Connect config plugins, iOS health usage descriptions, and Android `minSdkVersion` 26 via `expo-build-properties`.
+- Expo Go stays fully supported: native health modules are loaded lazily inside try/catch; in Expo Go the screen reports "needs the dev build" and sync stays dormant. Real syncing activates in a development/production build.
+
+### Phase 17: Share Card Image Export + EAS Build Config
+
+- Share Card screen exports the branded recap as a PNG via `react-native-view-shot` and shares it with `expo-sharing` (both bundled in Expo Go — works on device now). Share Text remains as a secondary action.
+- `eas.json` added with development/preview/production profiles; `docs/DEV_BUILD.md` documents the dev-build steps that activate Apple Health sync (run EAS from the Mac Mini, not from agents).
+
+### Phase 18: Health Import v1
+
+- Both health adapters now read recent sessions back from the platform store:
+  - Apple Health: `queryWorkoutSamples` (last 30 days, capped at 200), excluding samples written by our own bundle id.
+  - Health Connect: `readRecords('ExerciseSession')` plus per-run Distance aggregation, excluding our own package's records.
+- Permission requests now include read access (HealthKit `toRead`, Health Connect read permissions for ExerciseSession + Distance).
+- `src/health/importMapping.ts` (pure, Node-testable) maps imported sessions:
+  - running → local Run (distance converted to the profile preferred unit)
+  - strength training → completed Workout (no exercises, duration + notes)
+  - everything else → Hybrid Session with a single imported segment.
+- `WorkoutContext.importCompletedWorkout` adds externally recorded workouts to history.
+- HealthContext `importNow()`: 30-day lookback, dedupes via persisted `importedIds`, and marks imported items as already-synced so the export engine never echoes them back to the health store (and vice versa — our exports are filtered out of imports by app id).
+- Health Sync screen has an "Import from your watch" section with imported count, last import time, and an Import button with result alerts.
+- Imported items flow through Home, Activity Feed, Run/Train/Hybrid tabs, Progress, and Share Cards automatically.
+
+### Phase 19: Auto-Import + Watch Metrics on Detail Screens
+
+- Auto-import: new `autoImport` setting (default on) runs a health import once per app session when connected, and immediately after connecting. Toggle lives in the Health Sync import card.
+- Both adapters expose `readSessionMetrics(dateIso, durationSeconds)`:
+  - Apple Health: heart rate discreteAverage/discreteMax (`count/min`) and active energy cumulativeSum (`kcal`) over the session window.
+  - Health Connect: HeartRate and ActiveCaloriesBurned aggregates over the session window.
+- Read permissions now include heart rate and active energy on both platforms.
+- New `src/components/HealthMetricsCard.tsx` shows Avg HR / Max HR / Energy ("From Apple Health") on the Workout, Run, and Hybrid detail screens. It renders nothing unless health sync is connected and data exists, so Expo Go and unconnected devices are unaffected.
+
+### Phase 20: Weekly Training Summary
+
+- Progress tab opens with a This Week card combining all three modalities:
+  - combined session count vs the profile weekly target with a progress bar
+  - active days plus lifts/runs/hybrid breakdown
+  - strength volume, run distance (profile preferred unit), and hybrid time
+  - week-over-week deltas (▲/▼ percent vs last calendar week) on every metric.
+- `src/utils/weeklySummary.ts` (pure, Node-tested): Sunday-start week ranges, per-week rollups, delta calculation, and distance conversions.
+
+### Phase 21: Watch Metrics on Share Cards
+
+- Share cards include watch-recorded Avg HR and Energy (kcal) stats when health sync is connected and data exists for the session window.
+- Metrics are fetched via `getSessionMetrics` using the source workout/run/hybrid session's time window and slot into the existing stat grid (still capped at 6 stats).
+- No change when disconnected or in Expo Go — cards render exactly as before.
+
+### Phase 22: Rest Timer v1
+
+- Marking a set done in the Active Workout starts a rest countdown in a sticky bar above the bottom of the screen (progress bar, M:SS, +15s, Skip).
+- Rest length uses the routine's per-exercise `restSeconds` when the workout was started from a routine; otherwise defaults to 90 seconds.
+- `WorkoutExercise` gained optional `restSeconds` (additive, storage-safe) carried over by `startWorkoutFromRoutine`.
+- The device vibrates once when rest hits zero. Timer is in-app only (no background notifications yet).
+
+### Phase 23: App Icon + Splash (RX brand assets)
+
+- Owner supplied the RX brand board (Concept 2 monogram identity); palette matches the existing theme tokens.
+- Generated 1024×1024 production assets from the brand icon tile:
+  - `assets/icon.png` (iOS, full-bleed dark), `assets/adaptive-icon.png` (Android foreground, safe-zone scaled), `assets/splash-icon.png` (splash logo).
+- `app.json` now wires icon, Android adaptiveIcon (`#111111` background), and splash (`#111111`, contain).
+- Assets were upscaled from a 156px screenshot tile — fine at device sizes; swap in a designer 1024px master (same filenames) before App Store submission. See `assets/README.md`.
+
+### Phase 24: Plate Calculator
+
+- Each exercise card in the Active Workout has a plates button (disc icon) that opens a bottom-sheet Plate Calculator seeded with the exercise's heaviest entered weight.
+- Editable target weight, bar selector (45/35/15 lb or 20/15/10 kg by profile unit), per-side plate breakdown, achieved load, and a shortfall note when plates can't hit the target exactly.
+- `src/utils/plateMath.ts` is pure and Node-tested (greedy per-side breakdown, below-bar and non-exact cases).
+
+### Phase 25: Save Workout as Routine
+
+- Workout Detail has a Save as Routine action that turns any completed workout into a routine template and opens it.
+- Per exercise: targetSets = logged set count, targetReps = most common reps among completed sets, targetWeight = heaviest completed weight, restSeconds carried over. Exercises without sets are dropped.
+- `src/utils/workoutToRoutine.ts` is pure and Node-tested.
+
+### Phase 26: Last-Time History in Active Workout
+
+- Each exercise card in the Active Workout shows the previous session's numbers under the exercise name: `Last: 185×8, 185×8, 205×5 • 3d ago`.
+- Uses completed sets from the most recent saved workout containing that exercise (falls back to logged sets when none were marked complete); bodyweight sets render as reps; long lists collapse to the first 5.
+- `src/utils/lastPerformance.ts` is pure and Node-tested.
+
+### Phase 27: Body Weight Tracking v1
+
+- New local/private body weight log: `BodyWeightContext` persisted under `revivex.bodyWeight.v1` (new storage key — preserve it).
+- Body Weight screen at `app/profile/weight.tsx`: quick log input (profile preferred unit), current/change/entries summary, 14-entry trend bars, full history with delete.
+- Linked from a Body Weight section on the Profile screen.
+- Follow-up candidates: write weight entries to Apple Health/Health Connect; show weight trend on Progress.
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`
@@ -333,20 +470,22 @@ Do not run EAS build unless explicitly requested.
 
 ## Known Limitations
 
-- Full completed workout set-by-set editing is deferred.
-- Full PR history is deferred.
-- Exercise-specific progress graphs are deferred.
-- Share cards are preview screens plus text sharing only; image export is deferred.
 - Activity Feed is local/private only; no public social/community features exist yet.
 - Clean ReviveX icon/logo PNG files are still needed.
 - npm audit reports moderate dependency warnings; do not run `npm audit fix --force` without a specific reason.
 
-## Suggested Phase 13
+## Health Sync Status
 
-Completed Workout Editing v2:
+- Health sync code is complete but dormant in Expo Go (native modules can't load there).
+- To activate on device: create a development build (`eas build --profile development`) — requires an Apple Developer account for HealthKit entitlements on iOS.
+- Storage key `revivex.health.v1` persists health sync settings and synced IDs.
+- Health Import v1 (Phase 18) reads watch/app-recorded sessions into the local log; like export, it activates in the dev build.
 
-- Add safe completed workout set-by-set editing.
-- Recalculate completed workout totals after set edits.
-- Add exercise add/remove support for saved completed workouts if safe.
-- Keep Activity Feed, Share Cards, and Progress derived from edited workout data.
-- Keep GPS and Apple Health for later phases.
+## Suggested Phase 20
+
+Pick based on owner priorities:
+
+- Run the EAS dev build (docs/DEV_BUILD.md) and verify export, import, auto-import, and watch metrics end to end on device.
+- Weekly training summary (volume + mileage + hybrid time in one Progress view).
+- Share Card upgrades: include watch HR/energy metrics on exported cards.
+- ReviveX icon/splash asset pass once clean PNGs exist.

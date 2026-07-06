@@ -37,6 +37,9 @@ interface Props {
   ) => void;
   onRemoveSet: (setId: string) => void;
   onRemoveExercise: () => void;
+  onOpenPlates?: () => void;
+  /** e.g. "Last: 185×8, 185×8, 205×5 • 3d ago" */
+  lastPerformance?: string;
   weightUnit?: PreferredWeightUnit;
 }
 
@@ -51,6 +54,8 @@ export default function ExerciseLogCard({
   onUpdateSet,
   onRemoveSet,
   onRemoveExercise,
+  onOpenPlates,
+  lastPerformance,
   weightUnit = 'kg',
 }: Props) {
   const handleAddSet = () => {
@@ -70,7 +75,17 @@ export default function ExerciseLogCard({
         <View style={{ flex: 1 }}>
           <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
           <Text style={styles.muscleGroup}>{exercise.muscleGroup}</Text>
+          {lastPerformance ? (
+            <Text style={styles.lastPerformance} numberOfLines={1}>
+              {lastPerformance}
+            </Text>
+          ) : null}
         </View>
+        {onOpenPlates ? (
+          <Pressable onPress={onOpenPlates} hitSlop={10} style={styles.menuBtn}>
+            <Ionicons name="disc-outline" size={18} color={colors.accentTeal} />
+          </Pressable>
+        ) : null}
         <Pressable onPress={onRemoveExercise} hitSlop={10} style={styles.menuBtn}>
           <Ionicons
             name="trash-outline"
@@ -226,6 +241,11 @@ const styles = StyleSheet.create({
     fontSize: fontSize.lg,
     fontWeight: fontWeight.bold,
     letterSpacing: -0.2,
+  },
+  lastPerformance: {
+    color: colors.accentTeal,
+    fontSize: fontSize.xs,
+    marginTop: 3,
   },
   muscleGroup: {
     color: colors.gold,

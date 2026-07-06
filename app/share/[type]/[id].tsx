@@ -1,5 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { captureRef } from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -12,6 +14,7 @@ import { useRuns } from '../../../src/context/RunContext';
 import { useHybridSessions } from '../../../src/context/HybridContext';
 import { useProfile } from '../../../src/context/ProfileContext';
 import { useActivityFeed } from '../../../src/context/ActivityFeedContext';
+import { useHealth } from '../../../src/context/HealthContext';
 import { colors, fontSize, fontWeight, gradients, radius, spacing } from '../../../src/theme/theme';
 import {
   buildActivityFeed,
@@ -27,8 +30,49 @@ export default function SharePreviewScreen() {
   const { hybridSessions, hybridSessionsLoaded } = useHybridSessions();
   const { profile } = useProfile();
   const { getActivityBySource } = useActivityFeed();
-
+  const { connected: healthConnected, status: healthStatus, getSessionMetrics } = useHealth();
+  const cardRef = useRef<View>(null);
+  const [exporting, setExporting] = useState(false);
+  const [healthStats, setHealthStats] = useState<{ label: string; value: string }[]>([]);
   const activityType = normalizeActivityType(type);
+
+  // Session time window for watch metrics lookup.
+  const sessionWindow = useMemo(() => {
+    if (!activityType || !id) return undefined;
+    if (activityType === 'workout') {
+      const workout = history.find((item) => item.id === id);
+      return workout ? { dateIso: workout.date, durationSeconds: workout.duration } : undefined;
+    }
+    if (activityType === 'run') {
+      const run = runs.find((item) => item.id === id);
+      return run ? { dateIso: run.date, durationSeconds: run.durationSeconds } : undefined;
+    }
+    const session = hybridSessions.find((item) => item.id === id);
+    return session
+      ? { dateIso: session.date, durationSeconds: session.totalDurationSeconds }
+      : undefined;
+  }, [activityType, history, hybridSessions, id, runs]);
+
+  useEffect(() => {
+    if (!sessionWindow || !healthConnected || healthStatus !== 'available') return;
+
+    let cancelled = false;
+    getSessionMetrics(sessionWindow.dateIso, sessionWindow.durationSeconds).then((metrics) => {
+      if (cancelled || !metrics) return;
+      const stats: { label: string; value: string }[] = [];
+      if (metrics.avgHeartRateBpm) {
+        stats.push({ label: 'Avg HR', value: `${Math.round(metrics.avgHeartRateBpm)} bpm` });
+      }
+      if (metrics.energyBurnedKcal) {
+        stats.push({ label: 'Energy', value: `${Math.round(metrics.energyBurnedKcal)} kcal` });
+      }
+      setHealthStats(stats);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionWindow, healthConnected, healthStatus, getSessionMetrics]);
+
   const activity = useMemo(() => {
     if (!activityType || !id) return undefined;
     const freshActivity = buildActivityFeed(history, runs, hybridSessions).find(
@@ -68,6 +112,27 @@ export default function SharePreviewScreen() {
       slowest ? { label: 'Slowest Segment', value: `${slowest.name} • ${formatSegmentTime(slowest.durationSeconds)}` } : undefined,
     ].filter(Boolean) as { label: string; value: string }[];
   }, [activityType, hybridSessions, id]);
+
+  const handleShareImage = async () => {
+    if (!activity || exporting) return;
+
+    setExporting(true);
+    try {
+      const uri = await captureRef(cardRef, { format: 'png', quality: 1 });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'image/png',
+          dialogTitle: 'Share your ReviveX recap',
+        });
+      } else {
+        Alert.alert('Share unavailable', 'Image sharing is not available on this device.');
+      }
+    } catch {
+      Alert.alert('Export failed', 'ReviveX could not create the share image.');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const handleShareText = async () => {
     if (!activity) return;
@@ -118,7 +183,7 @@ export default function SharePreviewScreen() {
         </View>
       </View>
 
-      <View style={styles.cardShell}>
+      <View ref={cardRef} collapsable={false} style={styles.cardShell}>
         <LinearGradient
           colors={['rgba(0, 180, 179, 0.20)', 'rgba(198, 255, 0, 0.12)', 'transparent']}
           start={{ x: 0, y: 0 }}
@@ -154,7 +219,9 @@ export default function SharePreviewScreen() {
         <Text style={styles.activitySummary}>{activity.subtitle}</Text>
 
         <View style={styles.statGrid}>
-          {[...activity.stats, ...hybridSegmentHighlights].slice(0, 6).map((stat) => (
+          {[...activity.stats, ...healthStats, ...hybridSegmentHighlights]
+            .slice(0, 6)
+            .map((stat) => (
             <View key={stat.label} style={styles.recapStat}>
               <Text style={styles.recapStatValue} numberOfLines={1}>
                 {stat.value}
@@ -172,10 +239,16 @@ export default function SharePreviewScreen() {
       </View>
 
       <PrimaryButton
-        label="Share Text"
+        label={exporting ? 'Creating Image...' : 'Share Image'}
         variant="primary"
-        onPress={handleShareText}
+        onPress={handleShareImage}
         style={{ marginTop: spacing.lg }}
+      />
+      <PrimaryButton
+        label="Share Text"
+        variant="outline"
+        onPress={handleShareText}
+        style={{ marginTop: spacing.md }}
       />
       <PrimaryButton
         label="Back to Activity"

@@ -100,6 +100,42 @@ export default function ProfileScreen() {
         <DetailRow label="Distance unit" value={profile.preferredDistanceUnit} />
       </AppCard>
 
+      <Text style={styles.sectionTitle}>Body Weight</Text>
+      <Pressable onPress={() => router.push('/profile/weight')}>
+        <AppCard>
+          <View style={styles.communityRow}>
+            <View style={styles.communityIcon}>
+              <Ionicons name="scale-outline" size={20} color={colors.accentTeal} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.communityTitle}>Weight Log</Text>
+              <Text style={styles.communitySub}>
+                Track your body weight privately and watch the trend.
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </View>
+        </AppCard>
+      </Pressable>
+
+      <Text style={styles.sectionTitle}>Connections</Text>
+      <Pressable onPress={() => router.push('/profile/health')}>
+        <AppCard>
+          <View style={styles.communityRow}>
+            <View style={styles.communityIcon}>
+              <Ionicons name="heart-outline" size={20} color={colors.accentTeal} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.communityTitle}>Health Sync</Text>
+              <Text style={styles.communitySub}>
+                Sync workouts, runs, and hybrid sessions to Apple Health or Health Connect.
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </View>
+        </AppCard>
+      </Pressable>
+
       <Text style={styles.sectionTitle}>Community</Text>
       <AppCard>
         <View style={styles.communityRow}>

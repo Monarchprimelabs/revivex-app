@@ -65,8 +65,13 @@ interface WorkoutContextValue {
     workoutId: string,
     patch: UpdateWorkoutMetadataInput
   ) => Workout | undefined;
+  updateWorkoutDetails: (
+    workoutId: string,
+    patch: UpdateWorkoutDetailsInput
+  ) => Workout | undefined;
   getWorkoutById: (workoutId: string) => Workout | undefined;
   repeatWorkout: (workoutId: string) => boolean;
+  importCompletedWorkout: (input: ImportCompletedWorkoutInput) => Workout;
 
   // Routines
   routines: Routine[];
@@ -82,6 +87,35 @@ interface UpdateWorkoutMetadataInput {
   title?: string;
   date?: string;
   notes?: string;
+}
+
+interface UpdateWorkoutDetailsInput {
+  title?: string;
+  date?: string;
+  notes?: string;
+  exercises: WorkoutExercise[];
+}
+
+/** Minimal shape for workouts imported from an external source (e.g. Apple Health). */
+interface ImportCompletedWorkoutInput {
+  title: string;
+  date: string;
+  durationSeconds: number;
+  notes?: string;
+}
+
+function normalizeWorkoutExercises(exercises: WorkoutExercise[]): WorkoutExercise[] {
+  return exercises.map((exercise) => ({
+    ...exercise,
+    id: exercise.id || makeId('we'),
+    sets: exercise.sets.map((set, index) => ({
+      ...set,
+      id: set.id || makeId('set'),
+      setNumber: index + 1,
+      weight: Math.max(0, Number.isFinite(set.weight) ? set.weight : 0),
+      reps: Math.max(0, Math.floor(Number.isFinite(set.reps) ? set.reps : 0)),
+    })),
+  }));
 }
 
 const WorkoutContext = createContext<WorkoutContextValue | undefined>(undefined);
@@ -277,6 +311,41 @@ export function WorkoutProvider({ children }: ProviderProps) {
     []
   );
 
+  const updateWorkoutDetails = useCallback(
+    (workoutId: string, patch: UpdateWorkoutDetailsInput) => {
+      let updatedWorkout: Workout | undefined;
+
+      setHistory((prev) => {
+        const next = prev.map((workout) => {
+          if (workout.id !== workoutId) return workout;
+
+          const date = patch.date || workout.date;
+          const exercises = normalizeWorkoutExercises(patch.exercises);
+          const { totalSets, totalVolume } = computeWorkoutTotals(exercises);
+
+          updatedWorkout = {
+            ...workout,
+            title: patch.title?.trim() || workout.title,
+            date,
+            startedAt: workout.startedAt ? date : workout.startedAt,
+            notes: patch.notes !== undefined ? patch.notes.trim() || undefined : workout.notes,
+            exercises,
+            totalSets,
+            totalVolume,
+            updatedAt: new Date().toISOString(),
+          };
+
+          return updatedWorkout;
+        });
+
+        return sortWorkouts(next);
+      });
+
+      return updatedWorkout;
+    },
+    []
+  );
+
   const getWorkoutById = useCallback(
     (workoutId: string) => history.find((workout) => workout.id === workoutId),
     [history]
@@ -317,6 +386,23 @@ export function WorkoutProvider({ children }: ProviderProps) {
     },
     [history]
   );
+
+  const importCompletedWorkout = useCallback((input: ImportCompletedWorkoutInput) => {
+    const imported: Workout = {
+      id: makeId('wk'),
+      title: input.title.trim() || 'Imported Workout',
+      date: input.date,
+      startedAt: input.date,
+      duration: Math.max(0, Math.floor(input.durationSeconds)),
+      exercises: [],
+      notes: input.notes?.trim() || undefined,
+      totalSets: 0,
+      totalVolume: 0,
+    };
+
+    setHistory((prev) => sortWorkouts([imported, ...prev]));
+    return imported;
+  }, []);
 
   const setWorkoutTitle = useCallback((title: string) => {
     setActiveWorkout((current) => (current ? { ...current, title } : current));
@@ -489,6 +575,7 @@ export function WorkoutProvider({ children }: ProviderProps) {
           exerciseId: exercise.exerciseId,
           exerciseName: exercise.exerciseName,
           muscleGroup: exercise.muscleGroup,
+          restSeconds: exercise.restSeconds,
           sets: Array.from({ length: targetSets }, (_, index) => ({
             id: makeId('set'),
             setNumber: index + 1,
@@ -533,8 +620,10 @@ export function WorkoutProvider({ children }: ProviderProps) {
       historyLoaded,
       deleteWorkout,
       updateWorkoutMetadata,
+      updateWorkoutDetails,
       getWorkoutById,
       repeatWorkout,
+      importCompletedWorkout,
       routines,
       routinesLoaded,
       createRoutine,
@@ -560,8 +649,10 @@ export function WorkoutProvider({ children }: ProviderProps) {
       historyLoaded,
       deleteWorkout,
       updateWorkoutMetadata,
+      updateWorkoutDetails,
       getWorkoutById,
       repeatWorkout,
+      importCompletedWorkout,
       routines,
       routinesLoaded,
       createRoutine,

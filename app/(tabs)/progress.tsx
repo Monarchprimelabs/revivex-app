@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import ScreenContainer from '../../src/components/ScreenContainer';
@@ -10,6 +10,7 @@ import PrimaryButton from '../../src/components/PrimaryButton';
 import { useWorkout } from '../../src/context/WorkoutContext';
 import { useRuns } from '../../src/context/RunContext';
 import { useHybridSessions } from '../../src/context/HybridContext';
+import { useProfile } from '../../src/context/ProfileContext';
 import { colors, fontSize, fontWeight, glow, radius, spacing } from '../../src/theme/theme';
 import { formatRelativeDate, formatVolume } from '../../src/utils/format';
 import {
@@ -37,6 +38,14 @@ import {
   formatSegmentTime,
   getHybridSessionStats,
 } from '../../src/utils/hybridStats';
+import {
+  getWeekRange,
+  getWeeklyDelta,
+  getWeeklySummary,
+  milesToPreferredUnit,
+  type WeeklyDelta,
+  type WeeklySummary,
+} from '../../src/utils/weeklySummary';
 
 /**
  * Progress screen
@@ -46,6 +55,8 @@ export default function ProgressScreen() {
   const { history, historyLoaded } = useWorkout();
   const { runs, runsLoaded } = useRuns();
   const { hybridSessions, hybridSessionsLoaded } = useHybridSessions();
+  const { profile } = useProfile();
+  const weightUnit = profile?.preferredWeightUnit ?? 'lb';
 
   const analytics = useMemo(() => {
     const totalWorkouts = getTotalWorkouts(history);
@@ -54,8 +65,17 @@ export default function ProgressScreen() {
     const muscleGroupStats = getMuscleGroupStats(history);
     const runStats = calculateRunStats(runs);
     const hybridStats = getHybridSessionStats(hybridSessions);
+    const weekNow = getWeeklySummary(history, runs, hybridSessions, getWeekRange());
+    const weekPrev = getWeeklySummary(history, runs, hybridSessions, getWeekRange(new Date(), -1));
 
     return {
+      weekNow,
+      weekDeltas: {
+        sessions: getWeeklyDelta(weekNow.sessions, weekPrev.sessions),
+        volume: getWeeklyDelta(weekNow.strengthVolume, weekPrev.strengthVolume),
+        distance: getWeeklyDelta(weekNow.runDistanceMiles, weekPrev.runDistanceMiles),
+        hybridTime: getWeeklyDelta(weekNow.hybridSeconds, weekPrev.hybridSeconds),
+      },
       totalWorkouts,
       totalVolume,
       totalSets,
@@ -110,6 +130,14 @@ export default function ProgressScreen() {
         />
       ) : (
         <>
+          <SectionHeader title="This Week" />
+          <WeeklySummaryCard
+            summary={analytics.weekNow}
+            deltas={analytics.weekDeltas}
+            weeklyTarget={profile?.weeklyTrainingTarget ?? 0}
+            distanceUnit={profile?.preferredDistanceUnit ?? 'mi'}
+          />
+
           <View style={styles.statGrid}>
             <View style={styles.statRow}>
               <StatCard
@@ -205,8 +233,12 @@ export default function ProgressScreen() {
                 maxSets={analytics.maxMuscleSets}
               />
 
-              <SectionHeader title="Exercise PRs" />
-              <ExercisePRCard prs={analytics.topPRs} />
+              <SectionHeader
+                title="Exercise PRs"
+                actionLabel="View All"
+                onActionPress={() => router.push('/progress/prs')}
+              />
+              <ExercisePRCard prs={analytics.topPRs} weightUnit={weightUnit} />
 
               <SectionHeader title="Progress Highlights" />
               <HighlightsCard
@@ -240,6 +272,113 @@ export default function ProgressScreen() {
         </>
       )}
     </ScreenContainer>
+  );
+}
+
+function WeeklySummaryCard({
+  summary,
+  deltas,
+  weeklyTarget,
+  distanceUnit,
+}: {
+  summary: WeeklySummary;
+  deltas: {
+    sessions: WeeklyDelta;
+    volume: WeeklyDelta;
+    distance: WeeklyDelta;
+    hybridTime: WeeklyDelta;
+  };
+  weeklyTarget: number;
+  distanceUnit: 'mi' | 'km';
+}) {
+  const target = Math.max(0, Math.floor(weeklyTarget));
+  const targetPercent =
+    target > 0 ? Math.min(100, Math.round((summary.sessions / target) * 100)) : 0;
+
+  return (
+    <AppCard elevated tint="hybrid">
+      <View style={styles.weekTopRow}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.weekSessions}>
+            {summary.sessions}
+            {target > 0 ? ` / ${target}` : ''}
+            <Text style={styles.weekSessionsUnit}>  sessions</Text>
+          </Text>
+          <Text style={styles.weekSub}>
+            {summary.activeDays} active {summary.activeDays === 1 ? 'day' : 'days'} •{' '}
+            {summary.strengthWorkouts} lift{summary.strengthWorkouts === 1 ? '' : 's'} •{' '}
+            {summary.runs} run{summary.runs === 1 ? '' : 's'} • {summary.hybridSessions}{' '}
+            hybrid
+          </Text>
+        </View>
+        <DeltaBadge delta={deltas.sessions} />
+      </View>
+
+      {target > 0 ? (
+        <View style={styles.weekTargetTrack}>
+          <View style={[styles.weekTargetFill, { width: `${targetPercent}%` }]} />
+        </View>
+      ) : null}
+
+      <View style={styles.weekMetricRow}>
+        <WeekMetric
+          label="Volume"
+          value={formatCompactVolume(summary.strengthVolume)}
+          delta={deltas.volume}
+        />
+        <WeekMetric
+          label="Distance"
+          value={`${milesToPreferredUnit(summary.runDistanceMiles, distanceUnit)} ${distanceUnit}`}
+          delta={deltas.distance}
+        />
+        <WeekMetric
+          label="Hybrid Time"
+          value={summary.hybridSeconds > 0 ? formatSegmentTime(summary.hybridSeconds) : '—'}
+          delta={deltas.hybridTime}
+        />
+      </View>
+    </AppCard>
+  );
+}
+
+function WeekMetric({
+  label,
+  value,
+  delta,
+}: {
+  label: string;
+  value: string;
+  delta: WeeklyDelta;
+}) {
+  return (
+    <View style={styles.weekMetric}>
+      <Text style={styles.weekMetricValue} numberOfLines={1}>
+        {value}
+      </Text>
+      <View style={styles.weekMetricBottom}>
+        <Text style={styles.weekMetricLabel}>{label}</Text>
+        <DeltaBadge delta={delta} compact />
+      </View>
+    </View>
+  );
+}
+
+function DeltaBadge({ delta, compact }: { delta: WeeklyDelta; compact?: boolean }) {
+  if (delta.direction === 'flat') {
+    return <Text style={[styles.deltaFlat, compact && styles.deltaCompact]}>—</Text>;
+  }
+
+  const up = delta.direction === 'up';
+  return (
+    <Text
+      style={[
+        up ? styles.deltaUp : styles.deltaDown,
+        compact && styles.deltaCompact,
+      ]}
+    >
+      {up ? '▲' : '▼'}
+      {delta.percent !== undefined ? ` ${delta.percent}%` : ''}
+    </Text>
   );
 }
 
@@ -499,7 +638,7 @@ function MuscleGroupCard({
   );
 }
 
-function ExercisePRCard({ prs }: { prs: ExercisePR[] }) {
+function ExercisePRCard({ prs, weightUnit }: { prs: ExercisePR[]; weightUnit: string }) {
   if (prs.length === 0) {
     return (
       <AppCard>
@@ -513,8 +652,14 @@ function ExercisePRCard({ prs }: { prs: ExercisePR[] }) {
   return (
     <AppCard>
       {prs.map((pr, index) => (
-        <View
+        <Pressable
           key={`${pr.exerciseId}-${pr.exerciseName}`}
+          onPress={() =>
+            router.push({
+              pathname: '/progress/exercise/[key]',
+              params: { key: pr.exerciseId || pr.exerciseName },
+            })
+          }
           style={[styles.prRow, index !== prs.length - 1 && styles.rowDivider]}
         >
           <View style={styles.prRank}>
@@ -527,10 +672,10 @@ function ExercisePRCard({ prs }: { prs: ExercisePR[] }) {
             </Text>
           </View>
           <View style={styles.prResult}>
-            <Text style={styles.prWeight}>{formatWeight(pr.weight)}</Text>
+            <Text style={styles.prWeight}>{formatWeight(pr.weight, weightUnit)}</Text>
             <Text style={styles.prReps}>x {pr.reps}</Text>
           </View>
-        </View>
+        </Pressable>
       ))}
     </AppCard>
   );
@@ -600,9 +745,9 @@ function formatCompactVolume(volume: number): string {
   return formatVolume(volume);
 }
 
-function formatWeight(weight: number): string {
+function formatWeight(weight: number, unit: string): string {
   const rounded = Number.isInteger(weight) ? weight.toFixed(0) : weight.toFixed(1);
-  return `${rounded} kg`;
+  return `${rounded} ${unit}`;
 }
 
 const styles = StyleSheet.create({
@@ -610,6 +755,80 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontSize: fontSize.xxl,
     fontWeight: fontWeight.heavy,
+  },
+  weekTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+  },
+  weekSessions: {
+    color: colors.textPrimary,
+    fontSize: fontSize.xxl,
+    fontWeight: fontWeight.heavy,
+  },
+  weekSessionsUnit: {
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+  },
+  weekSub: {
+    color: colors.textSecondary,
+    fontSize: fontSize.xs,
+    marginTop: spacing.xs,
+  },
+  weekTargetTrack: {
+    height: 7,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.pill,
+    marginTop: spacing.md,
+    overflow: 'hidden',
+  },
+  weekTargetFill: {
+    height: 7,
+    borderRadius: radius.pill,
+    backgroundColor: colors.accentLime,
+  },
+  weekMetricRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.lg,
+  },
+  weekMetric: {
+    flex: 1,
+  },
+  weekMetricValue: {
+    color: colors.textPrimary,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.heavy,
+  },
+  weekMetricBottom: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: 2,
+  },
+  weekMetricLabel: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    textTransform: 'uppercase',
+  },
+  deltaUp: {
+    color: colors.success,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+  },
+  deltaDown: {
+    color: colors.danger,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+  },
+  deltaFlat: {
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+  },
+  deltaCompact: {
+    fontSize: 10,
   },
   subtitle: {
     color: colors.textSecondary,

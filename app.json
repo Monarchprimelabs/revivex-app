@@ -4,22 +4,43 @@
     "slug": "hybridtrack",
     "version": "0.1.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "scheme": "hybridtrack",
     "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#111111"
+    },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.hybridtrack.app"
+      "bundleIdentifier": "com.hybridtrack.app",
+      "infoPlist": {
+        "NSHealthShareUsageDescription": "ReviveX reads workout data so your watch and other training sessions stay in sync with your training log.",
+        "NSHealthUpdateUsageDescription": "ReviveX saves your workouts, runs, and hybrid sessions to Apple Health."
+      }
     },
     "android": {
       "package": "com.hybridtrack.app",
       "adaptiveIcon": {
-        "backgroundColor": "#0F1114"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#111111"
       }
     },
     "plugins": [
       "expo-router",
-      "expo-font"
+      "expo-font",
+      "@kingstinct/react-native-healthkit",
+      "react-native-health-connect",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

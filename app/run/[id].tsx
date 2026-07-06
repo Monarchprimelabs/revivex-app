@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import ScreenContainer from '../../src/components/ScreenContainer';
 import AppCard from '../../src/components/AppCard';
+import HealthMetricsCard from '../../src/components/HealthMetricsCard';
 import PrimaryButton from '../../src/components/PrimaryButton';
 import { useRuns } from '../../src/context/RunContext';
 import { colors, fontSize, fontWeight, radius, spacing } from '../../src/theme/theme';
@@ -88,6 +89,8 @@ export default function RunDetailScreen() {
           <Metric label="Pace" value={`${formatPace(displayPace)}/${run.distanceUnit}`} />
         </View>
       </AppCard>
+
+      <HealthMetricsCard dateIso={run.date} durationSeconds={run.durationSeconds} />
 
       <AppCard style={{ marginTop: spacing.md }}>
         <DetailRow label="Date" value={formatFullDate(run.date)} />
