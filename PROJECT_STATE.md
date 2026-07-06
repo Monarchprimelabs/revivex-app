@@ -433,6 +433,16 @@ Previous Phase 6 recovery baseline remains available:
 - New `DailyRings` component on Home: steps ring (teal, 10k goal) and calories ring (coral, 500 kcal goal) with percentage labels. Renders nothing unless health sync is connected with data — Expo Go unaffected.
 - Social feed (Strava/Hevy-style) is the next major track, pending the owner's Hevy reference video; requires the cloud/social architecture decision.
 
+### Phase 39: Social Cloud Foundation (owner-approved direction change)
+
+- Social/community is now in scope (Hevy-style feed per owner's reference screenshots); the former no-Supabase rule is retired. Local-first stays sacred: training data lives on device, the cloud only powers sharing.
+- `src/social/supabase.ts`: config-gated Supabase client (reads `expo.extra.supabaseUrl/supabaseAnonKey`; null → all social surfaces show a setup state). Deps: `@supabase/supabase-js`, `react-native-url-polyfill` (JS-only, Expo Go safe).
+- `src/context/SocialContext.tsx`: session state, email/password sign up/in/out, cloud profile load, username claim (3–20 chars, uniqueness enforced).
+- `app/social/index.tsx` Community screen: unconfigured → setup notice; signed out → join/sign-in card; signed in → profile header with counts + username claim/edit. Linked from the Profile tab's Community card.
+- `docs/supabase/schema.sql`: full social schema with RLS — profiles, posts (jsonb stats/details for workout/run/hybrid payloads), follows, likes, comments.
+- Owner setup to activate: create free Supabase project → run schema.sql in SQL editor → paste URL + anon key into app.json `expo.extra`.
+- Phase 40 spec captured from owner's Hevy screenshots: post-workout share flow (photo carousel + workout summary as last slide, description, visibility), Following/Discover feed, likes with avatar cluster, inline comments.
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`
