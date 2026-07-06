@@ -4,6 +4,7 @@ import {
   safeSessionRange,
   type HealthAdapter,
   type HealthAvailability,
+  type HealthDailyActivity,
   type HealthSessionMetrics,
   type ImportedHealthSession,
   type ImportedSessionKind,
@@ -61,6 +62,7 @@ async function requestPermissions(): Promise<boolean> {
         'HKWorkoutTypeIdentifier',
         'HKQuantityTypeIdentifierHeartRate',
         'HKQuantityTypeIdentifierActiveEnergyBurned',
+        'HKQuantityTypeIdentifierStepCount',
       ],
     });
   } catch {
@@ -107,6 +109,43 @@ async function readSessionMetrics(
     };
 
     return hasAnyMetric(metrics) ? metrics : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function readDailyActivity(): Promise<HealthDailyActivity | undefined> {
+  const healthKit = loadHealthKit();
+  if (!healthKit) return undefined;
+
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const dateFilter = { date: { startDate: start, endDate: new Date() } };
+
+  try {
+    const [steps, energy] = await Promise.all([
+      healthKit
+        .queryStatisticsForQuantity('HKQuantityTypeIdentifierStepCount', ['cumulativeSum'], {
+          filter: dateFilter,
+          unit: 'count',
+        })
+        .catch(() => undefined),
+      healthKit
+        .queryStatisticsForQuantity(
+          'HKQuantityTypeIdentifierActiveEnergyBurned',
+          ['cumulativeSum'],
+          { filter: dateFilter, unit: 'kcal' }
+        )
+        .catch(() => undefined),
+    ]);
+
+    const activity: HealthDailyActivity = {
+      steps: positiveOrUndefined(steps?.sumQuantity?.quantity),
+      energyBurnedKcal: positiveOrUndefined(energy?.sumQuantity?.quantity),
+    };
+    return activity.steps !== undefined || activity.energyBurnedKcal !== undefined
+      ? activity
+      : undefined;
   } catch {
     return undefined;
   }
@@ -228,6 +267,7 @@ export const appleHealthAdapter: HealthAdapter = {
   requestPermissions,
   readRecentSessions,
   readSessionMetrics,
+  readDailyActivity,
 
   async writeStrengthWorkout(workout: Workout): Promise<boolean> {
     const healthKit = loadHealthKit();

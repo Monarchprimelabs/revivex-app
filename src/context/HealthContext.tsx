@@ -12,6 +12,7 @@ import { getHealthAdapter } from '../health/healthService';
 import {
   DEFAULT_HEALTH_SYNC_STATE,
   type HealthAvailability,
+  type HealthDailyActivity,
   type HealthSessionMetrics,
   type HealthSyncSettings,
   type HealthSyncState,
@@ -69,6 +70,8 @@ interface HealthContextValue {
     dateIso: string,
     durationSeconds: number
   ) => Promise<HealthSessionMetrics | undefined>;
+  /** Today's steps + active calories from the health store, when connected. */
+  getDailyActivity: () => Promise<HealthDailyActivity | undefined>;
 }
 
 const HealthContext = createContext<HealthContextValue | undefined>(undefined);
@@ -342,6 +345,11 @@ export function HealthProvider({ children }: ProviderProps) {
     [adapter, status, syncState.connected]
   );
 
+  const getDailyActivity = useCallback(async () => {
+    if (!adapter || status !== 'available' || !syncState.connected) return undefined;
+    return adapter.readDailyActivity();
+  }, [adapter, status, syncState.connected]);
+
   const value = useMemo<HealthContextValue>(
     () => ({
       status,
@@ -361,6 +369,7 @@ export function HealthProvider({ children }: ProviderProps) {
       syncNow: runSync,
       importNow,
       getSessionMetrics,
+      getDailyActivity,
     }),
     [
       status,
@@ -380,6 +389,7 @@ export function HealthProvider({ children }: ProviderProps) {
       runSync,
       importNow,
       getSessionMetrics,
+      getDailyActivity,
     ]
   );
 

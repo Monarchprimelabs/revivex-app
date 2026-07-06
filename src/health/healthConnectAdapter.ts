@@ -4,6 +4,7 @@ import {
   safeSessionRange,
   type HealthAdapter,
   type HealthAvailability,
+  type HealthDailyActivity,
   type HealthSessionMetrics,
   type ImportedHealthSession,
   type ImportedSessionKind,
@@ -74,6 +75,7 @@ async function requestPermissions(): Promise<boolean> {
       { accessType: 'read', recordType: 'Distance' },
       { accessType: 'read', recordType: 'HeartRate' },
       { accessType: 'read', recordType: 'ActiveCaloriesBurned' },
+      { accessType: 'read', recordType: 'Steps' },
     ]);
     return granted.some(
       (permission) =>
@@ -243,6 +245,39 @@ async function readSessionMetrics(
   }
 }
 
+async function readDailyActivity(): Promise<HealthDailyActivity | undefined> {
+  const healthConnect = loadHealthConnect();
+  if (!healthConnect) return undefined;
+  if (!(await ensureInitialized(healthConnect))) return undefined;
+
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const timeRangeFilter = {
+    operator: 'between' as const,
+    startTime: start.toISOString(),
+    endTime: new Date().toISOString(),
+  };
+
+  try {
+    const [steps, energy] = await Promise.all([
+      healthConnect.aggregateRecord({ recordType: 'Steps', timeRangeFilter }).catch(() => undefined),
+      healthConnect
+        .aggregateRecord({ recordType: 'ActiveCaloriesBurned', timeRangeFilter })
+        .catch(() => undefined),
+    ]);
+
+    const activity: HealthDailyActivity = {
+      steps: positiveOrUndefined(steps?.COUNT_TOTAL),
+      energyBurnedKcal: positiveOrUndefined(energy?.ACTIVE_CALORIES_TOTAL?.inKilocalories),
+    };
+    return activity.steps !== undefined || activity.energyBurnedKcal !== undefined
+      ? activity
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function positiveOrUndefined(value?: number): number | undefined {
   return value !== undefined && Number.isFinite(value) && value > 0 ? value : undefined;
 }
@@ -253,6 +288,7 @@ export const healthConnectAdapter: HealthAdapter = {
   requestPermissions,
   readRecentSessions,
   readSessionMetrics,
+  readDailyActivity,
 
   async writeStrengthWorkout(workout: Workout): Promise<boolean> {
     const healthConnect = loadHealthConnect();

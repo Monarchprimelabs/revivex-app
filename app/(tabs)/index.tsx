@@ -9,6 +9,7 @@ import SectionHeader from '../../src/components/SectionHeader';
 import BrandTagline from '../../src/components/BrandTagline';
 import ActivityFeedCard from '../../src/components/ActivityFeedCard';
 import ProgressRing from '../../src/components/ProgressRing';
+import DailyRings from '../../src/components/DailyRings';
 import { colors, fontSize, fontWeight, spacing } from '../../src/theme/theme';
 import { useWorkout } from '../../src/context/WorkoutContext';
 import { useRuns } from '../../src/context/RunContext';
@@ -112,6 +113,9 @@ export default function HomeScreen() {
           </Text>
         </View>
       </AppCard>
+
+      {/* Steps + calories from the health store (dev build, when connected) */}
+      <DailyRings />
 
       {/* Quick actions */}
       <SectionHeader title="Quick actions" />

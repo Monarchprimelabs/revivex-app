@@ -427,6 +427,12 @@ Previous Phase 6 recovery baseline remains available:
 - Strava-style route thumbnails: GPS runs show a mini route trace on Run tab recent cards and Run History cards.
 - Follow-up (Phase 38+): hero stat typography on tab headers, hybrid tab deeper coral pass, feed-card route thumbnails, achievement celebration moments.
 
+### Phase 38: Daily Activity Rings
+
+- Both adapters expose `readDailyActivity()` — today's step count and active calories (HealthKit cumulativeSum statistics; Health Connect Steps/ActiveCaloriesBurned aggregates). Read permissions now include steps.
+- New `DailyRings` component on Home: steps ring (teal, 10k goal) and calories ring (coral, 500 kcal goal) with percentage labels. Renders nothing unless health sync is connected with data — Expo Go unaffected.
+- Social feed (Strava/Hevy-style) is the next major track, pending the owner's Hevy reference video; requires the cloud/social architecture decision.
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`
