@@ -1,16 +1,20 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { File, Paths } from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import ScreenContainer from '../../src/components/ScreenContainer';
 import AppCard from '../../src/components/AppCard';
 import PrimaryButton from '../../src/components/PrimaryButton';
+import { useBodyWeight } from '../../src/context/BodyWeightContext';
 import { useHybridSessions } from '../../src/context/HybridContext';
 import { useProfile } from '../../src/context/ProfileContext';
 import { useRuns } from '../../src/context/RunContext';
 import { useWorkout } from '../../src/context/WorkoutContext';
 import { formatWeeklyTarget } from '../../src/data/profileOptions';
 import { colors, fontSize, fontWeight, radius, spacing } from '../../src/theme/theme';
+import { buildExport, exportFileName } from '../../src/utils/dataExport';
 import { getWorkoutsThisWeek } from '../../src/utils/progress';
 import { getRunsThisWeek } from '../../src/utils/runStats';
 
@@ -19,6 +23,33 @@ export default function ProfileScreen() {
   const { history, routines } = useWorkout();
   const { runs } = useRuns();
   const { hybridSessions } = useHybridSessions();
+  const { entries: bodyWeightEntries } = useBodyWeight();
+
+  const handleExportData = async () => {
+    try {
+      const payload = buildExport({
+        profile,
+        workouts: history,
+        routines,
+        runs,
+        hybridSessions,
+        bodyWeight: bodyWeightEntries,
+      });
+      const file = new File(Paths.cache, exportFileName());
+      file.write(JSON.stringify(payload, null, 2));
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(file.uri, {
+          mimeType: 'application/json',
+          dialogTitle: 'Export ReviveX data',
+        });
+      } else {
+        Alert.alert('Sharing unavailable', 'This device cannot share files.');
+      }
+    } catch {
+      Alert.alert('Export failed', 'ReviveX could not create the export file.');
+    }
+  };
 
   const sessionsThisWeek =
     getWorkoutsThisWeek(history) +
@@ -129,6 +160,25 @@ export default function ProfileScreen() {
               <Text style={styles.communityTitle}>Health Sync</Text>
               <Text style={styles.communitySub}>
                 Sync workouts, runs, and hybrid sessions to Apple Health or Health Connect.
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </View>
+        </AppCard>
+      </Pressable>
+
+      <Text style={styles.sectionTitle}>Your Data</Text>
+      <Pressable onPress={handleExportData}>
+        <AppCard>
+          <View style={styles.communityRow}>
+            <View style={styles.communityIcon}>
+              <Ionicons name="download-outline" size={20} color={colors.accentTeal} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.communityTitle}>Export My Data</Text>
+              <Text style={styles.communitySub}>
+                Save everything — workouts, runs, hybrid sessions, routines, weight — as a
+                JSON file. Your data is yours.
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
