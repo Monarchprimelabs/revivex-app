@@ -32,3 +32,16 @@ covers Health Connect the same way.
 
 Do not run EAS builds from CI/agents; run them from the Mac Mini where
 you can authenticate with Apple.
+
+## TestFlight
+
+After the development build checks out (see docs/TESTING.md):
+
+```bash
+eas build --profile preview --platform ios
+eas submit --platform ios
+```
+
+- Internal testers (your Apple team) get the build right away — no review.
+- External testers require Apple beta review and a privacy policy URL.
+- `preview` builds are release-mode: no dev menu, real performance.
