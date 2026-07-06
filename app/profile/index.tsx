@@ -187,19 +187,22 @@ export default function ProfileScreen() {
       </Pressable>
 
       <Text style={styles.sectionTitle}>Community</Text>
-      <AppCard>
-        <View style={styles.communityRow}>
-          <View style={styles.communityIcon}>
-            <Ionicons name="people-outline" size={20} color={colors.accentTeal} />
+      <Pressable onPress={() => router.push('/social')}>
+        <AppCard>
+          <View style={styles.communityRow}>
+            <View style={styles.communityIcon}>
+              <Ionicons name="people-outline" size={20} color={colors.accentTeal} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.communityTitle}>ReviveX Community</Text>
+              <Text style={styles.communitySub}>
+                Create your account, claim a username, and get ready to share your training.
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.communityTitle}>Community features are coming later.</Text>
-            <Text style={styles.communitySub}>
-              Your username is saved locally now so ReviveX can support social features later.
-            </Text>
-          </View>
-        </View>
-      </AppCard>
+        </AppCard>
+      </Pressable>
     </ScreenContainer>
   );
 }
