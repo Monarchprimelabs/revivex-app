@@ -4,11 +4,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import ScreenContainer from '../../src/components/ScreenContainer';
 import AppCard from '../../src/components/AppCard';
-import StatCard from '../../src/components/StatCard';
 import PrimaryButton from '../../src/components/PrimaryButton';
 import SectionHeader from '../../src/components/SectionHeader';
 import BrandTagline from '../../src/components/BrandTagline';
 import ActivityFeedCard from '../../src/components/ActivityFeedCard';
+import ProgressRing from '../../src/components/ProgressRing';
 import { colors, fontSize, fontWeight, spacing } from '../../src/theme/theme';
 import { useWorkout } from '../../src/context/WorkoutContext';
 import { useRuns } from '../../src/context/RunContext';
@@ -90,22 +90,28 @@ export default function HomeScreen() {
         />
       </AppCard>
 
-      {/* Streak row */}
-      <View style={styles.row}>
-        <StatCard
-          label="Weekly Target"
+      {/* Weekly ring */}
+      <AppCard style={styles.ringCard}>
+        <ProgressRing
+          progress={weeklyTarget > 0 ? weeklySessions / weeklyTarget : 0}
           value={weeklyProgress}
-          hint="sessions this week"
-          accent="accentWarm"
+          label="this week"
+          color={colors.accentLime}
         />
-        <View style={{ width: spacing.md }} />
-        <StatCard
-          label="Total Sessions"
-          value={String(totalLoggedSessions)}
-          hint="all time"
-          accent="accent"
-        />
-      </View>
+        <View style={styles.ringSide}>
+          <Text style={styles.ringTitle}>
+            {weeklySessions >= weeklyTarget
+              ? 'Weekly target crushed 🎯'
+              : `${Math.max(0, weeklyTarget - weeklySessions)} session${
+                  weeklyTarget - weeklySessions === 1 ? '' : 's'
+                } to your target`}
+          </Text>
+          <Text style={styles.ringSub}>
+            {totalLoggedSessions} total session{totalLoggedSessions === 1 ? '' : 's'} all
+            time
+          </Text>
+        </View>
+      </AppCard>
 
       {/* Quick actions */}
       <SectionHeader title="Quick actions" />
@@ -117,7 +123,7 @@ export default function HomeScreen() {
           style={styles.quickBtn}
         />
         <PrimaryButton
-          label="Start GPS Run"
+          label="Start Run"
           variant="outline"
           onPress={() => router.push('/run/track')}
           style={styles.quickBtn}
@@ -321,6 +327,26 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     marginTop: spacing.lg,
+  },
+  ringCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+    marginTop: spacing.lg,
+  },
+  ringSide: {
+    flex: 1,
+  },
+  ringTitle: {
+    color: colors.textPrimary,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+    lineHeight: 22,
+  },
+  ringSub: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    marginTop: spacing.xs,
   },
   quickGrid: {
     gap: spacing.md,

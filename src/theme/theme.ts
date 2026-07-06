@@ -28,8 +28,16 @@ export const colors = {
   // ReviveX accents
   accentTeal: '#00B4B3',
   accentLime: '#C6FF00',
+  accentCoral: '#FF6B3D',
   accentGradientStart: '#00B4B3',
   accentGradientEnd: '#C6FF00',
+
+  // Modality identity (Phase 37): each training pillar owns an accent so
+  // Train / Run / Hybrid screens stop looking identical.
+  // Lift = lime, Run = teal, Hybrid = coral heat.
+  modalityStrength: '#C6FF00',
+  modalityRun: '#00B4B3',
+  modalityHybrid: '#FF6B3D',
 
   // Backward-compatible semantic aliases used across existing screens.
   primary: '#00B4B3',
@@ -62,8 +70,11 @@ export const gradients = {
   // Analytics stays mostly teal.
   analytics: ['#00B4B3', '#4DD8D6'] as const,
 
-  // Hybrid combines both brand accents.
-  hybrid: ['#00B4B3', '#9EF000'] as const,
+  // Hybrid heat — coral into amber, distinct from the brand gradient.
+  hybrid: ['#FF6B3D', '#FFB03A'] as const,
+
+  // The original teal+lime crossover, kept for brand-level surfaces.
+  brand: ['#00B4B3', '#9EF000'] as const,
 
   // Background atmospheric tint at the top of screens.
   ambient: ['#1A1D21', '#0F1114'] as const,
@@ -78,6 +89,8 @@ export const glow = {
   tealStrong: 'rgba(0, 180, 179, 0.20)',
   limeFaint: 'rgba(198, 255, 0, 0.08)',
   limeStrong: 'rgba(198, 255, 0, 0.18)',
+  coralFaint: 'rgba(255, 107, 61, 0.10)',
+  coralStrong: 'rgba(255, 107, 61, 0.20)',
   successFaint: 'rgba(167, 244, 50, 0.12)',
 
   // Compatibility aliases.

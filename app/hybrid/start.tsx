@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceAlt,
   },
   typeChipSelected: {
-    borderColor: colors.accentLime,
+    borderColor: colors.accentCoral,
     backgroundColor: 'rgba(198, 255, 0, 0.10)',
   },
   typeChipText: {
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.semibold,
   },
   typeChipTextSelected: {
-    color: colors.accentLime,
+    color: colors.accentCoral,
   },
   templateHint: {
     color: colors.textSecondary,
