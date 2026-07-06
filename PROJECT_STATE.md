@@ -382,6 +382,28 @@ Previous Phase 6 recovery baseline remains available:
 - `src/utils/routeProjection.ts` (pure, Node-tested) projects lat/lng to canvas coordinates with latitude correction, uniform scaling, and centering.
 - New dep: `react-native-svg@15.12.1` (bundled in Expo Go).
 
+### Phase 31: Background GPS Tracking (dev build)
+
+- `src/gps/backgroundLocation.ts`: expo-task-manager background location task buffering fixes; tracker drains the buffer every second.
+- The track screen prefers background updates and falls back to the foreground watch automatically — Expo Go unchanged, lock-screen tracking activates in the dev build (Android foreground-service notification, iOS background location mode).
+- `app.json`: `UIBackgroundModes: location`, Always-permission strings, Android background/foreground-service flags. New dep: `expo-task-manager`.
+
+### Phase 32: Streaks + Milestones
+
+- `src/utils/achievements.ts` (pure, Node-tested): weekly training streak across all modalities (alive if this week or last week has a session) and tiered milestones for sessions, run miles, strength volume, and streak length.
+- Milestones card on Progress: streak flame, earned badge chips, and the two closest upcoming milestones with progress bars.
+
+### Phase 33: Data Export
+
+- Export My Data on Profile writes the full local dataset (profile, workouts, routines, runs, hybrid sessions, body weight) as versioned JSON (`exportVersion: 1`) and opens the share sheet.
+- `src/utils/dataExport.ts` payload builder; `expo-file-system` (new File/Paths API) + existing `expo-sharing`.
+
+### Phase 34: Polish Pass
+
+- Home quick actions include Start GPS Run.
+- Run tab empty state leads with Start GPS Run, manual logging secondary.
+- CLAUDE_HANDOFF.md GPS rule retired; storage key table updated with `revivex.health.v1` and `revivex.bodyWeight.v1`.
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`
@@ -476,6 +498,8 @@ These AsyncStorage keys must be preserved across app updates unless a safe migra
 | `revivex.profile.v1` | Local/private profile and preferences | Yes | Added in Phase 9. Does not create a cloud account. |
 | `revivex.onboarding.v1` | Local onboarding completion state | Yes | Added in Phase 9. Safe to reset for testing, but not required for normal updates. |
 | `revivex.activityFeed.v1` | Derived local/private activity feed snapshot | Yes | Added in Phase 12. Rebuilt from saved workouts, runs, and hybrid sessions. |
+| `revivex.health.v1` | Health sync settings, synced IDs, imported IDs | Yes | Added in Phase 16/18. |
+| `revivex.bodyWeight.v1` | Local body weight log | Yes | Added in Phase 27. |
 
 Do not rename or clear these keys without a migration, or existing local data can disappear.
 
