@@ -25,6 +25,7 @@ import { useWorkout } from './WorkoutContext';
 import { useRuns } from './RunContext';
 import { useHybridSessions } from './HybridContext';
 import { useProfile } from './ProfileContext';
+import { useBodyWeight } from './BodyWeightContext';
 
 /**
  * HealthContext
@@ -82,6 +83,7 @@ export function HealthProvider({ children }: ProviderProps) {
   const { runs, runsLoaded, addRun } = useRuns();
   const { hybridSessions, hybridSessionsLoaded, addHybridSession } = useHybridSessions();
   const { profile } = useProfile();
+  const { entries: bodyWeightEntries, entriesLoaded: bodyWeightLoaded } = useBodyWeight();
 
   const [status, setStatus] = useState<HealthStatus>('checking');
   const [syncState, setSyncState] = useState<HealthSyncState>(DEFAULT_HEALTH_SYNC_STATE);
@@ -153,19 +155,26 @@ export function HealthProvider({ children }: ProviderProps) {
     const sessions = syncState.settings.syncHybrid
       ? hybridSessions.filter((session) => !synced.has(session.id))
       : [];
-    return { workouts, runs: pendingRuns, sessions };
-  }, [history, runs, hybridSessions, syncState.settings, syncState.syncedIds]);
+    const weights = syncState.settings.syncWeight
+      ? bodyWeightEntries.filter((entry) => !synced.has(entry.id))
+      : [];
+    return { workouts, runs: pendingRuns, sessions, weights };
+  }, [history, runs, hybridSessions, bodyWeightEntries, syncState.settings, syncState.syncedIds]);
 
   const pendingCount =
-    pendingItems.workouts.length + pendingItems.runs.length + pendingItems.sessions.length;
+    pendingItems.workouts.length +
+    pendingItems.runs.length +
+    pendingItems.sessions.length +
+    pendingItems.weights.length;
 
   const runSync = useCallback(async () => {
     if (!adapter || syncingRef.current || importingRef.current) return;
     if (status !== 'available' || !syncState.connected) return;
     if (!historyLoaded || !runsLoaded || !hybridSessionsLoaded || !healthLoaded) return;
+    if (!bodyWeightLoaded) return;
 
-    const { workouts, runs: pendingRuns, sessions } = pendingItems;
-    if (workouts.length + pendingRuns.length + sessions.length === 0) return;
+    const { workouts, runs: pendingRuns, sessions, weights } = pendingItems;
+    if (workouts.length + pendingRuns.length + sessions.length + weights.length === 0) return;
 
     syncingRef.current = true;
     const newlySynced: string[] = [];
@@ -178,6 +187,17 @@ export function HealthProvider({ children }: ProviderProps) {
       }
       for (const session of sessions) {
         if (await adapter.writeHybridSession(session)) newlySynced.push(session.id);
+      }
+      for (const entry of weights) {
+        if (
+          await adapter.writeBodyWeight({
+            weight: entry.weight,
+            unit: entry.unit,
+            date: entry.date,
+          })
+        ) {
+          newlySynced.push(entry.id);
+        }
       }
     } finally {
       syncingRef.current = false;
@@ -197,6 +217,7 @@ export function HealthProvider({ children }: ProviderProps) {
     historyLoaded,
     runsLoaded,
     hybridSessionsLoaded,
+    bodyWeightLoaded,
     healthLoaded,
     pendingItems,
   ]);

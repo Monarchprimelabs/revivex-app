@@ -56,7 +56,7 @@ async function requestPermissions(): Promise<boolean> {
 
   try {
     return await healthKit.requestAuthorization({
-      toShare: ['HKWorkoutTypeIdentifier'],
+      toShare: ['HKWorkoutTypeIdentifier', 'HKQuantityTypeIdentifierBodyMass'],
       toRead: [
         'HKWorkoutTypeIdentifier',
         'HKQuantityTypeIdentifierHeartRate',
@@ -259,5 +259,26 @@ export const appleHealthAdapter: HealthAdapter = {
       session.date,
       session.totalDurationSeconds
     );
+  },
+
+  async writeBodyWeight(entry): Promise<boolean> {
+    const healthKit = loadHealthKit();
+    if (!healthKit) return false;
+
+    const date = new Date(entry.date);
+    if (Number.isNaN(date.getTime()) || !(entry.weight > 0)) return false;
+
+    try {
+      const sample = await healthKit.saveQuantitySample(
+        'HKQuantityTypeIdentifierBodyMass',
+        entry.unit === 'kg' ? 'kg' : 'lb',
+        entry.weight,
+        date,
+        date
+      );
+      return sample !== undefined;
+    } catch {
+      return false;
+    }
   },
 };

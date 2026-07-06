@@ -25,8 +25,8 @@ export default function RootLayout() {
             <RunProvider>
               <HybridProvider>
                 <ActivityFeedProvider>
-                  <HealthProvider>
                   <BodyWeightProvider>
+                  <HealthProvider>
                   <StatusBar style="light" />
                   <OnboardingGate />
                   <Stack
@@ -198,8 +198,8 @@ export default function RootLayout() {
                     }}
                   />
                   </Stack>
-                  </BodyWeightProvider>
                   </HealthProvider>
+                  </BodyWeightProvider>
                 </ActivityFeedProvider>
               </HybridProvider>
             </RunProvider>

@@ -69,6 +69,7 @@ async function requestPermissions(): Promise<boolean> {
     const granted = await healthConnect.requestPermission([
       { accessType: 'write', recordType: 'ExerciseSession' },
       { accessType: 'write', recordType: 'Distance' },
+      { accessType: 'write', recordType: 'Weight' },
       { accessType: 'read', recordType: 'ExerciseSession' },
       { accessType: 'read', recordType: 'Distance' },
       { accessType: 'read', recordType: 'HeartRate' },
@@ -305,5 +306,30 @@ export const healthConnectAdapter: HealthAdapter = {
       session.totalDurationSeconds
     );
     return inserted !== undefined;
+  },
+
+  async writeBodyWeight(entry): Promise<boolean> {
+    const healthConnect = loadHealthConnect();
+    if (!healthConnect) return false;
+    if (!(await ensureInitialized(healthConnect))) return false;
+
+    const date = new Date(entry.date);
+    if (Number.isNaN(date.getTime()) || !(entry.weight > 0)) return false;
+
+    try {
+      await healthConnect.insertRecords([
+        {
+          recordType: 'Weight',
+          weight: {
+            value: entry.weight,
+            unit: entry.unit === 'kg' ? 'kilograms' : 'pounds',
+          },
+          time: date.toISOString(),
+        },
+      ]);
+      return true;
+    } catch {
+      return false;
+    }
   },
 };
