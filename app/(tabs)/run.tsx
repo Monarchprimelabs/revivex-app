@@ -153,12 +153,18 @@ function EmptyRunState({ onLogRun }: { onLogRun: () => void }) {
       <View style={styles.emptyIcon}>
         <Ionicons name="walk-outline" size={28} color={colors.accentTeal} />
       </View>
-      <Text style={styles.emptyTitle}>Log your first run to start tracking mileage, pace, and endurance.</Text>
+      <Text style={styles.emptyTitle}>Track your first run to start measuring mileage, pace, and endurance.</Text>
       <PrimaryButton
-        label="Log Run"
+        label="Start GPS Run"
         variant="primary"
-        onPress={onLogRun}
+        onPress={() => router.push('/run/track')}
         style={{ marginTop: spacing.lg }}
+      />
+      <PrimaryButton
+        label="Log Run Manually"
+        variant="outline"
+        onPress={onLogRun}
+        style={{ marginTop: spacing.md }}
       />
     </AppCard>
   );

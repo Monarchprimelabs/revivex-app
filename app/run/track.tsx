@@ -20,6 +20,11 @@ import {
   metersToDistance,
   type TrackState,
 } from '../../src/utils/gpsTracking';
+import {
+  drainBackgroundFixes,
+  startBackgroundTracking,
+  stopBackgroundTracking,
+} from '../../src/gps/backgroundLocation';
 import type { DistanceUnit } from '../../src/types';
 
 type Phase = 'requesting' | 'denied' | 'ready' | 'tracking' | 'paused';
@@ -41,6 +46,7 @@ export default function TrackRunScreen() {
   const [elapsedSec, setElapsedSec] = useState(0);
 
   const watchRef = useRef<Location.LocationSubscription | null>(null);
+  const [backgroundMode, setBackgroundMode] = useState(false);
   const startedAtRef = useRef<number | null>(null);
   // Moving-time bookkeeping across pauses.
   const movingMsRef = useRef(0);
@@ -55,8 +61,24 @@ export default function TrackRunScreen() {
     })();
     return () => {
       watchRef.current?.remove();
+      stopBackgroundTracking();
     };
   }, []);
+
+  // In background mode, drain fixes buffered by the background task.
+  useEffect(() => {
+    if (!backgroundMode || phase !== 'tracking') return;
+    const handle = setInterval(() => {
+      const fixes = drainBackgroundFixes();
+      if (fixes.length === 0) return;
+      setTrack((current) => {
+        let next = current;
+        for (const fix of fixes) next = advanceTrack(next, fix, unit);
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(handle);
+  }, [backgroundMode, phase, unit]);
 
   // Elapsed (moving) time ticker.
   useEffect(() => {
@@ -98,7 +120,13 @@ export default function TrackRunScreen() {
     startedAtRef.current = Date.now();
     segmentStartRef.current = Date.now();
     setPhase('tracking');
-    await startWatching();
+
+    // Prefer background updates (dev build); fall back to foreground watch.
+    const background = await startBackgroundTracking();
+    setBackgroundMode(background);
+    if (!background) {
+      await startWatching();
+    }
   }, [startWatching]);
 
   const handlePause = useCallback(() => {
@@ -123,6 +151,7 @@ export default function TrackRunScreen() {
       segmentStartRef.current = null;
     }
     watchRef.current?.remove();
+    stopBackgroundTracking();
 
     const durationSeconds = Math.max(1, Math.floor(movingMsRef.current / 1000));
     const distance = metersToDistance(track.distanceMeters, unit);
@@ -159,6 +188,7 @@ export default function TrackRunScreen() {
           style: 'destructive',
           onPress: () => {
             watchRef.current?.remove();
+            stopBackgroundTracking();
             router.back();
           },
         },
@@ -218,7 +248,9 @@ export default function TrackRunScreen() {
               <View style={styles.liveRow}>
                 <View style={styles.liveDot} />
                 <Text style={styles.liveText}>
-                  GPS live • keep the screen on (background tracking comes with the dev build)
+                  {backgroundMode
+                    ? 'GPS live • tracking continues with the screen locked'
+                    : 'GPS live • keep the screen on (lock-screen tracking needs the dev build)'}
                 </Text>
               </View>
             ) : null}

@@ -47,6 +47,7 @@ import {
   type WeeklyDelta,
   type WeeklySummary,
 } from '../../src/utils/weeklySummary';
+import { getAchievements, type Achievement } from '../../src/utils/achievements';
 
 /**
  * Progress screen
@@ -69,8 +70,10 @@ export default function ProgressScreen() {
     const hybridStats = getHybridSessionStats(hybridSessions);
     const weekNow = getWeeklySummary(history, runs, hybridSessions, getWeekRange());
     const weekPrev = getWeeklySummary(history, runs, hybridSessions, getWeekRange(new Date(), -1));
+    const milestones = getAchievements(history, runs, hybridSessions);
 
     return {
+      milestones,
       weekNow,
       weekDeltas: {
         sessions: getWeeklyDelta(weekNow.sessions, weekPrev.sessions),
@@ -212,6 +215,13 @@ export default function ProgressScreen() {
               accentColor={colors.primary}
             />
           </View>
+
+          <SectionHeader title="Milestones" />
+          <MilestonesCard
+            achievements={analytics.milestones.achievements}
+            weeklyStreak={analytics.milestones.weeklyStreak}
+            earnedCount={analytics.milestones.earnedCount}
+          />
 
           {weightEntries.length > 0 ? (
             <>
@@ -450,6 +460,80 @@ function BodyWeightCard({
           color={colors.success}
         />
       </View>
+    </AppCard>
+  );
+}
+
+function MilestonesCard({
+  achievements,
+  weeklyStreak,
+  earnedCount,
+}: {
+  achievements: Achievement[];
+  weeklyStreak: number;
+  earnedCount: number;
+}) {
+  const earned = achievements.filter((achievement) => achievement.earned);
+  const nextUp = achievements
+    .filter((achievement) => !achievement.earned && achievement.progress > 0)
+    .sort((a, b) => b.progress - a.progress)
+    .slice(0, 2);
+
+  return (
+    <AppCard>
+      <View style={styles.milestoneTopRow}>
+        <View style={styles.streakBadge}>
+          <Ionicons name="flame" size={18} color={colors.accentLime} />
+          <Text style={styles.streakValue}>{weeklyStreak}</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.rowTitle}>
+            {weeklyStreak > 0
+              ? `${weeklyStreak}-week training streak`
+              : 'Start a training streak'}
+          </Text>
+          <Text style={styles.rowSub}>
+            {earnedCount} of {achievements.length} milestones earned
+          </Text>
+        </View>
+      </View>
+
+      {earned.length > 0 ? (
+        <View style={styles.badgeWrap}>
+          {earned.map((achievement) => (
+            <View key={achievement.id} style={styles.badge}>
+              <Ionicons
+                name={achievement.icon as keyof typeof Ionicons.glyphMap}
+                size={13}
+                color={colors.accentLime}
+              />
+              <Text style={styles.badgeText}>{achievement.title}</Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
+
+      {nextUp.map((achievement) => (
+        <View key={achievement.id} style={styles.nextUpRow}>
+          <View style={styles.nextUpHeader}>
+            <Text style={styles.rowSub}>
+              Next: {achievement.title} • {achievement.description}
+            </Text>
+            <Text style={styles.rowSub}>{Math.round(achievement.progress * 100)}%</Text>
+          </View>
+          <View style={styles.progressTrack}>
+            <View
+              style={[
+                styles.progressFill,
+                {
+                  width: `${Math.round(achievement.progress * 100)}%`,
+                  backgroundColor: colors.accentTeal,
+                },
+              ]}
+            />
+          </View>
+        </View>
+      ))}
     </AppCard>
   );
 }
@@ -827,6 +911,57 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontSize: fontSize.xxl,
     fontWeight: fontWeight.heavy,
+  },
+  milestoneTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  streakBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.accentLime,
+    backgroundColor: 'rgba(198, 255, 0, 0.08)',
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  streakValue: {
+    color: colors.accentLime,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.heavy,
+  },
+  badgeWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+  },
+  badgeText: {
+    color: colors.textSecondary,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+  },
+  nextUpRow: {
+    marginTop: spacing.md,
+  },
+  nextUpHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
   },
   weekTopRow: {
     flexDirection: 'row',

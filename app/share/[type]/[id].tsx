@@ -9,6 +9,7 @@ import ScreenContainer from '../../../src/components/ScreenContainer';
 import AppCard from '../../../src/components/AppCard';
 import PrimaryButton from '../../../src/components/PrimaryButton';
 import BrandTagline from '../../../src/components/BrandTagline';
+import RouteMap from '../../../src/components/RouteMap';
 import { useWorkout } from '../../../src/context/WorkoutContext';
 import { useRuns } from '../../../src/context/RunContext';
 import { useHybridSessions } from '../../../src/context/HybridContext';
@@ -218,6 +219,10 @@ export default function SharePreviewScreen() {
         <Text style={styles.activityDate}>{activity.dateLabel}</Text>
         <Text style={styles.activitySummary}>{activity.subtitle}</Text>
 
+        {activityType === 'run' ? (
+          <ShareRouteTrace runId={id} runs={runs} />
+        ) : null}
+
         <View style={styles.statGrid}>
           {[...activity.stats, ...healthStats, ...hybridSegmentHighlights]
             .slice(0, 6)
@@ -257,6 +262,22 @@ export default function SharePreviewScreen() {
         style={{ marginTop: spacing.md }}
       />
     </ScreenContainer>
+  );
+}
+
+function ShareRouteTrace({
+  runId,
+  runs,
+}: {
+  runId?: string;
+  runs: { id: string; routePoints?: import('../../../src/types').RoutePoint[] }[];
+}) {
+  const run = runId ? runs.find((item) => item.id === runId) : undefined;
+  if (!run?.routePoints || run.routePoints.length < 2) return null;
+  return (
+    <View style={{ marginTop: spacing.md }}>
+      <RouteMap routePoints={run.routePoints} height={120} />
+    </View>
   );
 }
 

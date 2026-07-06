@@ -88,7 +88,7 @@ SHA256:
 - Do not change the existing 5-tab navigation.
 - Keep Expo Go compatibility (health sync degrades gracefully there; see Phase 16 in PROJECT_STATE.md).
 - Apple Health + Health Connect integration is approved as of Phase 16 (owner decision, 2026-07-05). Native modules must stay lazily loaded so Expo Go keeps working.
-- Do not add GPS.
+- GPS run tracking is approved as of Phase 29 (owner decision, 2026-07-06). Foreground works in Expo Go; background tracking activates in the dev build.
 - Do not add Supabase.
 - Do not add RevenueCat.
 - Do not add AI.

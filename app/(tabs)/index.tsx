@@ -117,6 +117,12 @@ export default function HomeScreen() {
           style={styles.quickBtn}
         />
         <PrimaryButton
+          label="Start GPS Run"
+          variant="outline"
+          onPress={() => router.push('/run/track')}
+          style={styles.quickBtn}
+        />
+        <PrimaryButton
           label="Log Run"
           variant="outline"
           onPress={logRun}
