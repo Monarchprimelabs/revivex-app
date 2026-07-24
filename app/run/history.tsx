@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import ScreenContainer from '../../src/components/ScreenContainer';
 import AppCard from '../../src/components/AppCard';
-import RouteMap from '../../src/components/RouteMap';
+import RouteMapView from '../../src/components/RouteMapView';
 import PrimaryButton from '../../src/components/PrimaryButton';
 import { useRuns } from '../../src/context/RunContext';
 import { colors, fontSize, fontWeight, spacing } from '../../src/theme/theme';
@@ -80,7 +80,7 @@ function RunHistoryCard({ run }: { run: Run }) {
 
         {run.routePoints && run.routePoints.length > 1 ? (
           <View style={{ marginTop: spacing.md }}>
-            <RouteMap routePoints={run.routePoints} height={96} />
+            <RouteMapView routePoints={run.routePoints} height={96} />
           </View>
         ) : null}
 
