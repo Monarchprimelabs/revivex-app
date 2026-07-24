@@ -478,6 +478,12 @@ Previous Phase 6 recovery baseline remains available:
 - Sheet sliced 5×5 → per-exercise cells, whitespace-trimmed, padded ~28% so figures clear the circular crop, saved as 240×240 JPEG over `assets/exercises/` (~132 KB total). No code changes — `exerciseImages.ts` map and `ExerciseThumb` circular rendering carry over from Phase 43.
 - To regenerate or extend: reuse the Phase 43/44 prompt spec (in session history), slice with the same trim+pad pipeline, drop into `assets/exercises/`, add a map line for new exercises.
 
+### Phase 45: Exercise Library Expansion (22 → 47)
+
+- Owner generated a second 27-cell sheet in the same style (same ChatGPT conversation): 25 new exercises plus improved Hack Squat and Standing Calf Raise.
+- New exercises across all groups — squats (back/front/goblet/Bulgarian split/walking lunge), deadlifts (conventional under Back, sumo under Glutes, good morning), pull-up/chin-up/dumbbell row/T-bar row, face pull/shrug/overhead press/Arnold press, cable crossover/push-up, dips/skull crusher, preacher curl, seated calf raise, hanging leg raise/Russian twist, and kettlebell swing (first `Hybrid`-group exercise — the Hybrid filter chip now has content).
+- `exerciseLibrary.ts` now 47 entries; `exerciseImages.ts` has a bundled illustration for every one (47 × 240px JPEG, ~271 KB total).
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`
