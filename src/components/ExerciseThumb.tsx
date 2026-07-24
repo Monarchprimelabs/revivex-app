@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import ExerciseFigure, { archetypeFor } from './ExerciseFigure';
 import { colors, radius } from '../theme/theme';
 import type { MuscleGroup } from '../types';
 
@@ -43,13 +44,16 @@ const MUSCLE_COLORS: Partial<Record<MuscleGroup, string>> = {
 export default function ExerciseThumb({
   name,
   muscleGroup,
+  exerciseId,
   size = 40,
 }: {
   name: string;
   muscleGroup: MuscleGroup;
+  exerciseId?: string;
   size?: number;
 }) {
   const color = MUSCLE_COLORS[muscleGroup] ?? colors.accentTeal;
+  const archetype = archetypeFor(exerciseId, name);
 
   return (
     <View
@@ -63,7 +67,11 @@ export default function ExerciseThumb({
         },
       ]}
     >
-      <MaterialCommunityIcons name={iconFor(name)} size={size * 0.55} color={color} />
+      {archetype ? (
+        <ExerciseFigure archetype={archetype} color={color} size={size * 0.92} />
+      ) : (
+        <MaterialCommunityIcons name={iconFor(name)} size={size * 0.55} color={color} />
+      )}
     </View>
   );
 }

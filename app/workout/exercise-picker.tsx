@@ -162,7 +162,7 @@ export default function ExercisePickerScreen() {
                   ]}
                 >
                   <View style={styles.rowLeft}>
-                    <ExerciseThumb name={ex.name} muscleGroup={ex.muscleGroup} />
+                    <ExerciseThumb name={ex.name} muscleGroup={ex.muscleGroup} exerciseId={ex.id} />
                     <View style={{ flexShrink: 1 }}>
                       <Text style={styles.rowName}>{ex.name}</Text>
                       <Text style={styles.rowSub}>{ex.muscleGroup}</Text>
@@ -197,7 +197,7 @@ export default function ExercisePickerScreen() {
                   ]}
                 >
                   <View style={styles.rowLeft}>
-                    <ExerciseThumb name={ex.name} muscleGroup={ex.muscleGroup} />
+                    <ExerciseThumb name={ex.name} muscleGroup={ex.muscleGroup} exerciseId={ex.id} />
                     <Text style={styles.rowName}>{ex.name}</Text>
                   </View>
                   <Ionicons
