@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import ExerciseThumb from '../../src/components/ExerciseThumb';
 import { useWorkout } from '../../src/context/WorkoutContext';
 import {
   exerciseLibrary,
@@ -115,7 +116,10 @@ export default function ExercisePickerScreen() {
                     pressed && styles.rowPressed,
                   ]}
                 >
-                  <Text style={styles.rowName}>{ex.name}</Text>
+                  <View style={styles.rowLeft}>
+                    <ExerciseThumb name={ex.name} muscleGroup={ex.muscleGroup} />
+                    <Text style={styles.rowName}>{ex.name}</Text>
+                  </View>
                   <Ionicons
                     name="add-circle"
                     size={22}
@@ -210,10 +214,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.borderSubtle,
   },
+  rowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    flex: 1,
+  },
   rowName: {
     color: colors.textPrimary,
     fontSize: fontSize.md,
     fontWeight: fontWeight.medium,
+    flexShrink: 1,
   },
   emptyState: {
     alignItems: 'center',

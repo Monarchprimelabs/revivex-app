@@ -10,6 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import ExerciseThumb from '../ExerciseThumb';
 import {
   colors,
   fontSize,
@@ -72,7 +73,12 @@ export default function ExerciseLogCard({
     <View style={styles.card}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={{ flex: 1 }}>
+        <ExerciseThumb
+          name={exercise.exerciseName}
+          muscleGroup={exercise.muscleGroup}
+          size={44}
+        />
+        <View style={{ flex: 1, marginLeft: spacing.md }}>
           <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
           <Text style={styles.muscleGroup}>{exercise.muscleGroup}</Text>
           {lastPerformance ? (

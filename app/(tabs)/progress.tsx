@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import ScreenContainer from '../../src/components/ScreenContainer';
@@ -7,6 +7,7 @@ import AppCard from '../../src/components/AppCard';
 import StatCard from '../../src/components/StatCard';
 import SectionHeader from '../../src/components/SectionHeader';
 import PrimaryButton from '../../src/components/PrimaryButton';
+import ProgressRing from '../../src/components/ProgressRing';
 import { useWorkout } from '../../src/context/WorkoutContext';
 import { useRuns } from '../../src/context/RunContext';
 import { useHybridSessions } from '../../src/context/HybridContext';
@@ -498,42 +499,37 @@ function MilestonesCard({
         </View>
       </View>
 
-      {earned.length > 0 ? (
-        <View style={styles.badgeWrap}>
-          {earned.map((achievement) => (
-            <View key={achievement.id} style={styles.badge}>
-              <Ionicons
-                name={achievement.icon as keyof typeof Ionicons.glyphMap}
-                size={13}
-                color={colors.accentLime}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.ringScroll}
+      >
+        {[...earned, ...nextUp].map((achievement) => {
+          const isEarned = achievement.earned;
+          return (
+            <View key={achievement.id} style={styles.ringItem}>
+              <ProgressRing
+                progress={achievement.progress}
+                size={76}
+                strokeWidth={7}
+                color={isEarned ? colors.accentLime : colors.accentTeal}
+                icon={
+                  isEarned
+                    ? (achievement.icon as keyof typeof Ionicons.glyphMap)
+                    : undefined
+                }
+                value={isEarned ? undefined : `${Math.round(achievement.progress * 100)}%`}
               />
-              <Text style={styles.badgeText}>{achievement.title}</Text>
+              <Text style={styles.ringItemTitle} numberOfLines={2}>
+                {achievement.title}
+              </Text>
+              <Text style={styles.ringItemSub} numberOfLines={1}>
+                {isEarned ? 'Earned' : achievement.description}
+              </Text>
             </View>
-          ))}
-        </View>
-      ) : null}
-
-      {nextUp.map((achievement) => (
-        <View key={achievement.id} style={styles.nextUpRow}>
-          <View style={styles.nextUpHeader}>
-            <Text style={styles.rowSub}>
-              Next: {achievement.title} • {achievement.description}
-            </Text>
-            <Text style={styles.rowSub}>{Math.round(achievement.progress * 100)}%</Text>
-          </View>
-          <View style={styles.progressTrack}>
-            <View
-              style={[
-                styles.progressFill,
-                {
-                  width: `${Math.round(achievement.progress * 100)}%`,
-                  backgroundColor: colors.accentTeal,
-                },
-              ]}
-            />
-          </View>
-        </View>
-      ))}
+          );
+        })}
+      </ScrollView>
     </AppCard>
   );
 }
@@ -933,35 +929,27 @@ const styles = StyleSheet.create({
     fontSize: fontSize.lg,
     fontWeight: fontWeight.heavy,
   },
-  badgeWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginTop: spacing.md,
+  ringScroll: {
+    gap: spacing.lg,
+    paddingTop: spacing.md,
+    paddingRight: spacing.md,
   },
-  badge: {
-    flexDirection: 'row',
+  ringItem: {
     alignItems: 'center',
-    gap: spacing.xs,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs + 2,
+    width: 92,
   },
-  badgeText: {
-    color: colors.textSecondary,
+  ringItemTitle: {
+    color: colors.textPrimary,
     fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
+    fontWeight: fontWeight.bold,
+    textAlign: 'center',
+    marginTop: spacing.sm,
   },
-  nextUpRow: {
-    marginTop: spacing.md,
-  },
-  nextUpHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: spacing.xs,
+  ringItemSub: {
+    color: colors.textMuted,
+    fontSize: 10,
+    textAlign: 'center',
+    marginTop: 2,
   },
   weekTopRow: {
     flexDirection: 'row',

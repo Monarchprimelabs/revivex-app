@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, fontSize, fontWeight } from '../theme/theme';
 
 /**
@@ -14,14 +15,17 @@ export default function ProgressRing({
   color = colors.accentLime,
   value,
   label,
+  icon,
 }: {
   /** 0..1 (values beyond 1 are clamped and shown full). */
   progress: number;
   size?: number;
   strokeWidth?: number;
   color?: string;
-  value: string;
-  label: string;
+  value?: string;
+  label?: string;
+  /** When set, renders an icon in the center instead of value/label text. */
+  icon?: keyof typeof Ionicons.glyphMap;
 }) {
   const clamped = Math.max(0, Math.min(1, Number.isFinite(progress) ? progress : 0));
   const radius = (size - strokeWidth) / 2;
@@ -54,8 +58,16 @@ export default function ProgressRing({
         />
       </Svg>
       <View style={styles.centerWrap}>
-        <Text style={styles.value}>{value}</Text>
-        <Text style={styles.label}>{label}</Text>
+        {icon ? (
+          <Ionicons name={icon} size={size * 0.32} color={color} />
+        ) : (
+          <>
+            {value !== undefined ? (
+              <Text style={[styles.value, size < 110 && styles.valueSmall]}>{value}</Text>
+            ) : null}
+            {label !== undefined ? <Text style={styles.label}>{label}</Text> : null}
+          </>
+        )}
       </View>
     </View>
   );
@@ -72,6 +84,9 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xl,
     fontWeight: fontWeight.heavy,
     fontVariant: ['tabular-nums'],
+  },
+  valueSmall: {
+    fontSize: fontSize.md,
   },
   label: {
     color: colors.textMuted,

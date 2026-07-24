@@ -443,6 +443,12 @@ Previous Phase 6 recovery baseline remains available:
 - Owner setup to activate: create free Supabase project → run schema.sql in SQL editor → paste URL + anon key into app.json `expo.extra`.
 - Phase 40 spec captured from owner's Hevy screenshots: post-workout share flow (photo carousel + workout summary as last slide, description, visibility), Following/Discover feed, likes with avatar cluster, inline comments.
 
+### Phase 40: Exercise Thumbnails + Milestone Rings
+
+- New `ExerciseThumb` component: movement pictogram (lifter/dumbbell/arm-flex/kettlebell/run/yoga, derived from the exercise name) on a muscle-group-colored tile. Shown in the Add Exercise picker, Active Workout exercise cards, and Workout Detail exercise list. A licensed illustration pack can swap in behind this component later.
+- Milestones on Progress are now closing rings (owner request, Apple-Fitness style): horizontal ring rail — earned = full lime ring with the achievement icon, in-progress = teal ring closing with percent in the center. `ProgressRing` gained optional `icon` and small-size text handling.
+- Owner direction: broader Strava × Hevy aesthetic pass continues next (reference screenshots incoming); real per-exercise demonstration illustrations need a licensed pack or designer assets — thumbnails are the drop-in point.
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`

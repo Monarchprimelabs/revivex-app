@@ -5,6 +5,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import ScreenContainer from '../../src/components/ScreenContainer';
 import AppCard from '../../src/components/AppCard';
 import HealthMetricsCard from '../../src/components/HealthMetricsCard';
+import ExerciseThumb from '../../src/components/ExerciseThumb';
 import PrimaryButton from '../../src/components/PrimaryButton';
 import { useWorkout } from '../../src/context/WorkoutContext';
 import { workoutToRoutineInput } from '../../src/utils/workoutToRoutine';
@@ -238,12 +239,16 @@ function WorkoutExerciseCard({
   return (
     <AppCard style={{ marginBottom: spacing.md }}>
       <View style={styles.exerciseHeader}>
-        <View style={styles.exerciseIndex}>
-          <Text style={styles.exerciseIndexText}>{index + 1}</Text>
-        </View>
+        <ExerciseThumb
+          name={exercise.exerciseName}
+          muscleGroup={exercise.muscleGroup}
+          size={40}
+        />
         <View style={{ flex: 1 }}>
           <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
-          <Text style={styles.exerciseGroup}>{exercise.muscleGroup}</Text>
+          <Text style={styles.exerciseGroup}>
+            #{index + 1} • {exercise.muscleGroup}
+          </Text>
         </View>
       </View>
 
