@@ -484,6 +484,12 @@ Previous Phase 6 recovery baseline remains available:
 - New exercises across all groups — squats (back/front/goblet/Bulgarian split/walking lunge), deadlifts (conventional under Back, sumo under Glutes, good morning), pull-up/chin-up/dumbbell row/T-bar row, face pull/shrug/overhead press/Arnold press, cable crossover/push-up, dips/skull crusher, preacher curl, seated calf raise, hanging leg raise/Russian twist, and kettlebell swing (first `Hybrid`-group exercise — the Hybrid filter chip now has content).
 - `exerciseLibrary.ts` now 47 entries; `exerciseImages.ts` has a bundled illustration for every one (47 × 240px JPEG, ~271 KB total).
 
+### Phase 46: Exercise Library Expansion (47 → 74)
+
+- Third owner-generated sheet, same style/pipeline: 27 new exercises. Strength gaps (dumbbell/incline/machine chest pressing, pec deck, close-grip bench, kickbacks, three more curls, upright row, front raise, machine reverse fly, straight-arm pulldown, back extension, smith squat, step-up, hip ab/adduction machines, glute kickback, three more core moves) plus the first `Cardio`-group strength-floor entries (Rowing Machine, Air Bike) and three more `Hybrid` conditioning moves (Box Jump, Battle Ropes, Farmer's Carry).
+- Library now 74 exercises, all with bundled illustrations (~427 KB total).
+- Known weak artwork (owner aware, patch prompts provided; readable at thumb size): db-bench-press arm angles, machine-chest-press geometry, cable-curl floor pulley, machine-reverse-fly shows dumbbells, farmers-carry has one dumbbell instead of two. Patch by regenerating single cells in the same ChatGPT thread and overwriting the JPEG.
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`
