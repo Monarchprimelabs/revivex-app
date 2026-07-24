@@ -1,10 +1,9 @@
 /**
- * Bundled exercise demonstration photos, keyed by exercise id.
+ * Bundled exercise illustrations, keyed by exercise id.
  *
- * Source: yuhonas/free-exercise-db (github.com/yuhonas/free-exercise-db),
- * released into the public domain under the Unlicense — free for
- * commercial use with no attribution requirement. Images are center-cropped
- * to 240×240 for thumbnail use.
+ * Original flat-vector artwork generated for ReviveX (faceless charcoal
+ * figure, teal kit, gray equipment, white background) — owned by
+ * Monarch Prime Labs, no third-party license involved. 240×240 JPEG.
  *
  * Metro requires static require() calls, so this map is hand-written.
  */
