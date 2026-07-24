@@ -9,7 +9,7 @@ import ScreenContainer from '../../../src/components/ScreenContainer';
 import AppCard from '../../../src/components/AppCard';
 import PrimaryButton from '../../../src/components/PrimaryButton';
 import BrandTagline from '../../../src/components/BrandTagline';
-import RouteMap from '../../../src/components/RouteMap';
+import RouteMapView from '../../../src/components/RouteMapView';
 import { useWorkout } from '../../../src/context/WorkoutContext';
 import { useRuns } from '../../../src/context/RunContext';
 import { useHybridSessions } from '../../../src/context/HybridContext';
@@ -276,7 +276,7 @@ function ShareRouteTrace({
   if (!run?.routePoints || run.routePoints.length < 2) return null;
   return (
     <View style={{ marginTop: spacing.md }}>
-      <RouteMap routePoints={run.routePoints} height={120} />
+      <RouteMapView routePoints={run.routePoints} height={120} />
     </View>
   );
 }

@@ -25,18 +25,45 @@ import type { Exercise } from '../../src/types';
  * Tapping an exercise adds it to the active workout and dismisses.
  */
 export default function ExercisePickerScreen() {
-  const { addExerciseToWorkout } = useWorkout();
+  const { addExerciseToWorkout, history } = useWorkout();
   const [query, setQuery] = useState('');
+  const [muscleFilter, setMuscleFilter] = useState<string>('All');
+
+  // Hevy-style Recent Exercises: latest unique exercises from history.
+  const recents = useMemo(() => {
+    const seen = new Set<string>();
+    const out: Exercise[] = [];
+    for (const workout of history) {
+      for (const exercise of workout.exercises) {
+        const key = exercise.exerciseId || exercise.exerciseName;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const libraryMatch = exerciseLibrary.find((item) => item.id === exercise.exerciseId);
+        out.push(
+          libraryMatch ?? {
+            id: exercise.exerciseId,
+            name: exercise.exerciseName,
+            muscleGroup: exercise.muscleGroup,
+          }
+        );
+        if (out.length >= 6) return out;
+      }
+    }
+    return out;
+  }, [history]);
 
   const grouped = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const filtered = q
+    let filtered = q
       ? exerciseLibrary.filter(
           (e) =>
             e.name.toLowerCase().includes(q) ||
             e.muscleGroup.toLowerCase().includes(q)
         )
       : exerciseLibrary;
+    if (muscleFilter !== 'All') {
+      filtered = filtered.filter((e) => e.muscleGroup === muscleFilter);
+    }
 
     // Bucket by muscle group
     const buckets: Record<string, Exercise[]> = {};
@@ -50,7 +77,9 @@ export default function ExercisePickerScreen() {
     return muscleGroupDisplayOrder
       .filter((g) => buckets[g]?.length)
       .map((g) => ({ group: g, items: buckets[g] }));
-  }, [query]);
+  }, [query, muscleFilter]);
+
+  const showRecents = recents.length > 0 && query.trim() === '' && muscleFilter === 'All';
 
   const handleSelect = (exercise: Exercise) => {
     addExerciseToWorkout(exercise);
@@ -88,6 +117,29 @@ export default function ExercisePickerScreen() {
         ) : null}
       </View>
 
+      {/* Muscle group filter chips */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.chipScroll}
+        contentContainerStyle={styles.chipRow}
+      >
+        {['All', ...muscleGroupDisplayOrder].map((group) => {
+          const selected = group === muscleFilter;
+          return (
+            <Pressable
+              key={group}
+              onPress={() => setMuscleFilter(group)}
+              style={[styles.chip, selected && styles.chipSelected]}
+            >
+              <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                {group}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
       {/* List */}
       <ScrollView
         style={{ flex: 1 }}
@@ -95,6 +147,34 @@ export default function ExercisePickerScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        {showRecents ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionHeader}>Recent</Text>
+            <View style={styles.sectionCard}>
+              {recents.map((ex, idx) => (
+                <Pressable
+                  key={`recent-${ex.id}`}
+                  onPress={() => handleSelect(ex)}
+                  style={({ pressed }) => [
+                    styles.row,
+                    idx !== recents.length - 1 && styles.rowDivider,
+                    pressed && styles.rowPressed,
+                  ]}
+                >
+                  <View style={styles.rowLeft}>
+                    <ExerciseThumb name={ex.name} muscleGroup={ex.muscleGroup} />
+                    <View style={{ flexShrink: 1 }}>
+                      <Text style={styles.rowName}>{ex.name}</Text>
+                      <Text style={styles.rowSub}>{ex.muscleGroup}</Text>
+                    </View>
+                  </View>
+                  <Ionicons name="add-circle" size={22} color={colors.gold} />
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        ) : null}
+
         {grouped.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>No matches</Text>
@@ -219,6 +299,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
     flex: 1,
+  },
+  rowSub: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    textTransform: 'uppercase',
+    marginTop: 2,
+  },
+  chipScroll: {
+    flexGrow: 0,
+    marginTop: spacing.md,
+  },
+  chipRow: {
+    paddingHorizontal: spacing.lg,
+    gap: spacing.sm,
+  },
+  chip: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.surface,
+  },
+  chipSelected: {
+    borderColor: colors.accentTeal,
+    backgroundColor: 'rgba(0, 180, 179, 0.10)',
+  },
+  chipText: {
+    color: colors.textSecondary,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+  },
+  chipTextSelected: {
+    color: colors.accentTeal,
   },
   rowName: {
     color: colors.textPrimary,

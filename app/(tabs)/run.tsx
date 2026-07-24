@@ -7,7 +7,7 @@ import AppCard from '../../src/components/AppCard';
 import StatCard from '../../src/components/StatCard';
 import PrimaryButton from '../../src/components/PrimaryButton';
 import SectionHeader from '../../src/components/SectionHeader';
-import RouteMap from '../../src/components/RouteMap';
+import RouteMapView from '../../src/components/RouteMapView';
 import { useRuns } from '../../src/context/RunContext';
 import { colors, fontSize, fontWeight, spacing } from '../../src/theme/theme';
 import { formatRelativeDate } from '../../src/utils/format';
@@ -190,7 +190,7 @@ function RunCard({ run }: { run: Run }) {
 
         {run.routePoints && run.routePoints.length > 1 ? (
           <View style={{ marginTop: spacing.md }}>
-            <RouteMap routePoints={run.routePoints} height={96} />
+            <RouteMapView routePoints={run.routePoints} height={96} />
           </View>
         ) : null}
 

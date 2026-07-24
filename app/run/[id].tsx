@@ -5,7 +5,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import ScreenContainer from '../../src/components/ScreenContainer';
 import AppCard from '../../src/components/AppCard';
 import HealthMetricsCard from '../../src/components/HealthMetricsCard';
-import RouteMap from '../../src/components/RouteMap';
+import RouteMapView from '../../src/components/RouteMapView';
 import PrimaryButton from '../../src/components/PrimaryButton';
 import { useRuns } from '../../src/context/RunContext';
 import { colors, fontSize, fontWeight, radius, spacing } from '../../src/theme/theme';
@@ -93,7 +93,7 @@ export default function RunDetailScreen() {
 
       {run.routePoints && run.routePoints.length > 1 ? (
         <View style={{ marginTop: spacing.md }}>
-          <RouteMap routePoints={run.routePoints} />
+          <RouteMapView routePoints={run.routePoints} />
         </View>
       ) : null}
 

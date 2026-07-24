@@ -449,6 +449,12 @@ Previous Phase 6 recovery baseline remains available:
 - Milestones on Progress are now closing rings (owner request, Apple-Fitness style): horizontal ring rail — earned = full lime ring with the achievement icon, in-progress = teal ring closing with percent in the center. `ProgressRing` gained optional `icon` and small-size text handling.
 - Owner direction: broader Strava × Hevy aesthetic pass continues next (reference screenshots incoming); real per-exercise demonstration illustrations need a licensed pack or designer assets — thumbnails are the drop-in point.
 
+### Phase 41: Real Street Maps + Exercise Picker Upgrades
+
+- New `RouteMapView`: real Apple Maps view with the run's route polyline, start/finish dots (Strava-style) on iOS dev/production builds; lazily loads `react-native-maps` and falls back to the dark SVG trace in Expo Go and on Android (which needs a Google Maps API key we haven't added). Replaces the SVG trace on Run Detail, Run tab cards, Run History, and share cards.
+- Add Exercise picker: Hevy-style muscle-group filter chips (horizontal All/Chest/Back/…) and a Recent section showing the last 6 unique exercises from workout history, each with thumbnails.
+- New dep: `react-native-maps@1.20.1` (dev-build native; safely dormant in Expo Go).
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`
