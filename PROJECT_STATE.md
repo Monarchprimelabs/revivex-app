@@ -470,6 +470,13 @@ Previous Phase 6 recovery baseline remains available:
 - `src/data/exerciseImages.ts` — static require() map keyed by exercise id (Metro needs static requires).
 - `ExerciseThumb` now renders the photo as a circular thumb (Hevy-style) with a border; custom exercises without a photo keep the pictogram-on-colored-tile fallback. `ExerciseFigure.tsx` and `exercisePoses.json` deleted.
 - Adding library exercises later: pull the matching photo from free-exercise-db (873 exercises available) and add one line to `exerciseImages.ts`.
+- SUPERSEDED by Phase 44: owner replaced the photos with original illustrations the same day.
+
+### Phase 44: Original Illustrated Exercise Pack (owner-generated)
+
+- Owner generated a 22-exercise flat-vector illustration sheet via an image model using the prompt spec we wrote (faceless charcoal figure, teal kit `#00B4B3`, gray equipment, white background, consistent 3/4 view) — original artwork owned by Monarch Prime Labs, no real people, no third-party license.
+- Sheet sliced 5×5 → per-exercise cells, whitespace-trimmed, padded ~28% so figures clear the circular crop, saved as 240×240 JPEG over `assets/exercises/` (~132 KB total). No code changes — `exerciseImages.ts` map and `ExerciseThumb` circular rendering carry over from Phase 43.
+- To regenerate or extend: reuse the Phase 43/44 prompt spec (in session history), slice with the same trim+pad pipeline, drop into `assets/exercises/`, add a map line for new exercises.
 
 ## Important Files
 
