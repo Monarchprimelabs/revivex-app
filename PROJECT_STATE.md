@@ -461,6 +461,15 @@ Previous Phase 6 recovery baseline remains available:
 - 20 hand-designed pose archetypes (Olympic-pictogram style: accent-colored athlete, lime head, muted equipment) covering all 22 library exercises, stored as joint-coordinate data in `src/data/exercisePoses.json`.
 - `src/components/ExerciseFigure.tsx` renders poses via react-native-svg; `ExerciseThumb` uses exact library-id mapping plus name-based fallback (custom/imported exercises still get a sensible figure; MCI icon as final fallback).
 - Preview sheet generation lives in this repo's history (PIL script); regenerate when adding poses.
+- SUPERSEDED by Phase 43: owner rejected the figure style; the figure renderer and pose data were removed.
+
+### Phase 43: Real Exercise Demonstration Photos
+
+- Owner rejected the Phase 42 stick figures and asked for crisp Hevy-grade imagery. Hevy's own pack is proprietary and cannot be copied; instead ReviveX bundles real demonstration photos from `yuhonas/free-exercise-db` (public domain / Unlicense — free for commercial use, no attribution required).
+- `assets/exercises/` — 22 photos (one per library exercise), the movement's most identifiable frame, center-cropped to 240×240 JPEG (~250 KB total).
+- `src/data/exerciseImages.ts` — static require() map keyed by exercise id (Metro needs static requires).
+- `ExerciseThumb` now renders the photo as a circular thumb (Hevy-style) with a border; custom exercises without a photo keep the pictogram-on-colored-tile fallback. `ExerciseFigure.tsx` and `exercisePoses.json` deleted.
+- Adding library exercises later: pull the matching photo from free-exercise-db (873 exercises available) and add one line to `exerciseImages.ts`.
 
 ## Important Files
 

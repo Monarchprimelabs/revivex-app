@@ -1,15 +1,15 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import ExerciseFigure, { archetypeFor } from './ExerciseFigure';
+import { exerciseImages } from '../data/exerciseImages';
 import { colors, radius } from '../theme/theme';
 import type { MuscleGroup } from '../types';
 
 /**
- * Exercise thumbnail (Phase 40): a movement pictogram on a muscle-group
- * colored tile, shown next to exercise names (Hevy-style). Icons are
- * derived from the exercise name; a licensed illustration pack can swap
- * in later behind this same component.
+ * Exercise thumbnail: a real demonstration photo (public-domain pack, see
+ * src/data/exerciseImages.ts) shown next to exercise names, Hevy-style.
+ * Custom exercises without a bundled photo fall back to a movement
+ * pictogram on a muscle-group colored tile.
  */
 
 type MciName = keyof typeof MaterialCommunityIcons.glyphMap;
@@ -53,7 +53,20 @@ export default function ExerciseThumb({
   size?: number;
 }) {
   const color = MUSCLE_COLORS[muscleGroup] ?? colors.accentTeal;
-  const archetype = archetypeFor(exerciseId, name);
+  const image = exerciseId ? exerciseImages[exerciseId] : undefined;
+
+  if (image) {
+    return (
+      <Image
+        source={image}
+        style={[
+          styles.photo,
+          { width: size, height: size, borderRadius: size / 2 },
+        ]}
+        resizeMode="cover"
+      />
+    );
+  }
 
   return (
     <View
@@ -62,23 +75,24 @@ export default function ExerciseThumb({
         {
           width: size,
           height: size,
+          borderRadius: size / 2,
           backgroundColor: `${color}1A`, // ~10% alpha tile wash
           borderColor: `${color}55`,
         },
       ]}
     >
-      {archetype ? (
-        <ExerciseFigure archetype={archetype} color={color} size={size * 0.92} />
-      ) : (
-        <MaterialCommunityIcons name={iconFor(name)} size={size * 0.55} color={color} />
-      )}
+      <MaterialCommunityIcons name={iconFor(name)} size={size * 0.55} color={color} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  photo: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: '#FFFFFF',
+  },
   tile: {
-    borderRadius: radius.md,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
