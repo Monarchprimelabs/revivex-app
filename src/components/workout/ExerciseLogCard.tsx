@@ -76,6 +76,7 @@ export default function ExerciseLogCard({
         <ExerciseThumb
           name={exercise.exerciseName}
           muscleGroup={exercise.muscleGroup}
+          exerciseId={exercise.exerciseId}
           size={44}
         />
         <View style={{ flex: 1, marginLeft: spacing.md }}>

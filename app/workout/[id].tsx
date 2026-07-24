@@ -242,6 +242,7 @@ function WorkoutExerciseCard({
         <ExerciseThumb
           name={exercise.exerciseName}
           muscleGroup={exercise.muscleGroup}
+          exerciseId={exercise.exerciseId}
           size={40}
         />
         <View style={{ flex: 1 }}>

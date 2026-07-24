@@ -455,6 +455,13 @@ Previous Phase 6 recovery baseline remains available:
 - Add Exercise picker: Hevy-style muscle-group filter chips (horizontal All/Chest/Back/…) and a Recent section showing the last 6 unique exercises from workout history, each with thumbnails.
 - New dep: `react-native-maps@1.20.1` (dev-build native; safely dormant in Expo Go).
 
+### Phase 42: Original Exercise Figure Illustrations
+
+- Owner decision: no licensed illustration pack — ReviveX now has its own original figure artwork.
+- 20 hand-designed pose archetypes (Olympic-pictogram style: accent-colored athlete, lime head, muted equipment) covering all 22 library exercises, stored as joint-coordinate data in `src/data/exercisePoses.json`.
+- `src/components/ExerciseFigure.tsx` renders poses via react-native-svg; `ExerciseThumb` uses exact library-id mapping plus name-based fallback (custom/imported exercises still get a sensible figure; MCI icon as final fallback).
+- Preview sheet generation lives in this repo's history (PIL script); regenerate when adding poses.
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`
