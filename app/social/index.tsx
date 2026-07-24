@@ -77,12 +77,11 @@ function UnconfiguredCard() {
       <Text style={styles.heroTitle}>The ReviveX community is almost here</Text>
       <Text style={styles.heroText}>
         Share workouts, runs with route maps, and hybrid sessions. Follow friends, give
-        likes, and talk training — Hevy-style, but built for hybrid athletes.
+        likes, and talk training — built for hybrid athletes.
       </Text>
       <Text style={[styles.heroText, { marginTop: spacing.md }]}>
-        Owner setup: create a free Supabase project, run docs/supabase/schema.sql, and add
-        the project URL + anon key to app.json → expo.extra. This screen activates
-        automatically.
+        Accounts and the community feed open up in an upcoming update. Your training log
+        is ready for it — everything you save now will be shareable then.
       </Text>
     </AppCard>
   );
