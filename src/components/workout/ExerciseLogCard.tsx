@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ExerciseThumb from '../ExerciseThumb';
+import { tapLight, tapMedium } from '../../utils/haptics';
 import {
   colors,
   fontSize,
@@ -60,6 +61,7 @@ export default function ExerciseLogCard({
   weightUnit = 'kg',
 }: Props) {
   const handleAddSet = () => {
+    tapLight();
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     onAddSet();
   };
@@ -168,6 +170,12 @@ function SetRow({ set, onUpdate, onRemove }: SetRowProps) {
   };
 
   const toggleComplete = () => {
+    // Completing a set is the core rep of the whole app — give it weight.
+    if (!set.completed) {
+      tapMedium();
+    } else {
+      tapLight();
+    }
     // If the user marks a set complete, also commit current input values
     commitWeight();
     commitReps();

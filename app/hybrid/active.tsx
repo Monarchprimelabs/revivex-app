@@ -20,6 +20,7 @@ import {
   isHybridSessionType,
 } from '../../src/data/hybridTemplates';
 import { colors, fontSize, fontWeight, radius, spacing } from '../../src/theme/theme';
+import { notifySuccess } from '../../src/utils/haptics';
 import { formatSegmentTime } from '../../src/utils/hybridStats';
 import type { HybridDistanceUnit, HybridSegmentType, HybridSessionType } from '../../src/types';
 
@@ -171,6 +172,7 @@ export default function ActiveHybridSessionScreen() {
       }),
     });
 
+    notifySuccess();
     router.replace({ pathname: '/hybrid/[id]', params: { id: session.id } });
   };
 

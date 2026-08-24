@@ -22,10 +22,12 @@ import ExerciseLogCard from '../../src/components/workout/ExerciseLogCard';
 import RestTimerBar from '../../src/components/workout/RestTimerBar';
 import PlateCalculatorModal from '../../src/components/workout/PlateCalculatorModal';
 import { formatDuration, formatRelativeDate } from '../../src/utils/format';
+import { celebratePR, notifySuccess, tapMedium } from '../../src/utils/haptics';
 import {
   formatLastPerformance,
   getLastPerformance,
 } from '../../src/utils/lastPerformance';
+import { getPRHistory } from '../../src/utils/prHistory';
 
 const DEFAULT_REST_SECONDS = 90;
 
@@ -111,6 +113,8 @@ export default function ActiveWorkoutScreen() {
       if (left === 0) {
         if (!restVibratedRef.current) {
           restVibratedRef.current = true;
+          // Crisp haptic on capable devices; long buzz as the fallback.
+          notifySuccess();
           Vibration.vibrate(600);
         }
         setRestTimer(null);
@@ -187,8 +191,29 @@ export default function ActiveWorkoutScreen() {
       return;
     }
 
-    await finishWorkout();
-    router.back();
+    const finished = await finishWorkout();
+    if (!finished) {
+      router.back();
+      return;
+    }
+
+    // Fresh PRs from this session get the celebration treatment on the
+    // summary screen; `history` here is the pre-finish list, so prepending
+    // the finished workout gives the complete picture.
+    const prEvents = getPRHistory([finished, ...history]).events.filter(
+      (event) => event.workoutId === finished.id
+    );
+
+    if (prEvents.length > 0) {
+      celebratePR();
+    } else {
+      notifySuccess();
+    }
+
+    router.replace({
+      pathname: '/workout/[id]',
+      params: prEvents.length > 0 ? { id: finished.id, celebrate: '1' } : { id: finished.id },
+    });
   };
 
   const handleAddExercise = () => {
