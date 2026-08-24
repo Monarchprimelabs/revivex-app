@@ -497,7 +497,15 @@ Previous Phase 6 recovery baseline remains available:
 - Deleted `src/data/demoData.ts` and the `ExercisePreview` type — no demo data remains in the app.
 - Tests moved INTO the repo: `tests/` with 8 suites / 70 checks over the pure logic (plate math, weekly summary, last performance, GPS engine, health import mapping, workout→routine, achievements/streaks, route projection). `npm test` runs them via tsx (new devDependency); `npm run typecheck` wraps tsc. Previously these lived in the session scratchpad and were lost when the container recycled.
 - package.json identity fixed: name `revivex`, version 1.0.0 (was `hybridtrack` 0.1.0).
-- OPEN DECISION (owner): app.json still ships slug `hybridtrack` + bundle id `com.hybridtrack.app`. The bundle id is permanent once the app first ships to the App Store — decide before TestFlight external release whether to move to a ReviveX-branded id (changing it invalidates existing dev builds + EAS project link).
+- OPEN DECISION resolved in Phase 48: owner chose to rebrand the bundle id before first App Store contact.
+
+### Phase 48: Identity Rebrand + Premium Feel Pass
+
+- Owner decisions (diagnostic review): premium feel first, then Hyrox race mode; bundle id rebranded now; subscriptions built later in the cycle but launched dark.
+- Identity rebrand: slug `revivex`, scheme `revivex`, iOS bundleIdentifier + Android package `com.monarchprimelabs.revivex`. Health adapters' echo-protection constants updated to match. AsyncStorage keys intentionally unchanged (`hybridtrack.*` prefixes preserve user data). No EAS projectId was pinned in app.json, so the next Codex build cleanly creates a ReviveX EAS project; the old dev build on test devices must be deleted and rebuilt.
+- New dep `expo-haptics@15.0.8` (works in Expo Go) behind `src/utils/haptics.ts` (tapLight/tapMedium/notifySuccess/notifyWarning/celebratePR; no-op on web, failures swallowed).
+- Haptics wired: set complete (medium) / uncheck (light), add set (light), rest timer done (success + legacy vibration fallback), GPS auto-lap (success), run finish, hybrid session finish.
+- PR celebration: `finishWorkout()` now returns the finished `Workout`; Finish routes to Workout Detail (`router.replace`) instead of popping back. Detail screen computes this workout's PR events via `getPRHistory` and renders a gold `PRBanner` (trophy, per-exercise records, e1RM or weight×reps); arriving with `celebrate=1` plays the double-haptic and a spring pop-in. First-time exercises count as records (Hevy behavior).
 - Known weak artwork (owner aware, patch prompts provided; readable at thumb size): db-bench-press arm angles, machine-chest-press geometry, cable-curl floor pulley, machine-reverse-fly shows dumbbells, farmers-carry has one dumbbell instead of two. Patch by regenerating single cells in the same ChatGPT thread and overwriting the JPEG.
 
 ## Important Files

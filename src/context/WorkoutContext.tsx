@@ -42,7 +42,7 @@ interface WorkoutContextValue {
   startWorkout: (title?: string) => void;
   startWorkoutTimer: () => void;
   cancelWorkout: () => void;
-  finishWorkout: () => Promise<void>;
+  finishWorkout: () => Promise<Workout | null>;
 
   // Active workout mutations
   setWorkoutTitle: (title: string) => void;
@@ -251,32 +251,32 @@ export function WorkoutProvider({ children }: ProviderProps) {
     setActiveWorkout(null);
   }, []);
 
-  const finishWorkout = useCallback(async () => {
-    setActiveWorkout((current) => {
-      if (!current) return null;
+  const finishWorkout = useCallback(async (): Promise<Workout | null> => {
+    if (!activeWorkout) return null;
 
-      const finishedAt = Date.now();
-      const startedAt = current.startedAt ?? new Date(finishedAt).toISOString();
-      const durationSec = Math.max(
-        0,
-        Math.floor((finishedAt - new Date(startedAt).getTime()) / 1000)
-      );
-      const { totalSets, totalVolume } = computeWorkoutTotals(current.exercises);
+    const finishedAt = Date.now();
+    const startedAt = activeWorkout.startedAt ?? new Date(finishedAt).toISOString();
+    const durationSec = Math.max(
+      0,
+      Math.floor((finishedAt - new Date(startedAt).getTime()) / 1000)
+    );
+    const { totalSets, totalVolume } = computeWorkoutTotals(activeWorkout.exercises);
 
-      const finished: Workout = {
-        ...current,
-        date: startedAt,
-        startedAt,
-        duration: durationSec,
-        totalSets,
-        totalVolume,
-      };
+    const finished: Workout = {
+      ...activeWorkout,
+      date: startedAt,
+      startedAt,
+      duration: durationSec,
+      totalSets,
+      totalVolume,
+    };
 
-      // Prepend to history (newest first)
-      setHistory((prev) => [finished, ...prev]);
-      return null;
-    });
-  }, []);
+    // Prepend to history (newest first); returned so the caller can
+    // route to the summary and detect fresh PRs.
+    setHistory((prev) => [finished, ...prev]);
+    setActiveWorkout(null);
+    return finished;
+  }, [activeWorkout]);
 
   const deleteWorkout = useCallback((workoutId: string) => {
     setHistory((prev) => prev.filter((workout) => workout.id !== workoutId));

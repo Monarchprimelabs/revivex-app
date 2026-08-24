@@ -1,5 +1,5 @@
-import React from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { Alert, Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import ScreenContainer from '../../src/components/ScreenContainer';
@@ -7,9 +7,16 @@ import AppCard from '../../src/components/AppCard';
 import HealthMetricsCard from '../../src/components/HealthMetricsCard';
 import ExerciseThumb from '../../src/components/ExerciseThumb';
 import PrimaryButton from '../../src/components/PrimaryButton';
+import { useProfile } from '../../src/context/ProfileContext';
 import { useWorkout } from '../../src/context/WorkoutContext';
+import { celebratePR } from '../../src/utils/haptics';
+import {
+  formatEst1RM,
+  formatPRWeight,
+  getPRHistory,
+} from '../../src/utils/prHistory';
 import { workoutToRoutineInput } from '../../src/utils/workoutToRoutine';
-import { colors, fontSize, fontWeight, radius, spacing } from '../../src/theme/theme';
+import { colors, fontSize, fontWeight, glow, radius, spacing } from '../../src/theme/theme';
 import {
   formatDuration,
   formatFullDate,
@@ -19,9 +26,17 @@ import {
 import type { WorkoutExercise } from '../../src/types';
 
 export default function WorkoutDetailScreen() {
-  const { id } = useLocalSearchParams<{ id?: string }>();
-  const { deleteWorkout, getWorkoutById, repeatWorkout, createRoutine } = useWorkout();
+  const { id, celebrate } = useLocalSearchParams<{ id?: string; celebrate?: string }>();
+  const { deleteWorkout, getWorkoutById, repeatWorkout, createRoutine, history } = useWorkout();
+  const { profile } = useProfile();
+  const weightUnit = profile?.preferredWeightUnit ?? 'lb';
   const workout = id ? getWorkoutById(id) : undefined;
+
+  // Records set in THIS workout (first-time lifts count, like the big apps).
+  const prEvents = useMemo(
+    () => (id ? getPRHistory(history).events.filter((event) => event.workoutId === id) : []),
+    [history, id]
+  );
 
   const handleRepeat = () => {
     if (!id || !workout) return;
@@ -140,6 +155,14 @@ export default function WorkoutDetailScreen() {
         </View>
       </AppCard>
 
+      {prEvents.length > 0 ? (
+        <PRBanner
+          events={prEvents}
+          weightUnit={weightUnit}
+          animateIn={celebrate === '1'}
+        />
+      ) : null}
+
       <HealthMetricsCard dateIso={workout.date} durationSeconds={workout.duration} />
 
       <AppCard style={{ marginTop: spacing.md }}>
@@ -198,6 +221,60 @@ export default function WorkoutDetailScreen() {
         style={{ marginTop: spacing.md }}
       />
     </ScreenContainer>
+  );
+}
+
+function PRBanner({
+  events,
+  weightUnit,
+  animateIn,
+}: {
+  events: ReturnType<typeof getPRHistory>['events'];
+  weightUnit: string;
+  animateIn: boolean;
+}) {
+  const scale = useRef(new Animated.Value(animateIn ? 0.6 : 1)).current;
+  const opacity = useRef(new Animated.Value(animateIn ? 0 : 1)).current;
+  const fired = useRef(false);
+
+  useEffect(() => {
+    if (!animateIn || fired.current) return;
+    fired.current = true;
+    celebratePR();
+    Animated.parallel([
+      Animated.spring(scale, {
+        toValue: 1,
+        friction: 5,
+        tension: 120,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacity, { toValue: 1, duration: 220, useNativeDriver: true }),
+    ]).start();
+  }, [animateIn, opacity, scale]);
+
+  return (
+    <Animated.View style={{ transform: [{ scale }], opacity }}>
+      <View style={styles.prCard}>
+        <View style={styles.prHeader}>
+          <Ionicons name="trophy" size={20} color={colors.gold} />
+          <Text style={styles.prTitle}>
+            {events.length === 1 ? 'New Record!' : `${events.length} New Records!`}
+          </Text>
+        </View>
+        {events.map((event) => (
+          <View key={`${event.exerciseId}-${event.kind}-${event.date}`} style={styles.prRow}>
+            <Text style={styles.prExercise} numberOfLines={1}>
+              {event.exerciseName}
+            </Text>
+            <Text style={styles.prValue}>
+              {event.kind === 'weight'
+                ? `${formatPRWeight(event.weight, weightUnit)} × ${event.reps}`
+                : `${formatEst1RM(event.est1RM, weightUnit)} e1RM`}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </Animated.View>
   );
 }
 
@@ -284,6 +361,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: -spacing.sm,
+  },
+  prCard: {
+    marginTop: spacing.md,
+    backgroundColor: glow.goldFaint,
+    borderWidth: 1,
+    borderColor: glow.goldStrong,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+  },
+  prHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  prTitle: {
+    color: colors.gold,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.heavy,
+    letterSpacing: 0.3,
+  },
+  prRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  prExercise: {
+    color: colors.textPrimary,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+    flexShrink: 1,
+  },
+  prValue: {
+    color: colors.gold,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+    fontVariant: ['tabular-nums'],
   },
   title: {
     color: colors.textPrimary,

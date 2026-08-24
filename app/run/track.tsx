@@ -10,6 +10,7 @@ import { useRuns } from '../../src/context/RunContext';
 import { useProfile } from '../../src/context/ProfileContext';
 import { colors, fontSize, fontWeight, radius, spacing } from '../../src/theme/theme';
 import { formatDuration } from '../../src/utils/format';
+import { notifySuccess } from '../../src/utils/haptics';
 import { formatPace } from '../../src/utils/runStats';
 import {
   advanceTrack,
@@ -155,6 +156,15 @@ export default function TrackRunScreen() {
     setPhase('tracking');
   }, []);
 
+  // Auto-lap haptic: fires once per completed split.
+  const lapCountRef = useRef(0);
+  useEffect(() => {
+    if (track.splits.length > lapCountRef.current) {
+      lapCountRef.current = track.splits.length;
+      notifySuccess();
+    }
+  }, [track.splits.length]);
+
   const handleFinish = useCallback(() => {
     const endedAt = Date.now();
     if (segmentStartRef.current) {
@@ -177,6 +187,7 @@ export default function TrackRunScreen() {
         runType: 'Treadmill',
         source: 'manual',
       });
+      notifySuccess();
       router.replace({ pathname: '/run/[id]', params: { id: run.id } });
       return;
     }
@@ -202,6 +213,7 @@ export default function TrackRunScreen() {
       routePoints: compressRoute(track.points),
     });
 
+    notifySuccess();
     router.replace({ pathname: '/run/[id]', params: { id: run.id } });
   }, [addRun, handleResume, indoorDistanceStr, mode, track, unit]);
 

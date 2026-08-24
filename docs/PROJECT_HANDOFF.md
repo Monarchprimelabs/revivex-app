@@ -47,6 +47,6 @@ npx expo start --tunnel --clear
 
 ## Immediate Risks
 
-- There is no automated test coverage yet, so all changes require device smoke testing.
-- Final app icon and splash assets are not in a release-ready state.
-- Legacy technical identifiers still reference `hybridtrack`; do not rename them casually.
+- Automated coverage exists for the pure logic layer (`npm test`, 70 checks); UI flows still require device smoke testing.
+- App identity was rebranded in Phase 48: slug `revivex`, scheme `revivex`, bundle id / package `com.monarchprimelabs.revivex`. The next EAS build creates a fresh provisioning profile and EAS project — the old `hybridtrack` dev build must be deleted from test devices and rebuilt.
+- AsyncStorage keys intentionally keep the `hybridtrack.*` prefix so the rebrand does not wipe local user data; do not rename them.

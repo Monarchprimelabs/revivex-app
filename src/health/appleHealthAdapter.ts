@@ -11,7 +11,7 @@ import {
 } from './types';
 
 /** Our own bundle id — sessions we exported must not echo back as imports. */
-const OWN_BUNDLE_ID = 'com.hybridtrack.app';
+const OWN_BUNDLE_ID = 'com.monarchprimelabs.revivex';
 
 const IMPORT_QUERY_LIMIT = 200;
 

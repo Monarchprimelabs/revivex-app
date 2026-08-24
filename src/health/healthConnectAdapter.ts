@@ -11,7 +11,7 @@ import {
 } from './types';
 
 /** Our own package name — sessions we exported must not echo back as imports. */
-const OWN_PACKAGE_NAME = 'com.hybridtrack.app';
+const OWN_PACKAGE_NAME = 'com.monarchprimelabs.revivex';
 
 /**
  * Google Health Connect adapter backed by react-native-health-connect.
