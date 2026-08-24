@@ -293,12 +293,3 @@ export interface UserProfileInput {
   preferredDistanceUnit: PreferredDistanceUnit;
 }
 
-// =======================
-// Static preview types
-// =======================
-
-export interface ExercisePreview {
-  id: string;
-  name: string;
-  muscleGroup: string;
-}
