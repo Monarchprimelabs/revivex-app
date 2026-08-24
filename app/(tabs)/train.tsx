@@ -7,14 +7,18 @@ import AppCard from '../../src/components/AppCard';
 import PrimaryButton from '../../src/components/PrimaryButton';
 import SectionHeader from '../../src/components/SectionHeader';
 import { colors, fontSize, fontWeight, glow, radius, spacing } from '../../src/theme/theme';
-import { exerciseLibraryPreview } from '../../src/data/demoData';
+import ExerciseThumb from '../../src/components/ExerciseThumb';
+import WorkoutHistoryCard from '../../src/components/workout/WorkoutHistoryCard';
+import { exerciseLibrary } from '../../src/data/exerciseLibrary';
 import { useWorkout } from '../../src/context/WorkoutContext';
-import {
-  formatDurationShort,
-  formatRelativeDate,
-  formatVolume,
-} from '../../src/utils/format';
 import type { Routine } from '../../src/types';
+
+// The Train tab shows only the freshest history; the full list lives on
+// the Workout History screen.
+const RECENT_WORKOUTS_LIMIT = 5;
+
+// A small rotating taste of the library, shown with thumbnails.
+const LIBRARY_PREVIEW_COUNT = 4;
 
 /**
  * Train screen
@@ -106,8 +110,12 @@ export default function TrainScreen() {
         ))
       )}
 
-      {/* Recent strength workouts — now wired to history */}
-      <SectionHeader title="Recent strength workouts" />
+      {/* Recent strength workouts — capped; full list on Workout History */}
+      <SectionHeader
+        title="Recent strength workouts"
+        actionLabel={history.length > RECENT_WORKOUTS_LIMIT ? 'See all' : undefined}
+        onActionPress={() => router.push('/workout/history')}
+      />
       {!historyLoaded ? (
         <AppCard>
           <Text style={styles.placeholder}>Loading…</Text>
@@ -125,24 +133,38 @@ export default function TrainScreen() {
           />
         </AppCard>
       ) : (
-        history.map((w) => <WorkoutHistoryCard key={w.id} workout={w} />)
+        history
+          .slice(0, RECENT_WORKOUTS_LIMIT)
+          .map((w) => <WorkoutHistoryCard key={w.id} workout={w} />)
       )}
 
-      {/* Exercise library preview */}
-      <SectionHeader title="Exercise Library" actionLabel="Browse" />
+      {/* Exercise library preview — real entries with illustrations */}
+      <SectionHeader
+        title="Exercise Library"
+        actionLabel="Browse"
+        onActionPress={() => router.push('/exercises')}
+      />
       <AppCard>
-        {exerciseLibraryPreview.map((ex, idx) => (
+        {exerciseLibrary.slice(0, LIBRARY_PREVIEW_COUNT).map((ex, idx) => (
           <View
             key={ex.id}
             style={[
               styles.libRow,
-              idx !== exerciseLibraryPreview.length - 1 && styles.libRowDivider,
+              idx !== LIBRARY_PREVIEW_COUNT - 1 && styles.libRowDivider,
             ]}
           >
-            <Text style={styles.libName}>{ex.name}</Text>
+            <View style={styles.libLeft}>
+              <ExerciseThumb name={ex.name} muscleGroup={ex.muscleGroup} exerciseId={ex.id} size={36} />
+              <Text style={styles.libName}>{ex.name}</Text>
+            </View>
             <Text style={styles.libGroup}>{ex.muscleGroup}</Text>
           </View>
         ))}
+        <Pressable onPress={() => router.push('/exercises')} hitSlop={6}>
+          <Text style={styles.libCountLine}>
+            {exerciseLibrary.length} exercises with illustrations — browse all
+          </Text>
+        </Pressable>
       </AppCard>
     </ScreenContainer>
   );
@@ -208,53 +230,6 @@ function RoutineCard({
         style={{ marginTop: spacing.md }}
       />
     </AppCard>
-  );
-}
-
-function WorkoutHistoryCard({ workout }: { workout: import('../../src/types').Workout }) {
-  const dateLabel = formatRelativeDate(workout.date);
-  return (
-    <Pressable
-      onPress={() => router.push({ pathname: '/workout/[id]', params: { id: workout.id } })}
-      style={{ marginBottom: spacing.md }}
-    >
-      <AppCard>
-        <View style={styles.histHeader}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.itemTitle}>{workout.title}</Text>
-            <Text style={styles.histDate}>{dateLabel}</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-        </View>
-
-        <View style={styles.histStatsRow}>
-          <View style={styles.histStat}>
-            <Ionicons name="barbell-outline" size={14} color={colors.gold} />
-            <Text style={styles.histStatText}>
-              {workout.exercises.length} ex
-            </Text>
-          </View>
-          <View style={styles.histStat}>
-            <Ionicons name="layers-outline" size={14} color={colors.textSecondary} />
-            <Text style={styles.histStatText}>
-              {workout.totalSets} sets
-            </Text>
-          </View>
-          <View style={styles.histStat}>
-            <Ionicons name="trending-up-outline" size={14} color={colors.tech} />
-            <Text style={styles.histStatText}>
-              {formatVolume(workout.totalVolume)}
-            </Text>
-          </View>
-          <View style={styles.histStat}>
-            <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
-            <Text style={styles.histStatText}>
-              {formatDurationShort(workout.duration)}
-            </Text>
-          </View>
-        </View>
-      </AppCard>
-    </Pressable>
   );
 }
 
@@ -350,41 +325,23 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  libLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    flex: 1,
+  },
+  libCountLine: {
+    color: colors.tech,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    textAlign: 'center',
+    paddingTop: spacing.md,
+  },
   placeholder: {
     color: colors.textMuted,
     fontSize: fontSize.sm,
     textAlign: 'center',
     paddingVertical: spacing.md,
-  },
-  histHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  histDate: {
-    color: colors.textMuted,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  histStatsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.md,
-    marginTop: spacing.xs,
-  },
-  histStat: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  histStatText: {
-    color: colors.textSecondary,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
-    fontVariant: ['tabular-nums'],
   },
 });

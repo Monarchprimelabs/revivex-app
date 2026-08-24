@@ -488,6 +488,16 @@ Previous Phase 6 recovery baseline remains available:
 
 - Third owner-generated sheet, same style/pipeline: 27 new exercises. Strength gaps (dumbbell/incline/machine chest pressing, pec deck, close-grip bench, kickbacks, three more curls, upright row, front raise, machine reverse fly, straight-arm pulldown, back extension, smith squat, step-up, hip ab/adduction machines, glute kickback, three more core moves) plus the first `Cardio`-group strength-floor entries (Rowing Machine, Air Bike) and three more `Hybrid` conditioning moves (Box Jump, Battle Ropes, Farmer's Carry).
 - Library now 74 exercises, all with bundled illustrations (~427 KB total).
+
+### Phase 47: Diagnostic pass — Train tab fixes, Exercise Library browser, in-repo tests
+
+- Full-app diagnostic (owner request before premium push). Fixed on the Train tab: the fake 4-item "Exercise Library" preview (hardcoded demo data with an invalid muscle group, dead "Browse" label) now shows real library entries with illustrations and links to a new browser; the recent-workouts list no longer renders the entire history (capped at 5 with "See all").
+- New `app/exercises/index.tsx`: read-only Exercise Library browser (search, muscle chips, per-exercise session counts from history); tapping opens the exercise progress detail. Linked from Train's "Browse".
+- New `app/workout/history.tsx`: full workout history list (Run and Hybrid already had one; strength didn't). `WorkoutHistoryCard` extracted to `src/components/workout/WorkoutHistoryCard.tsx`.
+- Deleted `src/data/demoData.ts` and the `ExercisePreview` type — no demo data remains in the app.
+- Tests moved INTO the repo: `tests/` with 8 suites / 70 checks over the pure logic (plate math, weekly summary, last performance, GPS engine, health import mapping, workout→routine, achievements/streaks, route projection). `npm test` runs them via tsx (new devDependency); `npm run typecheck` wraps tsc. Previously these lived in the session scratchpad and were lost when the container recycled.
+- package.json identity fixed: name `revivex`, version 1.0.0 (was `hybridtrack` 0.1.0).
+- OPEN DECISION (owner): app.json still ships slug `hybridtrack` + bundle id `com.hybridtrack.app`. The bundle id is permanent once the app first ships to the App Store — decide before TestFlight external release whether to move to a ReviveX-branded id (changing it invalidates existing dev builds + EAS project link).
 - Known weak artwork (owner aware, patch prompts provided; readable at thumb size): db-bench-press arm angles, machine-chest-press geometry, cable-curl floor pulley, machine-reverse-fly shows dumbbells, farmers-carry has one dumbbell instead of two. Patch by regenerating single cells in the same ChatGPT thread and overwriting the JPEG.
 
 ## Important Files
