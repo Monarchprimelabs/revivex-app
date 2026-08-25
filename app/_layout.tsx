@@ -12,6 +12,7 @@ import { ActivityFeedProvider } from '../src/context/ActivityFeedContext';
 import { HealthProvider } from '../src/context/HealthContext';
 import { BodyWeightProvider } from '../src/context/BodyWeightContext';
 import { SocialProvider } from '../src/context/SocialContext';
+import { ProProvider } from '../src/context/ProContext';
 
 /**
  * Root layout for the whole app.
@@ -29,6 +30,7 @@ export default function RootLayout() {
                   <BodyWeightProvider>
                   <HealthProvider>
                   <SocialProvider>
+                  <ProProvider>
                   <StatusBar style="light" />
                   <OnboardingGate />
                   <Stack
@@ -206,6 +208,7 @@ export default function RootLayout() {
                     }}
                   />
                   </Stack>
+                  </ProProvider>
                   </SocialProvider>
                   </HealthProvider>
                   </BodyWeightProvider>

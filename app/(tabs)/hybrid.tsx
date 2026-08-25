@@ -31,6 +31,18 @@ export default function HybridScreen() {
     [hybridSessions]
   );
 
+  // Fastest completed HYROX race sim, for the race card.
+  const bestHyrox = useMemo(() => {
+    const races = hybridSessions.filter(
+      (session) =>
+        session.sessionType === 'HYROX Race Sim' && session.totalDurationSeconds > 0
+    );
+    if (races.length === 0) return undefined;
+    return races.reduce((best, session) =>
+      session.totalDurationSeconds < best.totalDurationSeconds ? session : best
+    );
+  }, [hybridSessions]);
+
   const startSession = (sessionType?: HybridSessionType) => {
     if (sessionType) {
       router.push({ pathname: '/hybrid/start', params: { sessionType } });
@@ -94,13 +106,24 @@ export default function HybridScreen() {
       <AppCard elevated tint="hybrid" style={{ marginTop: spacing.lg }}>
         <Text style={styles.cardLabel}>Race simulator</Text>
         <Text style={styles.cardTitle}>HYROX Race Sim</Text>
-        <Text style={styles.cardSub}>8 runs • 8 stations • manual segment timing</Text>
+        <Text style={styles.cardSub}>
+          8 × 1 km runs • 8 stations • live race clock with per-segment splits
+        </Text>
+        {bestHyrox ? (
+          <Text style={styles.hyroxBest}>
+            Best race: {formatSegmentTime(bestHyrox.totalDurationSeconds)} ·{' '}
+            {formatRelativeDate(bestHyrox.date)}
+          </Text>
+        ) : null}
         <PrimaryButton
           label="Start Race Sim"
           variant="accent"
-          onPress={() => startSession('HYROX Race Sim')}
+          onPress={() => router.push('/hybrid/hyrox')}
           style={{ marginTop: spacing.md }}
         />
+        <Pressable onPress={() => startSession('HYROX Race Sim')} hitSlop={6}>
+          <Text style={styles.manualEntryLink}>Log a past race manually instead</Text>
+        </Pressable>
       </AppCard>
 
       <AppCard style={{ marginTop: spacing.md }}>
@@ -232,6 +255,20 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: fontSize.sm,
     marginTop: spacing.xs,
+  },
+  hyroxBest: {
+    color: colors.accentCoral,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+    marginTop: spacing.sm,
+    fontVariant: ['tabular-nums'],
+  },
+  manualEntryLink: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    textAlign: 'center',
+    marginTop: spacing.md,
+    textDecorationLine: 'underline',
   },
   emptyIcon: {
     width: 56,

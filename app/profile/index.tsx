@@ -8,6 +8,7 @@ import ScreenContainer from '../../src/components/ScreenContainer';
 import AppCard from '../../src/components/AppCard';
 import PrimaryButton from '../../src/components/PrimaryButton';
 import { useBodyWeight } from '../../src/context/BodyWeightContext';
+import { usePro } from '../../src/context/ProContext';
 import { useHybridSessions } from '../../src/context/HybridContext';
 import { useProfile } from '../../src/context/ProfileContext';
 import { useRuns } from '../../src/context/RunContext';
@@ -22,6 +23,7 @@ export default function ProfileScreen() {
   const { profile } = useProfile();
   const { history, routines } = useWorkout();
   const { runs } = useRuns();
+  const { status: proStatus, isPro } = usePro();
   const { hybridSessions } = useHybridSessions();
   const { entries: bodyWeightEntries } = useBodyWeight();
 
@@ -203,6 +205,31 @@ export default function ProfileScreen() {
           </View>
         </AppCard>
       </Pressable>
+
+      {/* ReviveX Pro — hidden until the RevenueCat key is configured (dark launch). */}
+      {proStatus !== 'unconfigured' ? (
+        <>
+          <Text style={styles.sectionTitle}>Membership</Text>
+          <Pressable onPress={() => router.push('/pro')}>
+            <AppCard>
+              <View style={styles.communityRow}>
+                <View style={[styles.communityIcon, styles.proIcon]}>
+                  <Ionicons name="star" size={20} color={colors.gold} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.communityTitle}>ReviveX Pro</Text>
+                  <Text style={styles.communitySub}>
+                    {isPro
+                      ? 'Active — thank you for backing the build.'
+                      : 'Race mode, programs, and deep analytics.'}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              </View>
+            </AppCard>
+          </Pressable>
+        </>
+      ) : null}
     </ScreenContainer>
   );
 }
@@ -393,6 +420,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.surfaceAlt,
+  },
+  proIcon: {
+    backgroundColor: 'rgba(198, 255, 0, 0.10)',
   },
   communityTitle: {
     color: colors.textPrimary,

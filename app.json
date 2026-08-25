@@ -61,7 +61,8 @@
     },
     "extra": {
       "supabaseUrl": "",
-      "supabaseAnonKey": ""
+      "supabaseAnonKey": "",
+      "revenueCatAppleKey": ""
     }
   }
 }
