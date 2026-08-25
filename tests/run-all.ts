@@ -6,6 +6,7 @@
 import { report } from './helpers';
 import { runAchievementsTests } from './achievements.test';
 import { runGpsTests } from './gpsTracking.test';
+import { runHyroxTests } from './hyrox.test';
 import { runImportMappingTests } from './importMapping.test';
 import { runLastPerformanceTests } from './lastPerformance.test';
 import { runPlateMathTests } from './plateMath.test';
@@ -21,5 +22,6 @@ runImportMappingTests();
 runWorkoutToRoutineTests();
 runAchievementsTests();
 runRouteProjectionTests();
+runHyroxTests();
 
 process.exit(report());
