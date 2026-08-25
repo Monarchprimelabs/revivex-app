@@ -506,6 +506,20 @@ Previous Phase 6 recovery baseline remains available:
 - New dep `expo-haptics@15.0.8` (works in Expo Go) behind `src/utils/haptics.ts` (tapLight/tapMedium/notifySuccess/notifyWarning/celebratePR; no-op on web, failures swallowed).
 - Haptics wired: set complete (medium) / uncheck (light), add set (light), rest timer done (success + legacy vibration fallback), GPS auto-lap (success), run finish, hybrid session finish.
 - PR celebration: `finishWorkout()` now returns the finished `Workout`; Finish routes to Workout Detail (`router.replace`) instead of popping back. Detail screen computes this workout's PR events via `getPRHistory` and renders a gold `PRBanner` (trophy, per-exercise records, e1RM or weight×reps); arriving with `celebrate=1` plays the double-haptic and a spring pop-in. First-time exercises count as records (Hevy behavior).
+
+### Phase 49: HYROX Race Simulation Mode
+
+- `src/data/hyrox.ts`: the fixed race format as data — 8 stations in official order (SkiErg, Sled Push, Sled Pull, Burpee Broad Jump, Row, Farmer's Carry, Sandbag Lunges, Wall Balls) with published division load standards (Open/Pro × Men/Women), `hyroxRacePlan(division)` producing the 16-segment plan, `formatRaceClock`.
+- `app/hybrid/hyrox.tsx`: live race player. Setup phase (division chips + full plan preview with loads) → racing phase (big race clock at 4 Hz, current-segment card colored run-teal/station-coral, per-segment timer, one-tap Complete with haptics, splits list). Finishing saves through the existing `addHybridSession` as `'HYROX Race Sim'` (no storage changes), fires the celebration haptic, and lands on the session detail.
+- Hybrid tab race card now launches the live player, shows the fastest race ("Best race: …"), and keeps a "log a past race manually" link to the old manual flow.
+- `tests/hyrox.test.ts` (12 checks): 16-segment alternation, 8 km total run distance, division-load differences, race-clock formatting. Suite now 82 checks.
+
+### Phase 50: Subscription Rails (dark launch)
+
+- Owner decisions: subscription model (free logging forever + Pro), rails built now, everything stays free until the owner flips it on. Nothing is gated yet and no monetization UI is reachable until a key is configured.
+- New dep `react-native-purchases@10.7.2` (RevenueCat), lazy-required + config-gated behind `expo.extra.revenueCatAppleKey` (empty string committed — only the PUBLIC appl_ SDK key ever goes here; secret keys never enter the repo). Status machine 'unconfigured' | 'needs-dev-build' | 'ready' mirrors the Supabase/health pattern.
+- `src/monetization/purchases.ts` (getProState/purchasePro/restorePro against entitlement id `pro`), `src/context/ProContext.tsx` (+ provider in root layout), `app/pro.tsx` paywall (feature list, Annual w/ trial badge + Monthly plan cards from the live offering, purchase + App-Store-required Restore Purchases, auto-renewal legal copy), Profile "Membership" row that only renders when configured.
+- Owner setup guide: ReviveX-Monetization-Setup.pdf (sent in chat) — App Store Connect products `revivex_pro_monthly` $5.99 / `revivex_pro_annual` $39.99 + 7-day trial, RevenueCat entitlement `pro`, default offering. When the appl_ key lands in app.json, the paywall goes live in the next dev build with zero code changes.
 - Known weak artwork (owner aware, patch prompts provided; readable at thumb size): db-bench-press arm angles, machine-chest-press geometry, cable-curl floor pulley, machine-reverse-fly shows dumbbells, farmers-carry has one dumbbell instead of two. Patch by regenerating single cells in the same ChatGPT thread and overwriting the JPEG.
 
 ## Important Files
