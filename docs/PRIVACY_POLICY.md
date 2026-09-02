@@ -56,9 +56,9 @@ If you choose to connect Apple Health (iOS) or Health Connect (Android):
 - ReviveX **writes** your workouts, runs, hybrid sessions, and body weight to
   the health store on your device.
 - ReviveX **reads** workouts (e.g., recorded by your watch), heart rate,
-  active energy, and your daily step count to display them in the app (watch
-  metrics, daily activity rings) and import workouts into your local training
-  log.
+  active energy, your daily step count, and (on Android) the distance
+  recorded for an imported run, to display them in the app (watch metrics,
+  daily activity rings) and import workouts into your local training log.
 
 Health data is used solely to provide these in-app features. It is never used
 for advertising, marketing, or data mining, never sold, and never disclosed
