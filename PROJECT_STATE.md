@@ -522,6 +522,12 @@ Previous Phase 6 recovery baseline remains available:
 - Owner setup guide: ReviveX-Monetization-Setup.pdf (sent in chat) — App Store Connect products `revivex_pro_monthly` $5.99 / `revivex_pro_annual` $39.99 + 7-day trial, RevenueCat entitlement `pro`, default offering. When the appl_ key lands in app.json, the paywall goes live in the next dev build with zero code changes.
 - Known weak artwork (owner aware, patch prompts provided; readable at thumb size): db-bench-press arm angles, machine-chest-press geometry, cable-curl floor pulley, machine-reverse-fly shows dumbbells, farmers-carry has one dumbbell instead of two. Patch by regenerating single cells in the same ChatGPT thread and overwriting the JPEG.
 
+### Phase 51: Privacy policy corrections
+
+- `docs/PRIVACY_POLICY.md` re-audited against the code after an independent review. The health section now lists the daily step-count read (Phase 38 `readDailyActivity`: `HKQuantityTypeIdentifierStepCount` / Health Connect `Steps`, both in the read permissions), and a new "Maps" section discloses that iOS builds fetch Apple Maps imagery for the area around a GPS route (Phase 41 `RouteMapView`) — no account or identifier attached, the run itself never uploaded, Apple's privacy policy governs the map service; Android and Expo Go draw the local SVG trace and request nothing.
+- Absolute wording narrowed only as far as the map imagery requires ("never leaves your device" and the Location section now point to Maps; "No servers receiving your personal data" → no servers of ours / no backend). Local-first promise unchanged: no accounts, no cloud storage, no analytics, no tracking. The Supabase social and RevenueCat rails stay config-gated behind empty keys, make no requests, and are deliberately not in the policy yet — the "Changes" section commits to updating it before any online feature goes live.
+- Contact is now monarchprimelabs@gmail.com; the hosted copy lives at https://monarchprimelabs.github.io/apps/revivex/privacy.html (the URL App Store Connect / TestFlight review asks for); "Last updated: September 2, 2026" added beneath the unchanged July 6, 2026 effective date.
+
 ## Important Files
 
 - `app/(tabs)/index.tsx`
