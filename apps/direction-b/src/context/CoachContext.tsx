@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useMemo } from 'react';
 import type {
   DailyPlanRecord,
+  ParsedExport,
   ExperienceLevel,
   HybridSession,
   PreferredDistanceUnit,
@@ -106,6 +107,8 @@ interface CoachContextValue {
   removeWorkouts: (ids: string[]) => void;
   removeRuns: (ids: string[]) => void;
   removeHybridSessions: (ids: string[]) => void;
+  /** Merge a Direction A export so the engine has real history. Returns what was merged. */
+  importHistory: (data: ParsedExport) => { workouts: number; runs: number; hybridSessions: number };
 }
 
 const CoachContext = createContext<CoachContextValue | undefined>(undefined);
@@ -263,6 +266,16 @@ export function CoachProvider({ children }: { children: React.ReactNode }) {
 
   const shortenTodayPlan = useCallback((planId: string) => replacePlan(planId, shortenPlan), [replacePlan]);
 
+  const importHistory = useCallback(
+    (data: ParsedExport) => {
+      workouts.upsertMany(data.workouts);
+      runs.upsertMany(data.runs);
+      hybridSessions.upsertMany(data.hybridSessions);
+      return { workouts: data.workouts.length, runs: data.runs.length, hybridSessions: data.hybridSessions.length };
+    },
+    [hybridSessions, runs, workouts]
+  );
+
   const summaryOfCompleted = useCallback(
     (record: DailyPlanRecord): CompletedSessionSummary | undefined => {
       if (record.status !== 'completed' || !record.completedActivityId) return undefined;
@@ -320,11 +333,12 @@ export function CoachProvider({ children }: { children: React.ReactNode }) {
       removeWorkouts: workouts.removeMany,
       removeRuns: runs.removeMany,
       removeHybridSessions: hybridSessions.removeMany,
+      importHistory,
     }),
     [
       loaded, settings, saveSettings, checkins.items, checkins.upsertMany, checkins.removeMany, plans.items, plans.upsertMany, plans.removeMany, workouts.items, workouts.upsertMany, workouts.removeMany,
       runs.items, runs.upsertMany, runs.removeMany, hybridSessions.items, hybridSessions.upsertMany, hybridSessions.removeMany, todayKey, todayCheckin, todayPlan, weekTemplate,
-      completedThisWeek, submitCheckin, planWithoutCheckin, regeneratePlan, completePlan, skipPlan, swapPlanBlock, shortenTodayPlan, dayPlanOf, summaryOfCompleted,
+      completedThisWeek, submitCheckin, planWithoutCheckin, regeneratePlan, completePlan, skipPlan, swapPlanBlock, shortenTodayPlan, dayPlanOf, summaryOfCompleted, importHistory,
     ]
   );
 

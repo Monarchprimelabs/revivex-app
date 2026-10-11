@@ -32,7 +32,7 @@ Date: 2026-10-11
 
 2. Create the Supabase project and follow `supabase/README.md`: run `db/schema.sql`, turn off email confirmation for development, paste the URL and anon key into both `app.json` files, deploy `delete-account`.
 3. Direction A in Expo Go: `npm run start:a`. Profile → Account → Create account → sign in. Log a workout. The history card should show "Syncing" then "Synced". Check the row in the Supabase table editor (`workouts`, your user id). Sign in on a second device or the simulator and watch history arrive.
-4. Direction B in Expo Go: `npm run start:b`. Set up → Check in → plan → Mark complete → History → detail. Account → sign in; check-ins, plans and the completed session should sync.
+4. Direction B in Expo Go: `npm run start:b`. Settings → Training history → Import the JSON you exported from Direction A (Profile → Your Data → Export) so the coach has your real history. Then Set up → Check in → plan → Mark complete (edit what you actually did) → History → detail. Account → sign in; check-ins, plans and the completed session should sync.
 5. Run the device checklist in `docs/TESTING.md` for the native-only paths (GPS, Health, maps). None of them changed in this phase, but the move to the monorepo deserves one pass.
 6. Report anything odd with steps to reproduce. The next build steps are listed under "Next" below.
 7. When satisfied, open a pull request from `claude/two-directions` into `main`. Nothing has been pushed to `main`.

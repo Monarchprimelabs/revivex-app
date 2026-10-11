@@ -16,7 +16,7 @@ npm run e2e:full      # export both apps for web and run Playwright at phone wid
 | Suite | What it covers | Result |
 | --- | --- | --- |
 | Typecheck | 7 workspaces (2 apps, 5 packages) | Clean |
-| `packages/core` | Plate math, weekly summary, last performance, GPS engine, workout-to-routine, achievements, route projection, HYROX plan, set types | 74 checks pass |
+| `packages/core` | Plate math, weekly summary, last performance, GPS engine, workout-to-routine, achievements, route projection, HYROX plan, set types, export parsing | 79 checks pass |
 | `packages/backend` | Row mappers round trip for every mirrored table, outbox reconcile, flush, failure and retry, pull and last-write-wins merge, tombstones across two devices, delete protection | 56 checks pass |
 | `packages/coach` | Readiness bands, week templates, slot selection, fatigue skip, readiness gates, progressive overload, run prescriptions, determinism, plan-to-activity conversion, swap and shorten adjustments, completion builders | 67 checks pass |
 | `apps/direction-a` | Health import mapping | 12 checks pass |
@@ -42,3 +42,4 @@ No defects were found in the app logic exercised by the suites. The coach engine
 - React Native's `Alert` is a no-op on web, which affects the discard-workout and finish-without-timer guards in Direction A on web only.
 - On web, screens below a modal stay mounted, so tests select the topmost match. Native behavior is unaffected.
 - Expo Go behavior and Inter font rendering on device have not been seen in this sandbox.
+- The Direction B history import is unit-tested at the parser level; the file picker itself was not exercised in Playwright.

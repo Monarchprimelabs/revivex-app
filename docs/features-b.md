@@ -21,6 +21,6 @@ Priority: must, should, nice. Status: done, partial, todo. Updated 2026-10-11 af
 | Local reminder notification for the check-in | should | todo | `expo-notifications`, no server push |
 | Streaks and simple adherence stats | should | todo | Reuse core achievements where they fit |
 | Playwright end-to-end flow for the slice | should | done | Pending decision 4 in the architecture doc |
-| Import history from a Direction A export file | nice | todo | Same JSON shape, lets testers seed the engine |
+| Import history from a Direction A export file | nice | done | Settings → Training history → Import. Parser validates the file and drops malformed records; merged by id |
 | Post completed sessions to Strava | nice | todo | Shared push backend once Direction A has it |
 | Read sleep from Apple Health or Health Connect to prefill the check-in | nice | todo | Dev build only |
