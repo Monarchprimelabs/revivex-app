@@ -55,7 +55,13 @@ export function useStoredCollection<T extends { id: string }>(key: string) {
     setItems((prev) => prev.filter((candidate) => candidate.id !== id));
   }, []);
 
-  return { items, loaded, setItems, upsert, upsertMany, remove };
+  const removeMany = useCallback((ids: string[]) => {
+    if (ids.length === 0) return;
+    const gone = new Set(ids);
+    setItems((prev) => prev.filter((candidate) => !gone.has(candidate.id)));
+  }, []);
+
+  return { items, loaded, setItems, upsert, upsertMany, remove, removeMany };
 }
 
 /** A single persisted value with a fallback. */

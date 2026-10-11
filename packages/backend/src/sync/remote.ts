@@ -3,10 +3,11 @@ import type { AnySyncRow, SyncTable } from '../rows';
 
 /** The few remote operations the sync engine needs. */
 export interface RemoteStore {
-  /** Inserts or replaces by (user_id, client_id). Resolves with the server timestamp. */
+  /** Inserts or replaces by (user_id, client_id), clearing any tombstone. Resolves with the server timestamp. */
   upsert(table: SyncTable, row: AnySyncRow): Promise<{ updated_at: string }>;
+  /** Soft-deletes by (user_id, client_id) so other devices can apply the removal. */
   remove(table: SyncTable, userId: string, clientId: string): Promise<void>;
-  /** Rows changed after `since` (exclusive), oldest first. */
+  /** Rows changed after `since` (exclusive), oldest first, tombstones included. */
   listSince(table: SyncTable, userId: string, since: string | undefined, limit?: number): Promise<AnySyncRow[]>;
 }
 
@@ -18,7 +19,7 @@ export class SupabaseRemoteStore implements RemoteStore {
   async upsert(table: SyncTable, row: AnySyncRow): Promise<{ updated_at: string }> {
     const { data, error } = await this.client
       .from(table)
-      .upsert(row, { onConflict: CONFLICT_TARGET })
+      .upsert({ ...row, deleted_at: null }, { onConflict: CONFLICT_TARGET })
       .select('updated_at')
       .single();
     if (error) throw new Error(`${table} upsert failed: ${error.message}`);
@@ -26,7 +27,12 @@ export class SupabaseRemoteStore implements RemoteStore {
   }
 
   async remove(table: SyncTable, userId: string, clientId: string): Promise<void> {
-    const { error } = await this.client.from(table).delete().eq('user_id', userId).eq('client_id', clientId);
+    const { error } = await this.client
+      .from(table)
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('user_id', userId)
+      .eq('client_id', clientId)
+      .is('deleted_at', null);
     if (error) throw new Error(`${table} delete failed: ${error.message}`);
   }
 
@@ -75,13 +81,18 @@ export class InMemoryRemoteStore implements RemoteStore {
       id: existing?.id ?? `srv_${this.rows.size + 1}`,
       created_at: existing?.created_at ?? updated_at,
       updated_at,
+      deleted_at: null,
     });
     return { updated_at };
   }
 
   async remove(table: SyncTable, userId: string, clientId: string): Promise<void> {
     this.maybeFail();
-    this.rows.delete(this.key(table, userId, clientId));
+    const key = this.key(table, userId, clientId);
+    const existing = this.rows.get(key);
+    if (!existing || existing.deleted_at) return;
+    const stamp = this.stamp();
+    this.rows.set(key, { ...existing, deleted_at: stamp, updated_at: stamp });
   }
 
   async listSince(table: SyncTable, userId: string, since: string | undefined, limit = 500): Promise<AnySyncRow[]> {
@@ -106,7 +117,8 @@ export class InMemoryRemoteStore implements RemoteStore {
     return this.rows.get(this.key(table, userId, clientId));
   }
 
+  /** Live (non-tombstoned) rows. */
   count(): number {
-    return this.rows.size;
+    return [...this.rows.values()].filter((row) => !row.deleted_at).length;
   }
 }

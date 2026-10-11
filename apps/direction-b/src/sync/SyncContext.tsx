@@ -63,6 +63,8 @@ interface TableSpec<T extends Item> {
   toRow: (userId: string, item: T) => AnySyncRow;
   fromRow: (row: AnySyncRow) => T;
   merge: (items: T[]) => void;
+  /** Apply tombstones pulled from the server. */
+  remove: (ids: string[]) => void;
 }
 
 export function SyncProvider({ children }: { children: React.ReactNode }) {
@@ -76,11 +78,11 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const specs = useMemo<TableSpec<Item>[]>(
     () =>
       [
-        { table: 'readiness_checkins', items: coach.checkins, toRow: (uid, item) => readinessCheckinToRow(uid, item as ReadinessCheckin), fromRow: (row) => rowToReadinessCheckin(row as ReadinessCheckinRow), merge: (items) => coach.mergeCheckins(items as ReadinessCheckin[]) },
-        { table: 'daily_plans', items: coach.plans, toRow: (uid, item) => dailyPlanToRow(uid, item as DailyPlanRecord), fromRow: (row) => rowToDailyPlan(row as DailyPlanRow), merge: (items) => coach.mergePlans(items as DailyPlanRecord[]) },
-        { table: 'workouts', items: coach.workouts, toRow: (uid, item) => workoutToRow(uid, item as Workout), fromRow: (row) => rowToWorkout(row as WorkoutRow), merge: (items) => coach.mergeWorkouts(items as Workout[]) },
-        { table: 'runs', items: coach.runs, toRow: (uid, item) => runToRow(uid, item as Run), fromRow: (row) => rowToRun(row as RunRow), merge: (items) => coach.mergeRuns(items as Run[]) },
-        { table: 'hybrid_sessions', items: coach.hybridSessions, toRow: (uid, item) => hybridSessionToRow(uid, item as HybridSession), fromRow: (row) => rowToHybridSession(row as HybridSessionRow), merge: (items) => coach.mergeHybridSessions(items as HybridSession[]) },
+        { table: 'readiness_checkins', items: coach.checkins, toRow: (uid, item) => readinessCheckinToRow(uid, item as ReadinessCheckin), fromRow: (row) => rowToReadinessCheckin(row as ReadinessCheckinRow), merge: (items) => coach.mergeCheckins(items as ReadinessCheckin[]), remove: coach.removeCheckins },
+        { table: 'daily_plans', items: coach.plans, toRow: (uid, item) => dailyPlanToRow(uid, item as DailyPlanRecord), fromRow: (row) => rowToDailyPlan(row as DailyPlanRow), merge: (items) => coach.mergePlans(items as DailyPlanRecord[]), remove: coach.removePlans },
+        { table: 'workouts', items: coach.workouts, toRow: (uid, item) => workoutToRow(uid, item as Workout), fromRow: (row) => rowToWorkout(row as WorkoutRow), merge: (items) => coach.mergeWorkouts(items as Workout[]), remove: coach.removeWorkouts },
+        { table: 'runs', items: coach.runs, toRow: (uid, item) => runToRow(uid, item as Run), fromRow: (row) => rowToRun(row as RunRow), merge: (items) => coach.mergeRuns(items as Run[]), remove: coach.removeRuns },
+        { table: 'hybrid_sessions', items: coach.hybridSessions, toRow: (uid, item) => hybridSessionToRow(uid, item as HybridSession), fromRow: (row) => rowToHybridSession(row as HybridSessionRow), merge: (items) => coach.mergeHybridSessions(items as HybridSession[]), remove: coach.removeHybridSessions },
       ] as TableSpec<Item>[],
     [coach]
   );
@@ -151,6 +153,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
               const applied = new Set(pulled.applied);
               spec.merge(pulled.items.filter((item) => applied.has(item.id)));
             }
+            if (pulled.removed.length > 0) spec.remove(pulled.removed);
           }
         }
         const flushed = await flushOutbox(stateRef.current, {

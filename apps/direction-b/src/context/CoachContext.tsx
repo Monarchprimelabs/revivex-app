@@ -99,6 +99,11 @@ interface CoachContextValue {
   mergeWorkouts: (items: Workout[]) => void;
   mergeRuns: (items: Run[]) => void;
   mergeHybridSessions: (items: HybridSession[]) => void;
+  removeCheckins: (ids: string[]) => void;
+  removePlans: (ids: string[]) => void;
+  removeWorkouts: (ids: string[]) => void;
+  removeRuns: (ids: string[]) => void;
+  removeHybridSessions: (ids: string[]) => void;
 }
 
 const CoachContext = createContext<CoachContextValue | undefined>(undefined);
@@ -307,10 +312,15 @@ export function CoachProvider({ children }: { children: React.ReactNode }) {
       mergeWorkouts: workouts.upsertMany,
       mergeRuns: runs.upsertMany,
       mergeHybridSessions: hybridSessions.upsertMany,
+      removeCheckins: checkins.removeMany,
+      removePlans: plans.removeMany,
+      removeWorkouts: workouts.removeMany,
+      removeRuns: runs.removeMany,
+      removeHybridSessions: hybridSessions.removeMany,
     }),
     [
-      loaded, settings, saveSettings, checkins.items, checkins.upsertMany, plans.items, plans.upsertMany, workouts.items, workouts.upsertMany,
-      runs.items, runs.upsertMany, hybridSessions.items, hybridSessions.upsertMany, todayKey, todayCheckin, todayPlan, weekTemplate,
+      loaded, settings, saveSettings, checkins.items, checkins.upsertMany, checkins.removeMany, plans.items, plans.upsertMany, plans.removeMany, workouts.items, workouts.upsertMany, workouts.removeMany,
+      runs.items, runs.upsertMany, runs.removeMany, hybridSessions.items, hybridSessions.upsertMany, hybridSessions.removeMany, todayKey, todayCheckin, todayPlan, weekTemplate,
       completedThisWeek, submitCheckin, planWithoutCheckin, regeneratePlan, completePlan, skipPlan, swapPlanBlock, shortenTodayPlan, dayPlanOf, summaryOfCompleted,
     ]
   );

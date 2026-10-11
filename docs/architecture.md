@@ -84,6 +84,7 @@ Design choices worth approving explicitly:
 - Nested payloads stay JSONB. `workouts.exercises`, `hybrid_sessions.segments`, `runs.splits`, `routines.exercises` and `daily_plans.plan` hold the same shapes the apps already use in `@revivex/core`. Upserts stay atomic, sync stays simple, and analytics keep running on-device with the existing utilities. Trade-off: no SQL across sets. If server-side analytics are ever needed, a normalized `workout_sets` table can be derived later.
 - GPS traces live in `run_routes`, separate from `runs`, owner-only, and a check constraint rejects any route-point key inside `posts.details`. Sharing a map later requires an explicit masked copy, never the raw trace.
 - `client_id` is the device id. Server ids are UUIDs. Devices never need the server id to sync.
+- Deletes are tombstones. A delete sets `deleted_at` and bumps `updated_at`, so every device pulls the removal; an upsert clears the tombstone. A local edit made after a tombstone wins and re-pushes. Account deletion still hard-deletes everything by cascade.
 - Account deletion cascades from `auth.users` through every table.
 
 ### 4.3 Direction B plan payload

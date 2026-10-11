@@ -81,15 +81,17 @@ interface TableSpec<T extends Item> {
   toRow: (userId: string, item: T) => AnySyncRow;
   fromRow: (row: AnySyncRow) => T;
   merge: (items: T[]) => void;
+  /** Apply tombstones pulled from the server. */
+  remove: (ids: string[]) => void;
 }
 
 export function SyncProvider({ children }: { children: React.ReactNode }) {
   const supabase = useMemo(() => getSupabase(), []);
   const { session } = useSocial();
-  const { history, historyLoaded, mergeWorkouts, routines, routinesLoaded, mergeRoutines } = useWorkout();
-  const { runs, runsLoaded, mergeRuns, mergeRunRoutes } = useRuns();
-  const { hybridSessions, hybridSessionsLoaded, mergeHybridSessions } = useHybridSessions();
-  const { entries, entriesLoaded, mergeEntries } = useBodyWeight();
+  const { history, historyLoaded, mergeWorkouts, deleteWorkout, routines, routinesLoaded, mergeRoutines, deleteRoutine } = useWorkout();
+  const { runs, runsLoaded, mergeRuns, mergeRunRoutes, deleteRun, clearRunRoutes } = useRuns();
+  const { hybridSessions, hybridSessionsLoaded, mergeHybridSessions, deleteHybridSession } = useHybridSessions();
+  const { entries, entriesLoaded, mergeEntries, deleteEntry } = useBodyWeight();
 
   const userId = session?.user.id ?? null;
   const remote = useMemo(() => (supabase ? new SupabaseRemoteStore(supabase) : null), [supabase]);
@@ -101,14 +103,14 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const specs = useMemo<TableSpec<Item>[]>(
     () =>
       [
-        { table: 'workouts', items: history, toRow: (uid, item) => workoutToRow(uid, item as Workout), fromRow: (row) => rowToWorkout(row as WorkoutRow), merge: (items) => mergeWorkouts(items as Workout[]) },
-        { table: 'routines', items: routines, toRow: (uid, item) => routineToRow(uid, item as Routine), fromRow: (row) => rowToRoutine(row as RoutineRow), merge: (items) => mergeRoutines(items as Routine[]) },
-        { table: 'runs', items: runs, toRow: (uid, item) => runToRow(uid, item as Run), fromRow: (row) => rowToRun(row as RunRow), merge: (items) => mergeRuns(items as Run[]) },
-        { table: 'run_routes', items: routes, toRow: (uid, item) => runRouteToRow(uid, item as RunRouteRecord), fromRow: (row) => rowToRunRoute(row as RunRouteRow), merge: (items) => mergeRunRoutes(items as RunRouteRecord[]) },
-        { table: 'hybrid_sessions', items: hybridSessions, toRow: (uid, item) => hybridSessionToRow(uid, item as HybridSession), fromRow: (row) => rowToHybridSession(row as HybridSessionRow), merge: (items) => mergeHybridSessions(items as HybridSession[]) },
-        { table: 'body_weight_entries', items: entries, toRow: (uid, item) => bodyWeightToRow(uid, item as BodyWeightEntry), fromRow: (row) => rowToBodyWeight(row as BodyWeightRow), merge: (items) => mergeEntries(items as BodyWeightEntry[]) },
+        { table: 'workouts', items: history, toRow: (uid, item) => workoutToRow(uid, item as Workout), fromRow: (row) => rowToWorkout(row as WorkoutRow), merge: (items) => mergeWorkouts(items as Workout[]), remove: (ids) => ids.forEach(deleteWorkout) },
+        { table: 'routines', items: routines, toRow: (uid, item) => routineToRow(uid, item as Routine), fromRow: (row) => rowToRoutine(row as RoutineRow), merge: (items) => mergeRoutines(items as Routine[]), remove: (ids) => ids.forEach(deleteRoutine) },
+        { table: 'runs', items: runs, toRow: (uid, item) => runToRow(uid, item as Run), fromRow: (row) => rowToRun(row as RunRow), merge: (items) => mergeRuns(items as Run[]), remove: (ids) => ids.forEach(deleteRun) },
+        { table: 'run_routes', items: routes, toRow: (uid, item) => runRouteToRow(uid, item as RunRouteRecord), fromRow: (row) => rowToRunRoute(row as RunRouteRow), merge: (items) => mergeRunRoutes(items as RunRouteRecord[]), remove: clearRunRoutes },
+        { table: 'hybrid_sessions', items: hybridSessions, toRow: (uid, item) => hybridSessionToRow(uid, item as HybridSession), fromRow: (row) => rowToHybridSession(row as HybridSessionRow), merge: (items) => mergeHybridSessions(items as HybridSession[]), remove: (ids) => ids.forEach(deleteHybridSession) },
+        { table: 'body_weight_entries', items: entries, toRow: (uid, item) => bodyWeightToRow(uid, item as BodyWeightEntry), fromRow: (row) => rowToBodyWeight(row as BodyWeightRow), merge: (items) => mergeEntries(items as BodyWeightEntry[]), remove: (ids) => ids.forEach(deleteEntry) },
       ] as TableSpec<Item>[],
-    [history, routines, runs, routes, hybridSessions, entries, mergeWorkouts, mergeRoutines, mergeRuns, mergeRunRoutes, mergeHybridSessions, mergeEntries]
+    [history, routines, runs, routes, hybridSessions, entries, mergeWorkouts, mergeRoutines, mergeRuns, mergeRunRoutes, mergeHybridSessions, mergeEntries, deleteWorkout, deleteRoutine, deleteRun, clearRunRoutes, deleteHybridSession, deleteEntry]
   );
   const specsRef = useRef(specs);
   specsRef.current = specs;
@@ -180,6 +182,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
               const applied = new Set(pulled.applied);
               spec.merge(pulled.items.filter((item) => applied.has(item.id)));
             }
+            if (pulled.removed.length > 0) spec.remove(pulled.removed);
           }
         }
         const flushed = await flushOutbox(stateRef.current, {

@@ -126,6 +126,10 @@ async function main(): Promise<number> {
   await run(alice, (tx) => tx.query(`update public.workouts set notes = 'felt strong'`));
   const after = await rows<{ updated_at: string }>(alice, 'select updated_at from public.workouts');
   checkTrue('updated_at trigger advances on update', new Date(after[0].updated_at).getTime() > new Date(before[0].updated_at).getTime());
+  check('owner can tombstone a row', await fails(alice, `update public.workouts set deleted_at = now() where client_id = 'wk_1'`), null);
+  check('tombstoned rows stay visible to the owner for sync', (await rows(alice, `select deleted_at from public.workouts where client_id = 'wk_1'`)).length, 1);
+  check('upsert clears a tombstone', await fails(alice, `insert into public.workouts (user_id, client_id, performed_at, deleted_at) values ($1, 'wk_1', now(), null) on conflict (user_id, client_id) do update set deleted_at = null`, [ALICE]), null);
+  check('tombstone cleared', (await rows<{ deleted_at: string | null }>(alice, `select deleted_at from public.workouts where client_id = 'wk_1'`))[0].deleted_at, null);
   check('exercises must be a json array', (await fails(alice, `insert into public.workouts (user_id, client_id, performed_at, exercises) values ($1, 'wk_bad', now(), '{"a":1}')`, [ALICE])) !== null, true);
 
   const run1 = await rows<{ id: string }>(alice, `insert into public.runs (user_id, client_id, performed_at, distance_m, duration_seconds, source) values ($1, 'run_1', now(), 5000, 1500, 'gps') returning id`, [ALICE]);

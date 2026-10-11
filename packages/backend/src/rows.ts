@@ -36,6 +36,8 @@ export interface SyncRowBase {
   client_id: string;
   created_at?: string;
   updated_at?: string;
+  /** Tombstone. Set by RemoteStore.remove; cleared by every upsert. */
+  deleted_at?: string | null;
 }
 
 /** A row of any mirrored table. Concrete row interfaces extend SyncRowBase. */

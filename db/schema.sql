@@ -12,6 +12,7 @@
 --     have their privileges revoked from anon/authenticated. Only Edge Functions
 --     using the service role touch them.
 --   * Route points live in their own owner-only table and can never enter a post.
+--   * Mirrored tables soft-delete (deleted_at) so every device converges; account deletion still hard-deletes by cascade.
 --   * Idempotent: safe to re-run in the Supabase SQL editor.
 --
 -- Local policy tests: `npm run test:db` (db/tests/rls.test.ts, runs in PGlite).
@@ -118,6 +119,8 @@ create table if not exists public.workouts (
   notes text,
   source text not null default 'manual' check (source in ('manual', 'routine', 'import', 'coach')),
   exercises jsonb not null default '[]'::jsonb check (jsonb_typeof(exercises) = 'array'),
+  -- Soft delete: other devices learn about removals through updated_at. Rows are never resurrected implicitly.
+  deleted_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (user_id, client_id)
@@ -139,6 +142,8 @@ create table if not exists public.runs (
   notes text,
   source text not null default 'manual' check (source in ('manual', 'gps', 'imported')),
   splits jsonb not null default '[]'::jsonb check (jsonb_typeof(splits) = 'array'),
+  -- Soft delete: other devices learn about removals through updated_at. Rows are never resurrected implicitly.
+  deleted_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (user_id, client_id)
@@ -153,6 +158,8 @@ create table if not exists public.run_routes (
   client_id text not null,
   points jsonb not null default '[]'::jsonb check (jsonb_typeof(points) = 'array'),
   point_count integer not null default 0 check (point_count >= 0),
+  -- Soft delete: other devices learn about removals through updated_at. Rows are never resurrected implicitly.
+  deleted_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (user_id, client_id)
@@ -170,6 +177,8 @@ create table if not exists public.hybrid_sessions (
   total_duration_seconds integer not null default 0 check (total_duration_seconds >= 0),
   notes text,
   segments jsonb not null default '[]'::jsonb check (jsonb_typeof(segments) = 'array'),
+  -- Soft delete: other devices learn about removals through updated_at. Rows are never resurrected implicitly.
+  deleted_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (user_id, client_id)
@@ -185,6 +194,8 @@ create table if not exists public.routines (
   description text,
   goal text,
   exercises jsonb not null default '[]'::jsonb check (jsonb_typeof(exercises) = 'array'),
+  -- Soft delete: other devices learn about removals through updated_at. Rows are never resurrected implicitly.
+  deleted_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (user_id, client_id)
@@ -198,6 +209,8 @@ create table if not exists public.body_weight_entries (
   measured_at timestamptz not null,
   weight numeric(6, 2) not null check (weight > 0),
   unit text not null check (unit in ('lb', 'kg')),
+  -- Soft delete: other devices learn about removals through updated_at. Rows are never resurrected implicitly.
+  deleted_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (user_id, client_id)
@@ -213,6 +226,8 @@ create table if not exists public.exercise_templates (
   equipment text,
   exercise_type text not null default 'weight_reps'
     check (exercise_type in ('weight_reps', 'reps_only', 'bodyweight_reps', 'duration', 'distance_duration')),
+  -- Soft delete: other devices learn about removals through updated_at. Rows are never resurrected implicitly.
+  deleted_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (user_id, client_id)
@@ -237,6 +252,8 @@ begin
     execute format('create policy %I on public.%I for delete to authenticated using (user_id = (select auth.uid()))', t || '_delete_own', t);
     execute format('drop trigger if exists %I on public.%I', t || '_set_updated_at', t);
     execute format('create trigger %I before update on public.%I for each row execute function public.set_updated_at()', t || '_set_updated_at', t);
+    execute format('alter table public.%I add column if not exists deleted_at timestamptz', t);
+    execute format('create index if not exists %I on public.%I (user_id, updated_at)', t || '_user_updated', t);
   end loop;
 end $$;
 
@@ -447,6 +464,8 @@ create table if not exists public.readiness_checkins (
   energy smallint not null check (energy between 1 and 5),
   score smallint not null check (score between 0 and 100),
   notes text check (char_length(notes) <= 280),
+  -- Soft delete: other devices learn about removals through updated_at. Rows are never resurrected implicitly.
+  deleted_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (user_id, client_id),
@@ -469,6 +488,8 @@ create table if not exists public.daily_plans (
   completed_activity_kind public.activity_kind,
   completed_activity_client_id text,
   completed_at timestamptz,
+  -- Soft delete: other devices learn about removals through updated_at. Rows are never resurrected implicitly.
+  deleted_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (user_id, client_id),
@@ -494,5 +515,7 @@ begin
     execute format('create policy %I on public.%I for delete to authenticated using (user_id = (select auth.uid()))', t || '_delete_own', t);
     execute format('drop trigger if exists %I on public.%I', t || '_set_updated_at', t);
     execute format('create trigger %I before update on public.%I for each row execute function public.set_updated_at()', t || '_set_updated_at', t);
+    execute format('alter table public.%I add column if not exists deleted_at timestamptz', t);
+    execute format('create index if not exists %I on public.%I (user_id, updated_at)', t || '_user_updated', t);
   end loop;
 end $$;

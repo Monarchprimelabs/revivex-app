@@ -125,9 +125,49 @@ export async function runSyncTests(): Promise<void> {
   check('server wins when its edit is newer', workouts.find((w) => w.id === 'wk_4')?.title, 'Arms (newest server edit)');
   check('server winner clears the queue', pendingCount(state), 0);
 
-  // Pending local delete blocks a re-insert from the server.
+  suite('sync: tombstones across devices');
+  // Device 2 holds the same items and tracking as device 1 after a full pull.
+  const device2 = await pullTable<Workout>(emptySyncState(), 'workouts', { remote, userId: USER, local: [], fromRow: (row) => rowToWorkout(row as never), full: true });
+  let state2 = device2.state;
+  let workouts2 = device2.items;
+  check('device 2 starts with every live item', workouts2.map((w) => w.id).sort(), workouts.map((w) => w.id).sort());
+
+  // Device 1 deletes wk_4 and pushes.
+  workouts = workouts.filter((w) => w.id !== 'wk_4');
+  state = reconcileCollection(state, 'workouts', workouts, NOW);
+  clock = new Date('2026-10-11T14:00:00.000Z');
+  result = await flushOutbox(state, deps(remote, () => workouts));
+  state = result.state;
+  check('delete becomes a tombstone, not a hard delete', [result.deleted, remote.count(), Boolean(remote.get('workouts', USER, 'wk_4')?.deleted_at)], [1, 2, true]);
+
+  // Device 2 pulls and drops it.
+  let pull2 = await pullTable<Workout>(state2, 'workouts', { remote, userId: USER, local: workouts2, fromRow: (row) => rowToWorkout(row as never) });
+  state2 = pull2.state;
+  workouts2 = pull2.items;
+  check('device 2 removes the tombstoned item', [pull2.removed, workouts2.some((w) => w.id === 'wk_4')], [['wk_4'], false]);
+  check('device 2 has nothing queued after the removal', pendingCount(reconcileCollection(state2, 'workouts', workouts2, NOW)), 0);
+
+  // Device 2 edits wk_phone after device 1 deletes it: the edit wins and resurrects it.
   workouts = workouts.filter((w) => w.id !== 'wk_phone');
   state = reconcileCollection(state, 'workouts', workouts, NOW);
-  const applied = applyRemoteRows(state, 'workouts', [remote.get('workouts', USER, 'wk_phone') as never], workouts, (row) => rowToWorkout(row as never));
+  clock = new Date('2026-10-11T15:00:00.000Z');
+  result = await flushOutbox(state, deps(remote, () => workouts));
+  state = result.state;
+  workouts2 = workouts2.map((w) => (w.id === 'wk_phone' ? { ...w, title: 'Edited after delete', updatedAt: '2026-10-11T16:00:00.000Z' } : w));
+  state2 = reconcileCollection(state2, 'workouts', workouts2, NOW);
+  pull2 = await pullTable<Workout>(state2, 'workouts', { remote, userId: USER, local: workouts2, fromRow: (row) => rowToWorkout(row as never) });
+  state2 = pull2.state;
+  workouts2 = pull2.items;
+  check('a newer local edit survives a tombstone', [pull2.removed, workouts2.find((w) => w.id === 'wk_phone')?.title], [[], 'Edited after delete']);
+  clock = new Date('2026-10-11T16:30:00.000Z');
+  result = await flushOutbox(state2, deps(remote, () => workouts2));
+  state2 = result.state;
+  check('the re-push clears the tombstone on the server', [result.pushed, remote.get('workouts', USER, 'wk_phone')?.deleted_at ?? null], [1, null]);
+
+  // A delete that is still queued (not yet pushed) blocks a re-insert from the server.
+  const scratchWorkouts = workouts2.filter((w) => w.id !== 'wk_phone');
+  const scratchState = reconcileCollection(state2, 'workouts', scratchWorkouts, NOW);
+  check('the pending delete is queued', scratchState.outbox.map((e) => [e.clientId, e.op]), [['wk_phone', 'delete']]);
+  const applied = applyRemoteRows(scratchState, 'workouts', [remote.get('workouts', USER, 'wk_phone') as never], scratchWorkouts, (row) => rowToWorkout(row as never));
   check('locally deleted item is not resurrected by a pull', applied.items.some((w) => w.id === 'wk_phone'), false);
 }

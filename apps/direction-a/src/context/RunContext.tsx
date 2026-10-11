@@ -21,6 +21,8 @@ interface RunContextValue {
   mergeRuns: (incoming: Run[]) => void;
   /** Attach cloud route points to runs that lack them. */
   mergeRunRoutes: (routes: { id: string; points: RoutePoint[] }[]) => void;
+  /** Drop GPS traces that were deleted on another device (the runs themselves stay). */
+  clearRunRoutes: (runIds: string[]) => void;
   updateRun: (runId: string, input: Partial<CreateRunInput>) => Run | undefined;
   getRunById: (runId: string) => Run | undefined;
   getRuns: () => Run[];
@@ -119,6 +121,12 @@ export function RunProvider({ children }: { children: React.ReactNode }) {
     setRuns((prev) => prev.filter((run) => run.id !== runId));
   }, []);
 
+  const clearRunRoutes = useCallback((runIds: string[]) => {
+    if (runIds.length === 0) return;
+    const ids = new Set(runIds);
+    setRuns((prev) => prev.map((run) => (ids.has(run.id) && run.routePoints ? { ...run, routePoints: undefined } : run)));
+  }, []);
+
   const mergeRuns = useCallback((incoming: Run[]) => {
     if (incoming.length === 0) return;
     setRuns((prev) => {
@@ -181,12 +189,13 @@ export function RunProvider({ children }: { children: React.ReactNode }) {
       deleteRun,
       mergeRuns,
       mergeRunRoutes,
+      clearRunRoutes,
       updateRun,
       getRunById,
       getRuns,
       calculateRunStats: getStats,
     }),
-    [runs, runsLoaded, addRun, deleteRun, mergeRuns, mergeRunRoutes, updateRun, getRunById, getRuns, getStats]
+    [runs, runsLoaded, addRun, deleteRun, mergeRuns, mergeRunRoutes, clearRunRoutes, updateRun, getRunById, getRuns, getStats]
   );
 
   return <RunContext.Provider value={value}>{children}</RunContext.Provider>;

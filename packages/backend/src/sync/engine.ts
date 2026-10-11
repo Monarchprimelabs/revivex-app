@@ -70,6 +70,8 @@ export interface ApplyResult<T> {
   items: T[];
   /** Ids inserted or replaced from the server. */
   applied: string[];
+  /** Ids removed locally because the server carries a newer tombstone. */
+  removed: string[];
 }
 
 /**
@@ -82,6 +84,8 @@ export interface ApplyResult<T> {
  * 4. An unchanged local item is replaced by the newer server version.
  * 5. A changed local item resolves last-write-wins between its own
  *    updatedAt and the server updated_at. The loser is discarded.
+ * 6. A tombstone removes the local item unless the local item changed after
+ *    the tombstone, in which case the local version wins and is re-pushed.
  */
 export function applyRemoteRows<T extends { id: string; updatedAt?: string }>(
   state: SyncState,
@@ -93,6 +97,7 @@ export function applyRemoteRows<T extends { id: string; updatedAt?: string }>(
   let next = state;
   const byId = new Map(local.map((item) => [item.id, item] as const));
   const applied: string[] = [];
+  const removed: string[] = [];
   let newest = state.lastPulledAt[table];
 
   for (const row of rows) {
@@ -105,6 +110,26 @@ export function applyRemoteRows<T extends { id: string; updatedAt?: string }>(
 
     const pending = findEntry(next, table, clientId);
     if (pending?.op === 'delete') continue;
+
+    if (row.deleted_at) {
+      const existing = byId.get(clientId);
+      if (!existing) continue;
+      const localChanged = tracked ? tracked.fp !== tracked.syncedFp || fingerprint(existing) !== tracked.syncedFp : true;
+      const localTime = existing.updatedAt ?? tracked?.serverUpdatedAt ?? '';
+      if (localChanged && serverUpdatedAt && localTime > serverUpdatedAt) {
+        // Edited here after it was deleted elsewhere: keep it; the queued upsert clears the tombstone.
+        const current = trackedItem(next, table, clientId);
+        next = {
+          ...next,
+          tracking: { ...next.tracking, [table]: { ...(next.tracking[table] ?? {}), [clientId]: { fp: current?.fp ?? fingerprint(existing), syncedFp: current?.syncedFp, serverUpdatedAt } } },
+        };
+        continue;
+      }
+      byId.delete(clientId);
+      removed.push(clientId);
+      next = markDeleted(next, table, clientId);
+      continue;
+    }
 
     const incoming = fromRow(row);
     const existing = byId.get(clientId);
@@ -144,7 +169,7 @@ export function applyRemoteRows<T extends { id: string; updatedAt?: string }>(
   if (newest && newest !== state.lastPulledAt[table]) {
     next = { ...next, lastPulledAt: { ...next.lastPulledAt, [table]: newest } };
   }
-  return { state: next, items: [...byId.values()], applied };
+  return { state: next, items: [...byId.values()], applied, removed };
 }
 
 export interface PullDeps<T> {
