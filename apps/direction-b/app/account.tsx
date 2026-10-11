@@ -4,7 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { AppCard, PrimaryButton, ScreenContainer, colors, fontSize, fontWeight, spacing } from '@revivex/design-system';
 import { formatRelativeDate } from '@revivex/core';
-import { validateCredentials } from '@revivex/backend';
+import { deleteAccount, validateCredentials } from '@revivex/backend';
+import { getSupabase } from '../src/lib/supabase';
 import { useAuth } from '../src/context/AuthContext';
 import { useSync } from '../src/sync/SyncContext';
 
@@ -21,6 +22,24 @@ export default function AccountScreen() {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: 'error' | 'info'; text: string } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    const client = getSupabase();
+    if (!client) return;
+    setDeleting(true);
+    setMessage(null);
+    const error = await deleteAccount(client);
+    setDeleting(false);
+    if (error) {
+      setMessage({ tone: 'error', text: error });
+      return;
+    }
+    setConfirmDelete(false);
+    await signOut();
+    setMessage({ tone: 'info', text: 'Your account and cloud data were deleted. Training data on this phone was kept.' });
+  };
 
   const submit = async () => {
     const invalid = validateCredentials(email, password);
@@ -91,6 +110,29 @@ export default function AccountScreen() {
           <Pressable onPress={() => void signOut()} style={styles.signOut} testID="account-signout">
             <Text style={styles.signOutText}>Sign out</Text>
           </Pressable>
+
+          <AppCard>
+            <Text style={styles.cardTitle}>Delete account</Text>
+            <Text style={styles.cardBody}>
+              Removes your account and everything backed up to the cloud. Training data on this phone stays until you delete the app.
+            </Text>
+            {message && message.tone === 'error' ? <Text style={[styles.message, styles.messageError]}>{message.text}</Text> : null}
+            {confirmDelete ? (
+              <>
+                <Text style={[styles.message, styles.messageError]}>This cannot be undone.</Text>
+                <View testID="account-delete-confirm">
+                  <PrimaryButton label="Yes, delete my account" onPress={() => void handleDeleteAccount()} loading={deleting} style={{ marginTop: spacing.md }} />
+                </View>
+                <Pressable onPress={() => setConfirmDelete(false)} style={styles.signOut}>
+                  <Text style={styles.signOutText}>Keep my account</Text>
+                </Pressable>
+              </>
+            ) : (
+              <Pressable onPress={() => setConfirmDelete(true)} style={styles.signOut} testID="account-delete">
+                <Text style={[styles.signOutText, { color: colors.danger }]}>Delete account</Text>
+              </Pressable>
+            )}
+          </AppCard>
         </>
       ) : (
         <>

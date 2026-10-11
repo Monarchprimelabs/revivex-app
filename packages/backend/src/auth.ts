@@ -54,3 +54,14 @@ export function validateCredentials(email: string, password: string): string | n
   if (password.length < 8) return 'Passwords need at least 8 characters.';
   return null;
 }
+
+/**
+ * Calls the `delete-account` Edge Function, which removes the auth user and,
+ * through ON DELETE CASCADE, everything the user owns. Returns an error message or null.
+ */
+export async function deleteAccount(client: SupabaseClient): Promise<string | null> {
+  const { data, error } = await client.functions.invoke<{ ok?: boolean; error?: string }>('delete-account', { method: 'POST' });
+  if (error) return error.message || 'Account deletion failed.';
+  if (data?.error) return data.error;
+  return null;
+}

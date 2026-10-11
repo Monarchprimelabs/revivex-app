@@ -4,7 +4,7 @@ Last updated: 2026-07-05
 
 ## Current Master Direction
 
-Update 2026-10-11: the repository is now a monorepo running a two-direction program. The Direction A app described below lives in `apps/direction-a/`, and its former `src/theme`, `src/types`, `src/utils`, `src/data`, and the generic components moved to `packages/`. Paths in the sections below are relative to `apps/direction-a/` unless they name a package. Program documents: `docs/recon.md` (step 1), `docs/architecture.md` (step 2, awaiting approval), `docs/features-a.md`, `docs/features-b.md`. The social schema in `docs/supabase/schema.sql` was replaced by `db/schema.sql`.
+Update 2026-10-11 (Phases 51 to 54, two-direction program): monorepo restructure, shared schema with tested RLS, sync engine and cloud mirror, coach engine and the Direction B app, web builds and Playwright suites, account deletion. See `CLAUDE_HANDOFF.md` for the current state and the Mac checklist. The repository is now a monorepo running a two-direction program. The Direction A app described below lives in `apps/direction-a/`, and its former `src/theme`, `src/types`, `src/utils`, `src/data`, and the generic components moved to `packages/`. Paths in the sections below are relative to `apps/direction-a/` unless they name a package. Program documents: `docs/recon.md` (step 1), `docs/architecture.md` (step 2, awaiting approval), `docs/features-a.md`, `docs/features-b.md`. The social schema in `docs/supabase/schema.sql` was replaced by `db/schema.sql`.
 
 
 ReviveX is the rebranded SDK 54 master version of the former HybridTrack project.

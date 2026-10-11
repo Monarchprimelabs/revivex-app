@@ -79,7 +79,7 @@ npx expo export --platform ios --output-dir /tmp/revivex-export-check
 ## Program Status
 
 - Direction A phases 1 to 50 are recorded in `PROJECT_STATE.md`.
-- Two-direction program: step 1 recon done (`docs/recon.md`), step 2 restructure and architecture proposal done (`docs/architecture.md`, `db/schema.sql`), awaiting approval for step 3 vertical slices. Backlogs in `docs/features-a.md` and `docs/features-b.md`.
+- Two-direction program: step 1 recon (`docs/recon.md`), step 2 restructure and architecture (`docs/architecture.md`, `db/schema.sql`, approved 2026-10-11), step 3 vertical slices for both directions, step 4 in progress (Direction A mirrors every table, account deletion), step 5 report in `docs/test-report.md`. Backlogs in `docs/features-a.md` and `docs/features-b.md`. Mac checklist in `CLAUDE_HANDOFF.md`.
 
 ## Asset Rules
 

@@ -36,7 +36,9 @@ Verification after the move (2026-10-11):
 | `npm run test:db` | 66 policy checks pass, schema applied twice to prove idempotency |
 | `npx expo export --platform ios` per app | Both apps produce a Hermes bundle. Direction A export is 11 MB with 116 assets, Direction B is 7.9 MB. Direction B currently bundles the exercise illustrations through the core barrel, which is fine because the coach uses the library |
 
-Commands: `npm run start:a`, `npm run start:b`, `npm run typecheck`, `npm test`, `npm run test:db`. Expo Go remains the development target. Native modules in Direction A stay lazily loaded.
+Commands: `npm run start:a`, `npm run start:b`, `npm run typecheck`, `npm test`, `npm run test:db`, `npm run e2e:full`. Expo Go remains the development target. Native modules in Direction A stay lazily loaded and resolve to empty modules on web.
+
+Status after step 3 (2026-10-11): both vertical slices are built and covered by Playwright on web; the sync engine is unit-tested; first run against a live Supabase project happens on the Mac. Details in `docs/test-report.md`.
 
 ## 3. Shared stack
 

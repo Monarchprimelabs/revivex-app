@@ -5,45 +5,45 @@ Date: 2026-10-11
 ## Read First
 
 - `AGENTS.md`: rules.
-- `docs/architecture.md`: the step 2 proposal, awaiting approval.
+- `docs/architecture.md`: the approved architecture.
+- `docs/test-report.md`: what has been verified and how.
+- `docs/features-a.md`, `docs/features-b.md`: backlogs with status.
 - `docs/recon.md`: step 1 research.
 - `PROJECT_STATE.md`: Direction A phase history (1 to 50) and storage keys.
 
 ## Current State
 
-- Monorepo on branch `claude/two-directions`. `main` still holds the pre-restructure layout until the owner merges.
-- `apps/direction-a` is the Phase 50 app moved into the workspace with imports rewritten to the shared packages. No behavior changes.
-- `apps/direction-b` is a scaffold: root layout and a Today placeholder.
-- `packages/core`, `packages/design-system`, `packages/backend`, `packages/test-utils` are extracted from the old `src/`.
-- `db/schema.sql` replaces `docs/supabase/schema.sql`. It has not been applied to any Supabase project yet.
+- Monorepo on branch `claude/two-directions`, pushed. `main` still holds the pre-restructure layout until the owner opens and merges a pull request.
+- Direction A (`apps/direction-a`) is the Phase 50 app plus: Account & Sync screen, cloud mirror for workouts, routines, runs, GPS traces, hybrid sessions and body weight, sync chips on workout history and detail, account deletion, Inter in shared components.
+- Direction B (`apps/direction-b`) is the daily coach: setup, check-in, Today, plan detail, history, account, cloud mirror of five tables.
+- Shared: `@revivex/core`, `@revivex/design-system`, `@revivex/backend` (sync engine), `@revivex/coach` (rules engine), `@revivex/test-utils`.
+- `db/schema.sql` is final for this phase and has not been applied to any Supabase project yet. `supabase/functions/delete-account` is written and not deployed.
+- Verification: see `docs/test-report.md`. All unit, policy and end-to-end suites pass in the sandbox.
 
-## Verification
+## Mac Checklist (first session on the Mac)
 
-```bash
-npm run typecheck
-npm test
-npm run test:db
-cd apps/direction-a && npx expo export --platform ios --output-dir /tmp/revivex-export-check
-```
+1. Pull the branch and install.
 
-## Key Files
+   ```bash
+   git fetch origin && git checkout claude/two-directions && npm install
+   npm run typecheck && npm test && npm run test:db
+   npm run e2e:full
+   ```
 
-- `apps/direction-a/app/`: Expo Router routes (unchanged paths).
-- `apps/direction-a/src/context/`: app state and AsyncStorage persistence.
-- `apps/direction-a/src/health/`, `src/gps/`, `src/monetization/`, `src/social/supabase.ts`: device and cloud integrations.
-- `packages/core/src/types/index.ts`: shared types, including `BodyWeightEntry`.
-- `packages/core/src/utils/`: pure training logic. `packages/core/tests/`: 70 checks.
-- `packages/core/src/data/`: exercise library, hybrid templates, HYROX data, illustrations map.
-- `packages/design-system/src/theme/theme.ts`: tokens. `src/components/`: primitives.
-- `packages/backend/src/index.ts`: `readSupabaseConfig`, `createRevivexSupabaseClient`.
-- `db/schema.sql`, `db/tests/rls.test.ts`.
+2. Create the Supabase project and follow `supabase/README.md`: run `db/schema.sql`, turn off email confirmation for development, paste the URL and anon key into both `app.json` files, deploy `delete-account`.
+3. Direction A in Expo Go: `npm run start:a`. Profile → Account → Create account → sign in. Log a workout. The history card should show "Syncing" then "Synced". Check the row in the Supabase table editor (`workouts`, your user id). Sign in on a second device or the simulator and watch history arrive.
+4. Direction B in Expo Go: `npm run start:b`. Set up → Check in → plan → Mark complete → History → detail. Account → sign in; check-ins, plans and the completed session should sync.
+5. Run the device checklist in `docs/TESTING.md` for the native-only paths (GPS, Health, maps). None of them changed in this phase, but the move to the monorepo deserves one pass.
+6. Report anything odd with steps to reproduce. The next build steps are listed under "Next" below.
+7. When satisfied, open a pull request from `claude/two-directions` into `main`. Nothing has been pushed to `main`.
+
+## Next (in order)
+
+1. Strava push: Edge Functions (`strava-connect`, `strava-callback`, `strava-push`, `strava-webhook`, `strava-disconnect`), a connect card under Profile → Connections, and a "Post to Strava" action on detail screens. Needs the owner's Strava API app and subscription; secrets go to `supabase secrets set`.
+2. Direction A logger breadth: set types, RPE, supersets, custom exercises. Sync chips on run, hybrid and routine screens.
+3. Direction B: adjust today's plan (swap an exercise, shorten), local reminder for the check-in.
+4. Step 6 comparison in `docs/comparison.md` once both directions have run on device.
 
 ## Storage Keys
 
-Unchanged. See the Storage Compatibility table in `PROJECT_STATE.md`.
-
-## Owner Actions Pending
-
-- Approve or amend `docs/architecture.md`.
-- Create a Supabase project, run `db/schema.sql`, and add the URL and anon key to `apps/*/app.json` under `expo.extra` when ready for the vertical slices to run end to end.
-- Later, for Strava: create the API application and keep the Strava subscription. Secrets go to Supabase secrets only.
+Direction A keys are unchanged (see `PROJECT_STATE.md`). Direction B uses `revivex.daily.*` keys. Sync state lives under `revivex.sync.v1.<userId>` (A) and `revivex.daily.sync.v1.<userId>` (B).
