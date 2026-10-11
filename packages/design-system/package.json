@@ -1,0 +1,23 @@
+{
+  "name": "@revivex/design-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Revive X theme tokens, primitives, and device feedback helpers shared by both apps.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@revivex/core": "1.0.0"
+  },
+  "peerDependencies": {
+    "@expo/vector-icons": "*",
+    "expo-haptics": "*",
+    "expo-linear-gradient": "*",
+    "react": "*",
+    "react-native": "*",
+    "react-native-safe-area-context": "*",
+    "react-native-svg": "*"
+  }
+}

@@ -1,5 +1,7 @@
 # ReviveX Pre-TestFlight Test Checklist
 
+Note (2026-10-11): the app now lives in `apps/direction-a/`. Run the commands below from that folder, or use `npm run start:a` from the repo root. Root-level `npm test` and `npm run typecheck` cover every workspace.
+
 Run through this on the development build (not Expo Go) — the dev build is
 the only place health sync, background GPS, and the app icon are active.
 

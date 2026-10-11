@@ -2,70 +2,46 @@
 
 Lift. Run. Revive.
 
-ReviveX is a hybrid fitness tracker for lifting, running, conditioning, routines, and progress analytics.
-It helps everyday athletes rebuild the athlete inside them one session at a time.
+ReviveX is a hybrid fitness tracker for lifting, running, conditioning, routines, and progress analytics. This repository is a monorepo exploring two product directions on one backend and one design system:
 
-## Status
+- `apps/direction-a/`: the existing hybrid tracker (Phase 50).
+- `apps/direction-b/`: a single-screen daily coach driven by a deterministic rules engine.
+- `packages/`: shared code (`@revivex/core`, `@revivex/design-system`, `@revivex/backend`, `@revivex/test-utils`).
+- `db/`: the shared Supabase schema with row-level security, plus policy tests.
+- `docs/`: recon, architecture proposal, feature backlogs, operational docs.
 
-Current checkpoint: Phase 6 — Manual Run Logging v1.
-
-Completed:
-
-- Phase 1: Expo Router app shell with 5 tabs.
-- Phase 2: Strength Workout Logger.
-- Phase 3: Workout History + Workout Detail.
-- Phase 4: Routine Builder.
-- Phase 5: Progress Dashboard v1.
-- Phase 5.5: ReviveX rebrand, theme tokens, app metadata display name, and asset TODOs.
-- Phase 5.6: UI polish, safe-area tab bar fix, and brand fidelity pass.
-- Phase 6: Manual Run Logging v1.
-
-## Tech
-
-- Expo SDK 54
-- React Native
-- Expo Router
-- TypeScript
-- AsyncStorage
-- Expo Go compatible
-
-## Run The App
+## Run
 
 ```bash
 npm install
-npx expo start --tunnel --clear
+npm run start:a      # Direction A, scan the QR code with Expo Go
+npm run start:b      # Direction B
 ```
 
-Then scan the QR code with Expo Go.
+From inside an app folder you can also run `npx expo start --tunnel --clear`.
 
-## Product Scope
+## Verify
 
-Current app:
+```bash
+npm run typecheck    # every workspace
+npm test             # unit suites (core and Direction A)
+npm run test:db      # schema and row-level security policies in PGlite
+```
 
-- Home dashboard
-- Train tab
-- Active workout logger
-- Exercise picker
-- Saved workout history
-- Routine builder
-- Routine detail
-- Start workout from routine
-- Progress Dashboard v1
-- Manual run logging
-- Run history
-- Run detail/delete
-- Basic running stats and PRs
+## Tech
 
-Later phases may add exercise-specific analytics, Apple Health, GPS running, hybrid race tracking, and backend features.
+- Expo SDK 54, React Native 0.81, React 19, Expo Router 6, TypeScript
+- npm workspaces, AsyncStorage (local-first), Supabase (auth, Postgres with RLS, Edge Functions)
+- Expo Go compatible. Native modules in Direction A load lazily and activate in a development build.
+
+## Status
+
+- Step 1 recon: `docs/recon.md`
+- Step 2 restructure and architecture proposal: `docs/architecture.md`, `db/schema.sql`
+- Direction A phase history: `PROJECT_STATE.md`
 
 ## Brand Direction
 
 - App name: ReviveX
 - Tagline: Lift. Run. Revive.
-- Positioning: A hybrid fitness tracker for lifting, running, conditioning, and progress.
-- Interface: premium dark-first UI with restrained teal/lime accents.
-
-## App Icon Assets
-
-Clean production icon/logo files are still needed before `app.json` should reference icons.
-See `assets/README.md` for exact file requirements.
+- Interface: premium dark-first UI with restrained teal/lime accents, original assets only.

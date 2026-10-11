@@ -1,0 +1,14 @@
+{
+  "name": "@revivex/backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Revive X Supabase client factory and typed data access shared by both apps.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.110.0"
+  }
+}

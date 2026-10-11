@@ -1,5 +1,7 @@
 # ReviveX Development Build (unlocks Apple Health + watch data)
 
+Note (2026-10-11): the app now lives in `apps/direction-a/`. Run the commands below from that folder, or use `npm run start:a` from the repo root. Root-level `npm test` and `npm run typecheck` cover every workspace.
+
 Health sync is fully wired but dormant in Expo Go. A development build
 activates it. One-time setup on the Mac Mini:
 

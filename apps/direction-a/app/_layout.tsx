@@ -1,0 +1,247 @@
+import React from 'react';
+import { router, Stack, useRootNavigationState, useSegments } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { colors } from '@revivex/design-system';
+import { WorkoutProvider } from '../src/context/WorkoutContext';
+import { RunProvider } from '../src/context/RunContext';
+import { HybridProvider } from '../src/context/HybridContext';
+import { ProfileProvider, useProfile } from '../src/context/ProfileContext';
+import { ActivityFeedProvider } from '../src/context/ActivityFeedContext';
+import { HealthProvider } from '../src/context/HealthContext';
+import { BodyWeightProvider } from '../src/context/BodyWeightContext';
+import { SocialProvider } from '../src/context/SocialContext';
+import { ProProvider } from '../src/context/ProContext';
+
+/**
+ * Root layout for the whole app.
+ * Wraps everything in providers and renders the navigation stack.
+ */
+export default function RootLayout() {
+  return (
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
+      <SafeAreaProvider>
+        <ProfileProvider>
+          <WorkoutProvider>
+            <RunProvider>
+              <HybridProvider>
+                <ActivityFeedProvider>
+                  <BodyWeightProvider>
+                  <HealthProvider>
+                  <SocialProvider>
+                  <ProProvider>
+                  <StatusBar style="light" />
+                  <OnboardingGate />
+                  <Stack
+                    screenOptions={{
+                      headerShown: false,
+                      contentStyle: { backgroundColor: colors.background },
+                    }}
+                  >
+                  <Stack.Screen name="(tabs)" />
+                  <Stack.Screen name="onboarding" />
+                  <Stack.Screen
+                    name="profile/index"
+                    options={{
+                      animation: 'slide_from_right',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="profile/edit"
+                    options={{
+                      animation: 'slide_from_right',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="activity/index"
+                    options={{
+                      animation: 'slide_from_right',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="share/[type]/[id]"
+                    options={{
+                      animation: 'slide_from_right',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="workout/active"
+                    options={{
+                      presentation: 'modal',
+                      animation: 'slide_from_bottom',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="workout/exercise-picker"
+                    options={{
+                      presentation: 'modal',
+                      animation: 'slide_from_bottom',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="workout/[id]"
+                    options={{
+                      animation: 'slide_from_right',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="workout/edit/[id]"
+                    options={{
+                      presentation: 'modal',
+                      animation: 'slide_from_bottom',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="routine/create"
+                    options={{
+                      presentation: 'modal',
+                      animation: 'slide_from_bottom',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="routine/edit/[id]"
+                    options={{
+                      presentation: 'modal',
+                      animation: 'slide_from_bottom',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="routine/[id]"
+                    options={{
+                      animation: 'slide_from_right',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="run/log"
+                    options={{
+                      presentation: 'modal',
+                      animation: 'slide_from_bottom',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="run/track"
+                    options={{
+                      presentation: 'modal',
+                      animation: 'slide_from_bottom',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="run/history"
+                    options={{
+                      animation: 'slide_from_right',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="run/[id]"
+                    options={{
+                      animation: 'slide_from_right',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="run/edit/[id]"
+                    options={{
+                      presentation: 'modal',
+                      animation: 'slide_from_bottom',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="hybrid/start"
+                    options={{
+                      animation: 'slide_from_right',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="hybrid/active"
+                    options={{
+                      presentation: 'modal',
+                      animation: 'slide_from_bottom',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="hybrid/history"
+                    options={{
+                      animation: 'slide_from_right',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="hybrid/[id]"
+                    options={{
+                      animation: 'slide_from_right',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="hybrid/edit/[id]"
+                    options={{
+                      presentation: 'modal',
+                      animation: 'slide_from_bottom',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="progress/prs"
+                    options={{
+                      animation: 'slide_from_right',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="progress/exercise/[key]"
+                    options={{
+                      animation: 'slide_from_right',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="profile/health"
+                    options={{
+                      animation: 'slide_from_right',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="profile/weight"
+                    options={{
+                      animation: 'slide_from_right',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="social/index"
+                    options={{
+                      animation: 'slide_from_right',
+                    }}
+                  />
+                  </Stack>
+                  </ProProvider>
+                  </SocialProvider>
+                  </HealthProvider>
+                  </BodyWeightProvider>
+                </ActivityFeedProvider>
+              </HybridProvider>
+            </RunProvider>
+          </WorkoutProvider>
+        </ProfileProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
+  );
+}
+
+function OnboardingGate() {
+  const segments = useSegments();
+  const rootNavigationState = useRootNavigationState();
+  const { onboardingCompleted, profile, profileLoaded } = useProfile();
+
+  React.useEffect(() => {
+    if (!rootNavigationState?.key || !profileLoaded) return;
+
+    const isOnboardingRoute = segments[0] === 'onboarding';
+    const needsOnboarding = !onboardingCompleted || !profile;
+
+    if (needsOnboarding && !isOnboardingRoute) {
+      router.replace('/onboarding');
+      return;
+    }
+
+    if (!needsOnboarding && isOnboardingRoute) {
+      router.replace('/');
+    }
+  }, [onboardingCompleted, profile, profileLoaded, rootNavigationState?.key, segments]);
+
+  return null;
+}

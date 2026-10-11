@@ -1,0 +1,1293 @@
+import React, { useMemo } from 'react';
+import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { ScreenContainer } from '@revivex/design-system';
+import { AppCard } from '@revivex/design-system';
+import { StatCard } from '@revivex/design-system';
+import { SectionHeader } from '@revivex/design-system';
+import { PrimaryButton } from '@revivex/design-system';
+import { ProgressRing } from '@revivex/design-system';
+import { useWorkout } from '../../src/context/WorkoutContext';
+import { useRuns } from '../../src/context/RunContext';
+import { useHybridSessions } from '../../src/context/HybridContext';
+import { useProfile } from '../../src/context/ProfileContext';
+import { useBodyWeight } from '../../src/context/BodyWeightContext';
+import { colors, fontSize, fontWeight, glow, radius, spacing } from '@revivex/design-system';
+import { formatRelativeDate, formatVolume } from '@revivex/core';
+import {
+  getAverageWorkoutVolume,
+  getBestVolumeWorkout,
+  getCurrentTrainingStreak,
+  getMostFrequentExercise,
+  getMostTrainedMuscleGroup,
+  getMuscleGroupStats,
+  getTopExercisePRs,
+  getTotalSets,
+  getTotalVolume,
+  getTotalWorkouts,
+  getWeeklyActivity,
+  getWorkoutsThisWeek,
+  type MuscleGroupStat,
+} from '@revivex/core';
+import type { ExercisePR } from '@revivex/core';
+import {
+  calculateRunStats,
+  formatDistance,
+  formatPace,
+} from '@revivex/core';
+import {
+  formatSegmentTime,
+  getHybridSessionStats,
+} from '@revivex/core';
+import {
+  getWeekRange,
+  getWeeklyDelta,
+  getWeeklySummary,
+  milesToPreferredUnit,
+  type WeeklyDelta,
+  type WeeklySummary,
+} from '@revivex/core';
+import { getAchievements, type Achievement } from '@revivex/core';
+
+/**
+ * Progress screen
+ * Phase 5 dashboard built from saved strength workout history.
+ */
+export default function ProgressScreen() {
+  const { history, historyLoaded } = useWorkout();
+  const { runs, runsLoaded } = useRuns();
+  const { hybridSessions, hybridSessionsLoaded } = useHybridSessions();
+  const { profile } = useProfile();
+  const { entries: weightEntries } = useBodyWeight();
+  const weightUnit = profile?.preferredWeightUnit ?? 'lb';
+
+  const analytics = useMemo(() => {
+    const totalWorkouts = getTotalWorkouts(history);
+    const totalVolume = getTotalVolume(history);
+    const totalSets = getTotalSets(history);
+    const muscleGroupStats = getMuscleGroupStats(history);
+    const runStats = calculateRunStats(runs);
+    const hybridStats = getHybridSessionStats(hybridSessions);
+    const weekNow = getWeeklySummary(history, runs, hybridSessions, getWeekRange());
+    const weekPrev = getWeeklySummary(history, runs, hybridSessions, getWeekRange(new Date(), -1));
+    const milestones = getAchievements(history, runs, hybridSessions);
+
+    return {
+      milestones,
+      weekNow,
+      weekDeltas: {
+        sessions: getWeeklyDelta(weekNow.sessions, weekPrev.sessions),
+        volume: getWeeklyDelta(weekNow.strengthVolume, weekPrev.strengthVolume),
+        distance: getWeeklyDelta(weekNow.runDistanceMiles, weekPrev.runDistanceMiles),
+        hybridTime: getWeeklyDelta(weekNow.hybridSeconds, weekPrev.hybridSeconds),
+      },
+      totalWorkouts,
+      totalVolume,
+      totalSets,
+      workoutsThisWeek: getWorkoutsThisWeek(history),
+      averageVolume: getAverageWorkoutVolume(history),
+      bestVolumeWorkout: getBestVolumeWorkout(history),
+      mostFrequentExercise: getMostFrequentExercise(history),
+      mostTrainedMuscleGroup: getMostTrainedMuscleGroup(history),
+      currentStreak: getCurrentTrainingStreak(history),
+      weeklyActivity: getWeeklyActivity(history),
+      muscleGroupStats,
+      topPRs: getTopExercisePRs(history, 5),
+      latestWorkout: history[0],
+      runStats,
+      hybridStats,
+      maxMuscleVolume: Math.max(...muscleGroupStats.map((stat) => stat.totalVolume), 0),
+      maxMuscleSets: Math.max(...muscleGroupStats.map((stat) => stat.totalSets), 0),
+    };
+  }, [history, runs, hybridSessions]);
+
+  const handleStartWorkout = () => {
+    router.push('/workout/active');
+  };
+
+  const handleLogRun = () => {
+    router.push('/run/log');
+  };
+
+  const handleStartHybrid = () => {
+    router.push('/hybrid/start');
+  };
+
+  const hasAnyProgress =
+    analytics.totalWorkouts > 0 ||
+    analytics.runStats.totalRuns > 0 ||
+    analytics.hybridStats.totalSessions > 0;
+
+  return (
+    <ScreenContainer>
+      <Text style={styles.title}>Progress</Text>
+      <Text style={styles.subtitle}>See how your lifting, conditioning, and consistency are moving.</Text>
+
+      {!historyLoaded || !runsLoaded || !hybridSessionsLoaded ? (
+        <AppCard style={styles.topCard}>
+          <Text style={styles.placeholder}>Loading progress data...</Text>
+        </AppCard>
+      ) : !hasAnyProgress ? (
+        <EmptyProgressState
+          onStartWorkout={handleStartWorkout}
+          onLogRun={handleLogRun}
+          onStartHybrid={handleStartHybrid}
+        />
+      ) : (
+        <>
+          <SectionHeader title="This Week" />
+          <WeeklySummaryCard
+            summary={analytics.weekNow}
+            deltas={analytics.weekDeltas}
+            weeklyTarget={profile?.weeklyTrainingTarget ?? 0}
+            distanceUnit={profile?.preferredDistanceUnit ?? 'mi'}
+          />
+
+          <View style={styles.statGrid}>
+            <View style={styles.statRow}>
+              <StatCard
+                label="Total Workouts"
+                value={String(analytics.totalWorkouts)}
+                hint="all time"
+                accent="gold"
+              />
+              <View style={styles.statSpacer} />
+              <StatCard
+                label="This Week"
+                value={String(analytics.workoutsThisWeek)}
+                hint="calendar week"
+                accent="primary"
+              />
+            </View>
+
+            <View style={styles.statRow}>
+              <StatCard
+                label="Total Volume"
+                value={formatCompactVolume(analytics.totalVolume)}
+                hint="completed sets"
+                accent="tech"
+              />
+              <View style={styles.statSpacer} />
+              <StatCard
+                label="Total Sets"
+                value={analytics.totalSets.toLocaleString()}
+                hint="logged sets"
+                accent="success"
+              />
+            </View>
+          </View>
+
+          <View style={styles.secondaryGrid}>
+            <MiniMetricCard
+              label="Most Trained"
+              value={analytics.mostTrainedMuscleGroup?.muscleGroup ?? '—'}
+              hint={
+                analytics.mostTrainedMuscleGroup
+                  ? `${analytics.mostTrainedMuscleGroup.totalSets} sets`
+                  : 'no sets yet'
+              }
+              icon="body-outline"
+              accentColor={colors.gold}
+            />
+            <MiniMetricCard
+              label="Avg Volume"
+              value={formatCompactVolume(analytics.averageVolume)}
+              hint="per workout"
+              icon="analytics-outline"
+              accentColor={colors.tech}
+            />
+            <MiniMetricCard
+              label="Best Workout"
+              value={
+                analytics.bestVolumeWorkout
+                  ? formatCompactVolume(analytics.bestVolumeWorkout.totalVolume)
+                  : '—'
+              }
+              hint={analytics.bestVolumeWorkout?.workout.title ?? 'no workout yet'}
+              icon="trophy-outline"
+              accentColor={colors.success}
+            />
+            <MiniMetricCard
+              label="Streak"
+              value={`${analytics.currentStreak}`}
+              hint={analytics.currentStreak === 1 ? 'day' : 'days'}
+              icon="flame-outline"
+              accentColor={colors.primary}
+            />
+          </View>
+
+          <SectionHeader title="Milestones" />
+          <MilestonesCard
+            achievements={analytics.milestones.achievements}
+            weeklyStreak={analytics.milestones.weeklyStreak}
+            earnedCount={analytics.milestones.earnedCount}
+          />
+
+          {weightEntries.length > 0 ? (
+            <>
+              <SectionHeader
+                title="Body Weight"
+                actionLabel="View Log"
+                onActionPress={() => router.push('/profile/weight')}
+              />
+              <BodyWeightCard entries={weightEntries} />
+            </>
+          ) : null}
+
+          <SectionHeader title="Running Snapshot" />
+          <RunProgressCard stats={analytics.runStats} />
+
+          {analytics.hybridStats.totalSessions > 0 ? (
+            <>
+              <SectionHeader title="Hybrid Snapshot" />
+              <HybridProgressCard stats={analytics.hybridStats} />
+            </>
+          ) : null}
+
+          {analytics.totalWorkouts > 0 ? (
+            <>
+              <SectionHeader title="Weekly Activity" />
+              <WeeklyActivityCard days={analytics.weeklyActivity} />
+
+              <SectionHeader title="Volume by Muscle Group" />
+              <MuscleGroupCard
+                stats={analytics.muscleGroupStats}
+                maxVolume={analytics.maxMuscleVolume}
+                maxSets={analytics.maxMuscleSets}
+              />
+
+              <SectionHeader
+                title="Exercise PRs"
+                actionLabel="View All"
+                onActionPress={() => router.push('/progress/prs')}
+              />
+              <ExercisePRCard prs={analytics.topPRs} weightUnit={weightUnit} />
+
+              <SectionHeader title="Progress Highlights" />
+              <HighlightsCard
+                biggestWorkout={
+                  analytics.bestVolumeWorkout
+                    ? `${analytics.bestVolumeWorkout.workout.title} • ${formatCompactVolume(
+                        analytics.bestVolumeWorkout.totalVolume
+                      )}`
+                    : 'No volume yet'
+                }
+                mostFrequentExercise={
+                  analytics.mostFrequentExercise
+                    ? `${analytics.mostFrequentExercise.exerciseName} • ${analytics.mostFrequentExercise.appearances}x`
+                    : 'No exercises yet'
+                }
+                mostTrainedMuscleGroup={
+                  analytics.mostTrainedMuscleGroup
+                    ? `${analytics.mostTrainedMuscleGroup.muscleGroup} • ${analytics.mostTrainedMuscleGroup.totalSets} sets`
+                    : 'No sets yet'
+                }
+                latestWorkout={
+                  analytics.latestWorkout
+                    ? `${analytics.latestWorkout.title} • ${formatRelativeDate(
+                        analytics.latestWorkout.date
+                      )}`
+                    : 'No workouts yet'
+                }
+              />
+            </>
+          ) : null}
+        </>
+      )}
+    </ScreenContainer>
+  );
+}
+
+function WeeklySummaryCard({
+  summary,
+  deltas,
+  weeklyTarget,
+  distanceUnit,
+}: {
+  summary: WeeklySummary;
+  deltas: {
+    sessions: WeeklyDelta;
+    volume: WeeklyDelta;
+    distance: WeeklyDelta;
+    hybridTime: WeeklyDelta;
+  };
+  weeklyTarget: number;
+  distanceUnit: 'mi' | 'km';
+}) {
+  const target = Math.max(0, Math.floor(weeklyTarget));
+  const targetPercent =
+    target > 0 ? Math.min(100, Math.round((summary.sessions / target) * 100)) : 0;
+
+  return (
+    <AppCard elevated tint="brand">
+      <View style={styles.weekTopRow}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.weekSessions}>
+            {summary.sessions}
+            {target > 0 ? ` / ${target}` : ''}
+            <Text style={styles.weekSessionsUnit}>  sessions</Text>
+          </Text>
+          <Text style={styles.weekSub}>
+            {summary.activeDays} active {summary.activeDays === 1 ? 'day' : 'days'} •{' '}
+            {summary.strengthWorkouts} lift{summary.strengthWorkouts === 1 ? '' : 's'} •{' '}
+            {summary.runs} run{summary.runs === 1 ? '' : 's'} • {summary.hybridSessions}{' '}
+            hybrid
+          </Text>
+        </View>
+        <DeltaBadge delta={deltas.sessions} />
+      </View>
+
+      {target > 0 ? (
+        <View style={styles.weekTargetTrack}>
+          <View style={[styles.weekTargetFill, { width: `${targetPercent}%` }]} />
+        </View>
+      ) : null}
+
+      <View style={styles.weekMetricRow}>
+        <WeekMetric
+          label="Volume"
+          value={formatCompactVolume(summary.strengthVolume)}
+          delta={deltas.volume}
+        />
+        <WeekMetric
+          label="Distance"
+          value={`${milesToPreferredUnit(summary.runDistanceMiles, distanceUnit)} ${distanceUnit}`}
+          delta={deltas.distance}
+        />
+        <WeekMetric
+          label="Hybrid Time"
+          value={summary.hybridSeconds > 0 ? formatSegmentTime(summary.hybridSeconds) : '—'}
+          delta={deltas.hybridTime}
+        />
+      </View>
+    </AppCard>
+  );
+}
+
+function WeekMetric({
+  label,
+  value,
+  delta,
+}: {
+  label: string;
+  value: string;
+  delta: WeeklyDelta;
+}) {
+  return (
+    <View style={styles.weekMetric}>
+      <Text style={styles.weekMetricValue} numberOfLines={1}>
+        {value}
+      </Text>
+      <View style={styles.weekMetricBottom}>
+        <Text style={styles.weekMetricLabel}>{label}</Text>
+        <DeltaBadge delta={delta} compact />
+      </View>
+    </View>
+  );
+}
+
+function DeltaBadge({ delta, compact }: { delta: WeeklyDelta; compact?: boolean }) {
+  if (delta.direction === 'flat') {
+    return <Text style={[styles.deltaFlat, compact && styles.deltaCompact]}>—</Text>;
+  }
+
+  const up = delta.direction === 'up';
+  return (
+    <Text
+      style={[
+        up ? styles.deltaUp : styles.deltaDown,
+        compact && styles.deltaCompact,
+      ]}
+    >
+      {up ? '▲' : '▼'}
+      {delta.percent !== undefined ? ` ${delta.percent}%` : ''}
+    </Text>
+  );
+}
+
+function BodyWeightCard({
+  entries,
+}: {
+  entries: ReturnType<typeof useBodyWeight>['entries'];
+}) {
+  const latest = entries[0];
+  const previous = entries[1];
+  const change =
+    previous !== undefined
+      ? Math.round((latest.weight - previous.weight) * 10) / 10
+      : undefined;
+  const oldest = entries[entries.length - 1];
+  const totalChange =
+    entries.length > 1
+      ? Math.round((latest.weight - oldest.weight) * 10) / 10
+      : undefined;
+
+  return (
+    <AppCard>
+      <View style={styles.runSnapshotGrid}>
+        <RunSnapshotMetric
+          label="Current"
+          value={`${latest.weight} ${latest.unit}`}
+          hint={formatRelativeDate(latest.date)}
+          icon="scale-outline"
+          color={colors.accentTeal}
+        />
+        <RunSnapshotMetric
+          label="Last Change"
+          value={
+            change === undefined ? '—' : `${change > 0 ? '+' : ''}${change} ${latest.unit}`
+          }
+          hint={previous ? `from ${previous.weight} ${previous.unit}` : 'first entry'}
+          icon={change !== undefined && change > 0 ? 'trending-up-outline' : 'trending-down-outline'}
+          color={colors.accentLime}
+        />
+        <RunSnapshotMetric
+          label="All Time"
+          value={
+            totalChange === undefined
+              ? '—'
+              : `${totalChange > 0 ? '+' : ''}${totalChange} ${latest.unit}`
+          }
+          hint={oldest ? `since ${formatRelativeDate(oldest.date)}` : 'no history yet'}
+          icon="analytics-outline"
+          color={colors.techCool}
+        />
+        <RunSnapshotMetric
+          label="Entries"
+          value={String(entries.length)}
+          hint="logged"
+          icon="list-outline"
+          color={colors.success}
+        />
+      </View>
+    </AppCard>
+  );
+}
+
+function MilestonesCard({
+  achievements,
+  weeklyStreak,
+  earnedCount,
+}: {
+  achievements: Achievement[];
+  weeklyStreak: number;
+  earnedCount: number;
+}) {
+  const earned = achievements.filter((achievement) => achievement.earned);
+  const nextUp = achievements
+    .filter((achievement) => !achievement.earned && achievement.progress > 0)
+    .sort((a, b) => b.progress - a.progress)
+    .slice(0, 2);
+
+  return (
+    <AppCard>
+      <View style={styles.milestoneTopRow}>
+        <View style={styles.streakBadge}>
+          <Ionicons name="flame" size={18} color={colors.accentLime} />
+          <Text style={styles.streakValue}>{weeklyStreak}</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.rowTitle}>
+            {weeklyStreak > 0
+              ? `${weeklyStreak}-week training streak`
+              : 'Start a training streak'}
+          </Text>
+          <Text style={styles.rowSub}>
+            {earnedCount} of {achievements.length} milestones earned
+          </Text>
+        </View>
+      </View>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.ringScroll}
+      >
+        {[...earned, ...nextUp].map((achievement) => {
+          const isEarned = achievement.earned;
+          return (
+            <View key={achievement.id} style={styles.ringItem}>
+              <ProgressRing
+                progress={achievement.progress}
+                size={76}
+                strokeWidth={7}
+                color={isEarned ? colors.accentLime : colors.accentTeal}
+                icon={
+                  isEarned
+                    ? (achievement.icon as keyof typeof Ionicons.glyphMap)
+                    : undefined
+                }
+                value={isEarned ? undefined : `${Math.round(achievement.progress * 100)}%`}
+              />
+              <Text style={styles.ringItemTitle} numberOfLines={2}>
+                {achievement.title}
+              </Text>
+              <Text style={styles.ringItemSub} numberOfLines={1}>
+                {isEarned ? 'Earned' : achievement.description}
+              </Text>
+            </View>
+          );
+        })}
+      </ScrollView>
+    </AppCard>
+  );
+}
+
+function EmptyProgressState({
+  onStartWorkout,
+  onLogRun,
+  onStartHybrid,
+}: {
+  onStartWorkout: () => void;
+  onLogRun: () => void;
+  onStartHybrid: () => void;
+}) {
+  return (
+    <AppCard elevated tint="brand" style={styles.emptyCard}>
+      <View style={styles.emptyIcon}>
+        <Ionicons name="stats-chart-outline" size={28} color={colors.tech} />
+      </View>
+      <Text style={styles.emptyTitle}>Log your first workout, run, or hybrid session to unlock progress tracking.</Text>
+      <Text style={styles.emptySub}>ReviveX will track volume, mileage, sets, pace, hybrid sessions, PRs, and trends here.</Text>
+      <PrimaryButton
+        label="Start Workout"
+        variant="primary"
+        onPress={onStartWorkout}
+        style={styles.emptyButton}
+      />
+      <PrimaryButton
+        label="Log Run"
+        variant="outline"
+        onPress={onLogRun}
+        style={styles.emptySecondaryButton}
+      />
+      <PrimaryButton
+        label="Start Hybrid Session"
+        variant="outline"
+        onPress={onStartHybrid}
+        style={styles.emptySecondaryButton}
+      />
+    </AppCard>
+  );
+}
+
+function RunProgressCard({ stats }: { stats: ReturnType<typeof calculateRunStats> }) {
+  return (
+    <AppCard>
+      <View style={styles.runSnapshotGrid}>
+        <RunSnapshotMetric
+          label="Run Distance"
+          value={`${stats.totalDistanceMiles.toFixed(1)} mi`}
+          hint="all time"
+          icon="walk-outline"
+          color={colors.accentTeal}
+        />
+        <RunSnapshotMetric
+          label="Runs This Week"
+          value={String(stats.runsThisWeek)}
+          hint={`${stats.weeklyMileageMiles.toFixed(1)} mi`}
+          icon="calendar-outline"
+          color={colors.techCool}
+        />
+        <RunSnapshotMetric
+          label="Best Pace"
+          value={`${formatPace(stats.bestPace?.paceSecondsPerMile)}/mi`}
+          hint={stats.bestPace?.title ?? 'no pace yet'}
+          icon="speedometer-outline"
+          color={colors.accentLime}
+        />
+        <RunSnapshotMetric
+          label="Longest Run"
+          value={
+            stats.longestRun
+              ? formatDistance(stats.longestRun.distance, stats.longestRun.distanceUnit)
+              : '—'
+          }
+          hint={stats.longestRun?.title ?? 'no runs yet'}
+          icon="trail-sign-outline"
+          color={colors.success}
+        />
+      </View>
+    </AppCard>
+  );
+}
+
+function RunSnapshotMetric({
+  label,
+  value,
+  hint,
+  icon,
+  color,
+}: {
+  label: string;
+  value: string;
+  hint: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  color: string;
+}) {
+  return (
+    <View style={styles.runSnapshotMetric}>
+      <View style={styles.runSnapshotHeader}>
+        <Ionicons name={icon} size={16} color={color} />
+        <Text style={styles.runSnapshotLabel}>{label}</Text>
+      </View>
+      <Text style={styles.runSnapshotValue}>{value}</Text>
+      <Text style={styles.runSnapshotHint} numberOfLines={1}>{hint}</Text>
+    </View>
+  );
+}
+
+function HybridProgressCard({ stats }: { stats: ReturnType<typeof getHybridSessionStats> }) {
+  return (
+    <AppCard>
+      <View style={styles.runSnapshotGrid}>
+        <RunSnapshotMetric
+          label="Hybrid Sessions"
+          value={String(stats.totalSessions)}
+          hint="all time"
+          icon="flash-outline"
+          color={colors.accentLime}
+        />
+        <RunSnapshotMetric
+          label="Best Time"
+          value={stats.bestSession ? formatSegmentTime(stats.bestSession.totalDurationSeconds) : '—'}
+          hint={stats.bestSession?.title ?? 'no time yet'}
+          icon="trophy-outline"
+          color={colors.success}
+        />
+        <RunSnapshotMetric
+          label="Average Time"
+          value={stats.averageSessionTime > 0 ? formatSegmentTime(stats.averageSessionTime) : '—'}
+          hint="timed sessions"
+          icon="timer-outline"
+          color={colors.accentTeal}
+        />
+        <RunSnapshotMetric
+          label="Latest"
+          value={stats.latestSession ? formatSegmentTime(stats.latestSession.totalDurationSeconds) : '—'}
+          hint={stats.latestSession?.title ?? 'no sessions yet'}
+          icon="calendar-outline"
+          color={colors.techCool}
+        />
+      </View>
+    </AppCard>
+  );
+}
+
+function MiniMetricCard({
+  label,
+  value,
+  hint,
+  icon,
+  accentColor,
+}: {
+  label: string;
+  value: string;
+  hint: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  accentColor: string;
+}) {
+  return (
+    <AppCard style={styles.miniCard}>
+      <View style={styles.miniHeader}>
+        <Ionicons name={icon} size={16} color={accentColor} />
+        <Text style={styles.miniLabel}>{label}</Text>
+      </View>
+      <Text style={styles.miniValue} numberOfLines={1}>
+        {value}
+      </Text>
+      <Text style={styles.miniHint} numberOfLines={1}>
+        {hint}
+      </Text>
+    </AppCard>
+  );
+}
+
+function WeeklyActivityCard({ days }: { days: ReturnType<typeof getWeeklyActivity> }) {
+  const maxSets = Math.max(...days.map((day) => day.totalSets), 1);
+
+  return (
+    <AppCard>
+      <View style={styles.weekRow}>
+        {days.map((day) => {
+          const hasWorkout = day.workoutCount > 0;
+          const barHeight = Math.max(6, Math.round((day.totalSets / maxSets) * 54));
+
+          return (
+            <View key={day.dateKey} style={styles.dayCard}>
+              <Text style={styles.dayLabel}>{day.dayLabel}</Text>
+              <View style={styles.dayBarTrack}>
+                <View
+                  style={[
+                    styles.dayBarFill,
+                    {
+                      height: barHeight,
+                      backgroundColor: hasWorkout ? colors.tech : colors.border,
+                    },
+                  ]}
+                />
+              </View>
+              <Text style={[styles.daySets, hasWorkout && styles.daySetsActive]}>
+                {day.totalSets}
+              </Text>
+              <Text style={styles.dayUnit}>sets</Text>
+            </View>
+          );
+        })}
+      </View>
+    </AppCard>
+  );
+}
+
+function MuscleGroupCard({
+  stats,
+  maxVolume,
+  maxSets,
+}: {
+  stats: MuscleGroupStat[];
+  maxVolume: number;
+  maxSets: number;
+}) {
+  const usesVolumeBars = maxVolume > 0;
+  const maxValue = usesVolumeBars ? maxVolume : Math.max(maxSets, 1);
+
+  return (
+    <AppCard>
+      {stats.map((stat, index) => {
+        const barValue = usesVolumeBars ? stat.totalVolume : stat.totalSets;
+        const percent = maxValue > 0 ? Math.min(100, Math.round((barValue / maxValue) * 100)) : 0;
+
+        return (
+          <View
+            key={stat.muscleGroup}
+            style={[
+              styles.muscleRow,
+              index !== stats.length - 1 && styles.rowDivider,
+            ]}
+          >
+            <View style={styles.muscleTopRow}>
+              <Text style={styles.rowTitle}>{stat.muscleGroup}</Text>
+              <Text style={styles.rowMeta}>
+                {stat.totalSets} sets • {formatVolume(stat.totalVolume)}
+              </Text>
+            </View>
+            <View style={styles.progressTrack}>
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    width: `${percent}%`,
+                    backgroundColor: stat.totalVolume > 0 ? colors.gold : colors.tech,
+                  },
+                ]}
+              />
+            </View>
+          </View>
+        );
+      })}
+    </AppCard>
+  );
+}
+
+function ExercisePRCard({ prs, weightUnit }: { prs: ExercisePR[]; weightUnit: string }) {
+  if (prs.length === 0) {
+    return (
+      <AppCard>
+        <Text style={styles.placeholder}>
+          Complete weighted sets to start seeing PRs here.
+        </Text>
+      </AppCard>
+    );
+  }
+
+  return (
+    <AppCard>
+      {prs.map((pr, index) => (
+        <Pressable
+          key={`${pr.exerciseId}-${pr.exerciseName}`}
+          onPress={() =>
+            router.push({
+              pathname: '/progress/exercise/[key]',
+              params: { key: pr.exerciseId || pr.exerciseName },
+            })
+          }
+          style={[styles.prRow, index !== prs.length - 1 && styles.rowDivider]}
+        >
+          <View style={styles.prRank}>
+            <Text style={styles.prRankText}>{index + 1}</Text>
+          </View>
+          <View style={styles.prContent}>
+            <Text style={styles.rowTitle}>{pr.exerciseName}</Text>
+            <Text style={styles.rowSub}>
+              {pr.muscleGroup} • {formatRelativeDate(pr.date)}
+            </Text>
+          </View>
+          <View style={styles.prResult}>
+            <Text style={styles.prWeight}>{formatWeight(pr.weight, weightUnit)}</Text>
+            <Text style={styles.prReps}>x {pr.reps}</Text>
+          </View>
+        </Pressable>
+      ))}
+    </AppCard>
+  );
+}
+
+function HighlightsCard({
+  biggestWorkout,
+  mostFrequentExercise,
+  mostTrainedMuscleGroup,
+  latestWorkout,
+}: {
+  biggestWorkout: string;
+  mostFrequentExercise: string;
+  mostTrainedMuscleGroup: string;
+  latestWorkout: string;
+}) {
+  const highlights = [
+    {
+      label: 'Biggest workout by volume',
+      value: biggestWorkout,
+      icon: 'trending-up-outline' as const,
+      color: colors.tech,
+    },
+    {
+      label: 'Most frequent exercise',
+      value: mostFrequentExercise,
+      icon: 'repeat-outline' as const,
+      color: colors.gold,
+    },
+    {
+      label: 'Most trained muscle group',
+      value: mostTrainedMuscleGroup,
+      icon: 'body-outline' as const,
+      color: colors.primary,
+    },
+    {
+      label: 'Latest workout completed',
+      value: latestWorkout,
+      icon: 'checkmark-circle-outline' as const,
+      color: colors.success,
+    },
+  ];
+
+  return (
+    <AppCard style={styles.bottomCard}>
+      {highlights.map((highlight, index) => (
+        <View
+          key={highlight.label}
+          style={[styles.highlightRow, index !== highlights.length - 1 && styles.rowDivider]}
+        >
+          <Ionicons name={highlight.icon} size={18} color={highlight.color} />
+          <View style={styles.highlightText}>
+            <Text style={styles.highlightLabel}>{highlight.label}</Text>
+            <Text style={styles.highlightValue} numberOfLines={1}>
+              {highlight.value}
+            </Text>
+          </View>
+        </View>
+      ))}
+    </AppCard>
+  );
+}
+
+function formatCompactVolume(volume: number): string {
+  if (volume >= 1_000_000) return `${(volume / 1_000_000).toFixed(1)}M kg`;
+  if (volume >= 10_000) return `${Math.round(volume / 1_000).toLocaleString()}k kg`;
+  return formatVolume(volume);
+}
+
+function formatWeight(weight: number, unit: string): string {
+  const rounded = Number.isInteger(weight) ? weight.toFixed(0) : weight.toFixed(1);
+  return `${rounded} ${unit}`;
+}
+
+const styles = StyleSheet.create({
+  title: {
+    color: colors.textPrimary,
+    fontSize: fontSize.xxl,
+    fontWeight: fontWeight.heavy,
+  },
+  milestoneTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  streakBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.accentLime,
+    backgroundColor: 'rgba(198, 255, 0, 0.08)',
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  streakValue: {
+    color: colors.accentLime,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.heavy,
+  },
+  ringScroll: {
+    gap: spacing.lg,
+    paddingTop: spacing.md,
+    paddingRight: spacing.md,
+  },
+  ringItem: {
+    alignItems: 'center',
+    width: 92,
+  },
+  ringItemTitle: {
+    color: colors.textPrimary,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    textAlign: 'center',
+    marginTop: spacing.sm,
+  },
+  ringItemSub: {
+    color: colors.textMuted,
+    fontSize: 10,
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  weekTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+  },
+  weekSessions: {
+    color: colors.textPrimary,
+    fontSize: fontSize.xxl,
+    fontWeight: fontWeight.heavy,
+  },
+  weekSessionsUnit: {
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+  },
+  weekSub: {
+    color: colors.textSecondary,
+    fontSize: fontSize.xs,
+    marginTop: spacing.xs,
+  },
+  weekTargetTrack: {
+    height: 7,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.pill,
+    marginTop: spacing.md,
+    overflow: 'hidden',
+  },
+  weekTargetFill: {
+    height: 7,
+    borderRadius: radius.pill,
+    backgroundColor: colors.accentLime,
+  },
+  weekMetricRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.lg,
+  },
+  weekMetric: {
+    flex: 1,
+  },
+  weekMetricValue: {
+    color: colors.textPrimary,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.heavy,
+  },
+  weekMetricBottom: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: 2,
+  },
+  weekMetricLabel: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    textTransform: 'uppercase',
+  },
+  deltaUp: {
+    color: colors.success,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+  },
+  deltaDown: {
+    color: colors.danger,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+  },
+  deltaFlat: {
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+  },
+  deltaCompact: {
+    fontSize: 10,
+  },
+  subtitle: {
+    color: colors.textSecondary,
+    fontSize: fontSize.md,
+    marginTop: spacing.xs,
+  },
+  topCard: {
+    marginTop: spacing.lg,
+  },
+  statGrid: {
+    marginTop: spacing.lg,
+    gap: spacing.md,
+  },
+  statRow: {
+    flexDirection: 'row',
+  },
+  statSpacer: {
+    width: spacing.md,
+  },
+  secondaryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    marginTop: spacing.lg,
+  },
+  miniCard: {
+    width: '48%',
+    minHeight: 118,
+  },
+  miniHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  miniLabel: {
+    color: colors.textSecondary,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    textTransform: 'uppercase',
+  },
+  miniValue: {
+    color: colors.textPrimary,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.heavy,
+    marginTop: spacing.md,
+  },
+  miniHint: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    marginTop: spacing.xs,
+  },
+  emptyCard: {
+    alignItems: 'center',
+    marginTop: spacing.lg,
+  },
+  emptyIcon: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: glow.cyanFaint,
+    borderWidth: 1,
+    borderColor: glow.cyanStrong,
+    marginBottom: spacing.md,
+  },
+  emptyTitle: {
+    color: colors.textPrimary,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
+    textAlign: 'center',
+  },
+  emptySub: {
+    color: colors.textSecondary,
+    fontSize: fontSize.sm,
+    lineHeight: 20,
+    textAlign: 'center',
+    marginTop: spacing.sm,
+  },
+  emptyButton: {
+    alignSelf: 'stretch',
+    marginTop: spacing.lg,
+  },
+  emptySecondaryButton: {
+    alignSelf: 'stretch',
+    marginTop: spacing.md,
+  },
+  runSnapshotGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+  },
+  runSnapshotMetric: {
+    width: '48%',
+    minHeight: 104,
+  },
+  runSnapshotHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  runSnapshotLabel: {
+    color: colors.textSecondary,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    textTransform: 'uppercase',
+  },
+  runSnapshotValue: {
+    color: colors.textPrimary,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.heavy,
+    marginTop: spacing.md,
+  },
+  runSnapshotHint: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    marginTop: spacing.xs,
+  },
+  weekRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  dayCard: {
+    flex: 1,
+    alignItems: 'center',
+    minHeight: 116,
+  },
+  dayLabel: {
+    color: colors.textSecondary,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+  },
+  dayBarTrack: {
+    height: 58,
+    width: 10,
+    justifyContent: 'flex-end',
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.pill,
+    marginTop: spacing.sm,
+    overflow: 'hidden',
+  },
+  dayBarFill: {
+    width: 10,
+    borderRadius: radius.pill,
+  },
+  daySets: {
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+    marginTop: spacing.sm,
+  },
+  daySetsActive: {
+    color: colors.textPrimary,
+  },
+  dayUnit: {
+    color: colors.textMuted,
+    fontSize: 10,
+    marginTop: 1,
+  },
+  muscleRow: {
+    paddingVertical: spacing.md,
+  },
+  muscleTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  rowTitle: {
+    color: colors.textPrimary,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+    flexShrink: 1,
+  },
+  rowSub: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    marginTop: 2,
+  },
+  rowMeta: {
+    color: colors.textSecondary,
+    fontSize: fontSize.xs,
+    textAlign: 'right',
+  },
+  rowDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderSubtle,
+  },
+  progressTrack: {
+    height: 7,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.pill,
+    marginTop: spacing.sm,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: 7,
+    borderRadius: radius.pill,
+  },
+  prRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    gap: spacing.md,
+  },
+  prRank: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: glow.successFaint,
+    borderWidth: 1,
+    borderColor: colors.success,
+  },
+  prRankText: {
+    color: colors.success,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.heavy,
+  },
+  prContent: {
+    flex: 1,
+  },
+  prResult: {
+    alignItems: 'flex-end',
+  },
+  prWeight: {
+    color: colors.gold,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.heavy,
+  },
+  prReps: {
+    color: colors.textSecondary,
+    fontSize: fontSize.xs,
+    marginTop: 2,
+  },
+  highlightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+  },
+  highlightText: {
+    flex: 1,
+  },
+  highlightLabel: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    textTransform: 'uppercase',
+  },
+  highlightValue: {
+    color: colors.textPrimary,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+    marginTop: 2,
+  },
+  bottomCard: {
+    marginBottom: spacing.lg,
+  },
+  placeholder: {
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
+    textAlign: 'center',
+    paddingVertical: spacing.md,
+  },
+});

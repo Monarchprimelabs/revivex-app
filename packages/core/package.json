@@ -1,0 +1,15 @@
+{
+  "name": "@revivex/core",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Revive X shared domain types, pure training logic, exercise library and illustrations.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "test": "npx tsx tests/run-all.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@revivex/test-utils": "1.0.0"
+  }
+}
