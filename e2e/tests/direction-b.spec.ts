@@ -40,6 +40,12 @@ test.describe('Direction B', () => {
     await expect(page.getByTestId('plan-block-0')).toContainText('Bench Press');
     await expect(page.getByText('Why this today')).toBeVisible();
 
+    // Adjust without breaking the week: swap the first exercise, then shorten.
+    await page.getByTestId('plan-swap-0').click();
+    await expect(page.getByTestId('plan-block-0')).not.toContainText('Bench Press');
+    await page.getByTestId('today-shorten').click();
+    await expect(page.getByTestId('today-adjustments')).toContainText('Shortened at your request');
+
     await page.getByTestId('today-complete').click();
     await expect(page.getByTestId('today-done')).toBeVisible();
     await expect(page.getByTestId('today-week')).toContainText('✓ Upper');

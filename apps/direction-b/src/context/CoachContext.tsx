@@ -20,6 +20,8 @@ import {
   planToWorkout,
   readinessScore,
   sessionsThisWeek,
+  shortenPlan,
+  swapExercise,
   weekTemplateFor,
   type CoachProfile,
   type DayPlan,
@@ -87,6 +89,8 @@ interface CoachContextValue {
   regeneratePlan: () => DailyPlanRecord | undefined;
   completePlan: (planId: string) => void;
   skipPlan: (planId: string) => void;
+  swapPlanBlock: (planId: string, blockIndex: number) => void;
+  shortenTodayPlan: (planId: string) => void;
   dayPlanOf: (record: DailyPlanRecord) => DayPlan;
   summaryOfCompleted: (record: DailyPlanRecord) => CompletedSessionSummary | undefined;
   /** Merge helpers used by cloud sync. */
@@ -234,6 +238,23 @@ export function CoachProvider({ children }: { children: React.ReactNode }) {
     [plans]
   );
 
+  const replacePlan = useCallback(
+    (planId: string, transform: (plan: DayPlan) => DayPlan) => {
+      const record = plans.items.find((candidate) => candidate.id === planId);
+      if (!record || record.status !== 'planned') return;
+      const next = transform(record.plan as unknown as DayPlan);
+      plans.upsert({ ...record, kind: next.kind, title: next.title, plan: next as unknown as Record<string, unknown>, updatedAt: new Date().toISOString() });
+    },
+    [plans]
+  );
+
+  const swapPlanBlock = useCallback(
+    (planId: string, blockIndex: number) => replacePlan(planId, (plan) => swapExercise(plan, blockIndex, history.workouts)),
+    [history.workouts, replacePlan]
+  );
+
+  const shortenTodayPlan = useCallback((planId: string) => replacePlan(planId, shortenPlan), [replacePlan]);
+
   const summaryOfCompleted = useCallback(
     (record: DailyPlanRecord): CompletedSessionSummary | undefined => {
       if (record.status !== 'completed' || !record.completedActivityId) return undefined;
@@ -277,6 +298,8 @@ export function CoachProvider({ children }: { children: React.ReactNode }) {
       regeneratePlan,
       completePlan,
       skipPlan,
+      swapPlanBlock,
+      shortenTodayPlan,
       dayPlanOf,
       summaryOfCompleted,
       mergeCheckins: checkins.upsertMany,
@@ -288,7 +311,7 @@ export function CoachProvider({ children }: { children: React.ReactNode }) {
     [
       loaded, settings, saveSettings, checkins.items, checkins.upsertMany, plans.items, plans.upsertMany, workouts.items, workouts.upsertMany,
       runs.items, runs.upsertMany, hybridSessions.items, hybridSessions.upsertMany, todayKey, todayCheckin, todayPlan, weekTemplate,
-      completedThisWeek, submitCheckin, planWithoutCheckin, regeneratePlan, completePlan, skipPlan, dayPlanOf, summaryOfCompleted,
+      completedThisWeek, submitCheckin, planWithoutCheckin, regeneratePlan, completePlan, skipPlan, swapPlanBlock, shortenTodayPlan, dayPlanOf, summaryOfCompleted,
     ]
   );
 

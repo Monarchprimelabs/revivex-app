@@ -1,5 +1,6 @@
 import { report } from '@revivex/test-utils';
-import { runCoachTests } from './coach.test';
+import { runAdjustTests, runCoachTests } from './coach.test';
 
 runCoachTests();
+runAdjustTests();
 process.exit(report());

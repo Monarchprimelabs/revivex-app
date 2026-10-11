@@ -1,6 +1,6 @@
 # Direction A feature backlog (Revive X hybrid tracker)
 
-Priority: must, should, nice. Status: done, partial, todo. Updated 2026-10-11 after step 4a. The vertical slice in step 3 covers the rows marked "slice".
+Priority: must, should, nice. Status: done, partial, todo. Updated 2026-10-11 after step 4c. The vertical slice in step 3 covers the rows marked "slice".
 
 | Feature | Priority | Status | Notes |
 | --- | --- | --- | --- |
@@ -13,7 +13,7 @@ Priority: must, should, nice. Status: done, partial, todo. Updated 2026-10-11 af
 | Open-source font in the design system | must | partial | Inter loads in both apps and drives shared components. Direction A screens keep the platform font until a typography pass |
 | Background-safe rest timer | must | partial | Timer exists. Needs a device check and a local notification at zero |
 | Privacy-safe sharing | must | partial | Schema rejects route points in posts. Client share flow still to build on the new tables |
-| Strava connect and push for runs, workouts, hybrid sessions | should | todo | Edge Functions and connect UI. Needs the owner's Strava API app and subscription |
+| Strava connect and push for runs, workouts, hybrid sessions | should | done | Edge Functions, connection screen, Post to Strava on detail screens. Needs the owner's Strava API app, subscription and secrets to run |
 | Set types (warm-up, drop, failure) and RPE | should | todo | Category table stakes per recon |
 | Supersets | should | todo | Category table stakes per recon |
 | Custom exercises | should | todo | `exercise_templates` table exists |

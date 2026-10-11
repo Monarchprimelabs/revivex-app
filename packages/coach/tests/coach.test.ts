@@ -8,8 +8,10 @@ import {
   planToWorkout,
   readinessScore,
   roundToIncrement,
+  shortenPlan,
   startOfWeek,
   suggestLoad,
+  swapExercise,
   weekTemplateFor,
   type CoachProfile,
   type StrengthBlock,
@@ -146,4 +148,35 @@ export function runCoachTests(): void {
   const hybridPlan = generateDayPlan({ profile, history: { ...empty, workouts: [mondayUpper, lowerYesterday] }, date: TODAY });
   const asHybrid = planToHybridSession(hybridPlan, { id: 'hy_done', durationSeconds: 2700 });
   check('completed hybrid expands the benchmark segments', [asHybrid.sessionType, asHybrid.segments.length], ['Hybrid Benchmark', 6]);
+}
+
+export function runAdjustTests(): void {
+  suite('coach: adjustments');
+  const basePlan = generateDayPlan({ profile, history: { ...empty, workouts: [workout('wk_a', new Date(2026, 9, 7, 18), 'bench-press', 'Chest', 185, [5, 5, 5, 5], 'Bench Press')] }, date: TODAY });
+  const swapped = swapExercise(basePlan, 0, []);
+  const before = basePlan.blocks[0] as StrengthBlock;
+  const after = swapped.blocks[0] as StrengthBlock;
+  checkTrue('swap picks a different exercise', after.exerciseId !== before.exerciseId);
+  check('swap keeps the muscle group', after.muscleGroup, before.muscleGroup);
+  checkTrue('swap never duplicates another block', !swapped.blocks.some((block, index) => index !== 0 && block.type === 'strength' && block.exerciseId === after.exerciseId));
+  checkTrue('swap explains itself', swapped.rationale[swapped.rationale.length - 1].startsWith('Swapped Bench Press for'));
+  check('swap on a non-strength block is a no-op', swapExercise(basePlan, 99, []), basePlan);
+
+  const shorter = shortenPlan(basePlan);
+  const setsBefore = basePlan.blocks.reduce((sum, block) => sum + (block as StrengthBlock).sets, 0);
+  const setsAfter = shorter.blocks.reduce((sum, block) => sum + (block as StrengthBlock).sets, 0);
+  checkTrue('shorten reduces total sets', setsAfter < setsBefore);
+  checkTrue('shorten caps exercises at four', shorter.blocks.length <= 4);
+  checkTrue('shorten reduces the estimate', shorter.estimatedMinutes < basePlan.estimatedMinutes);
+  checkTrue('shorten keeps at least two sets', shorter.blocks.every((block) => (block as StrengthBlock).sets >= 2));
+
+  const runProfile: CoachProfile = { ...profile, trainingFocus: 'Run', weeklyTrainingTarget: 3 };
+  const runPlan = generateDayPlan({ profile: runProfile, history: empty, date: TODAY });
+  const shorterRun = shortenPlan(runPlan);
+  check('shorten trims run distance by 30 percent', (shorterRun.blocks[0] as { distance: number }).distance, 1.8);
+
+  const hybridPlan = generateDayPlan({ profile, history: { ...empty, workouts: [workout('a', new Date(2026, 9, 12, 18), 'bench-press', 'Chest', 185, [5, 5, 5, 5, 5, 5], 'Bench Press'), workout('b', new Date(2026, 9, 13, 18), 'barbell-back-squat', 'Quads', 225, [5, 5, 5, 5, 5, 5], 'Back Squat')] }, date: TODAY });
+  check('hybrid plan to shorten', hybridPlan.kind, 'hybrid');
+  const shorterHybrid = shortenPlan(hybridPlan);
+  check('shorten swaps a one-round benchmark for the shorter circuit', (shorterHybrid.blocks[0] as { sessionType: string; rounds: number }).sessionType, 'Custom Hybrid');
 }

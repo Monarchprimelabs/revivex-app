@@ -1,6 +1,6 @@
 # Direction B feature backlog (Revive X daily coach)
 
-Priority: must, should, nice. Status: done, partial, todo. Updated 2026-10-11 after step 3. The vertical slice in step 3 covers the rows marked "slice".
+Priority: must, should, nice. Status: done, partial, todo. Updated 2026-10-11 after step 4c. The vertical slice in step 3 covers the rows marked "slice".
 
 | Feature | Priority | Status | Notes |
 | --- | --- | --- | --- |
@@ -15,7 +15,7 @@ Priority: must, should, nice. Status: done, partial, todo. Updated 2026-10-11 af
 | Profile basics: focus, weekly target, experience, units | must | done | Inputs the engine needs. Captured on first launch |
 | Open-source font in the design system | must | done | Inter throughout Direction B |
 | Account deletion from inside the app | must | done | Shared Edge Function |
-| Adjust today's plan: swap an exercise, shorten the session | should | todo | Addresses the rigidity complaints in the recon |
+| Adjust today's plan: swap an exercise, shorten the session | should | done | Swap keeps the muscle group and avoids duplicates; shorten trims sets, distance, rounds or time. Both explained in the rationale |
 | Weekly strip showing completed slots | should | done | Makes the rotation visible |
 | Local reminder notification for the check-in | should | todo | `expo-notifications`, no server push |
 | Streaks and simple adherence stats | should | todo | Reuse core achievements where they fit |

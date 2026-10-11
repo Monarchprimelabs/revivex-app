@@ -14,10 +14,10 @@ Date: 2026-10-11
 ## Current State
 
 - Monorepo on branch `claude/two-directions`, pushed. `main` still holds the pre-restructure layout until the owner opens and merges a pull request.
-- Direction A (`apps/direction-a`) is the Phase 50 app plus: Account & Sync screen, cloud mirror for workouts, routines, runs, GPS traces, hybrid sessions and body weight, sync chips on workout history and detail, account deletion, Inter in shared components.
-- Direction B (`apps/direction-b`) is the daily coach: setup, check-in, Today, plan detail, history, account, cloud mirror of five tables.
+- Direction A (`apps/direction-a`) is the Phase 50 app plus: Account & Sync screen, cloud mirror for workouts, routines, runs, GPS traces, hybrid sessions and body weight, sync chips on workout history and detail, account deletion, Strava connect and Post to Strava (functions written, not deployed), Inter in shared components.
+- Direction B (`apps/direction-b`) is the daily coach: setup, check-in, Today with swap and shorten, plan detail, history, account, cloud mirror of five tables.
 - Shared: `@revivex/core`, `@revivex/design-system`, `@revivex/backend` (sync engine), `@revivex/coach` (rules engine), `@revivex/test-utils`.
-- `db/schema.sql` is final for this phase and has not been applied to any Supabase project yet. `supabase/functions/delete-account` is written and not deployed.
+- `db/schema.sql` is final for this phase and has not been applied to any Supabase project yet. `supabase/functions/*` (delete-account and the five Strava functions) are written and not deployed.
 - Verification: see `docs/test-report.md`. All unit, policy and end-to-end suites pass in the sandbox.
 
 ## Mac Checklist (first session on the Mac)
@@ -39,10 +39,10 @@ Date: 2026-10-11
 
 ## Next (in order)
 
-1. Strava push: Edge Functions (`strava-connect`, `strava-callback`, `strava-push`, `strava-webhook`, `strava-disconnect`), a connect card under Profile → Connections, and a "Post to Strava" action on detail screens. Needs the owner's Strava API app and subscription; secrets go to `supabase secrets set`.
-2. Direction A logger breadth: set types, RPE, supersets, custom exercises. Sync chips on run, hybrid and routine screens.
-3. Direction B: adjust today's plan (swap an exercise, shorten), local reminder for the check-in.
-4. Step 6 comparison in `docs/comparison.md` once both directions have run on device.
+1. Strava on the Mac: create the Strava API app (callback domain = your Supabase host), set secrets, deploy the five functions per `supabase/README.md`, then Profile → Connections → Strava → Connect, and Post to Strava from a workout detail.
+2. Direction A logger breadth: set types, RPE, supersets, custom exercises. Sync chips on run, hybrid and routine screens. Typography pass.
+3. Direction B: inline "what I actually did" editor on completion, local reminder for the check-in, per-exercise trends from the shared core utilities.
+4. Revisit `docs/comparison.md` (currently a draft) after a week on device.
 
 ## Storage Keys
 

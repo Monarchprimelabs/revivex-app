@@ -12,3 +12,4 @@ export * from './running';
 export * from './hybrid';
 export * from './generate';
 export * from './convert';
+export * from './adjust';

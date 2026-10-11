@@ -59,7 +59,7 @@ export default function PlanDetailScreen() {
       {plan.blocks.length > 0 ? (
         <AppCard style={{ marginTop: spacing.lg }}>
           <Text style={styles.sectionTitle}>Session</Text>
-          <PlanBlocks blocks={plan.blocks} />
+          <PlanBlocks blocks={plan.blocks} onSwap={isToday && record.status === 'planned' ? (index) => coach.swapPlanBlock(record.id, index) : undefined} />
         </AppCard>
       ) : null}
 
@@ -89,9 +89,14 @@ export default function PlanDetailScreen() {
           <View testID="plan-complete">
             <PrimaryButton label={plan.kind === 'rest' ? 'Got it, resting' : 'Mark complete'} onPress={() => coach.completePlan(record.id)} style={{ marginTop: spacing.xl }} />
           </View>
-          <Pressable onPress={() => coach.skipPlan(record.id)} hitSlop={8} style={styles.skip} testID="plan-skip">
-            <Text style={styles.link}>Skip today</Text>
-          </Pressable>
+          <View style={styles.actions}>
+            <Pressable onPress={() => coach.shortenTodayPlan(record.id)} hitSlop={8} testID="plan-shorten">
+              <Text style={styles.link}>Shorten</Text>
+            </Pressable>
+            <Pressable onPress={() => coach.skipPlan(record.id)} hitSlop={8} testID="plan-skip">
+              <Text style={styles.link}>Skip today</Text>
+            </Pressable>
+          </View>
         </>
       ) : null}
       {record.status !== 'planned' ? (
@@ -115,5 +120,6 @@ const styles = StyleSheet.create({
   bulletDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: colors.accentTeal, marginTop: 8 },
   footnote: { color: colors.textMuted, fontSize: fontSize.xs, marginTop: spacing.md, fontFamily: fontFamily.regular },
   skip: { alignItems: 'center', paddingVertical: spacing.lg },
+  actions: { flexDirection: 'row', justifyContent: 'center', gap: spacing.xl, paddingVertical: spacing.lg },
   link: { color: colors.textSecondary, fontSize: fontSize.sm, fontFamily: fontFamily.semibold },
 });

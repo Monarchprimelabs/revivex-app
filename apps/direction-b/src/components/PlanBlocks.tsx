@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { formatPaceSeconds, type PlanBlock } from '@revivex/coach';
 import { colors, fontFamily, fontSize, spacing } from '@revivex/design-system';
@@ -11,7 +11,7 @@ function restLabel(seconds: number): string {
 }
 
 /** Renders the blocks of a plan: one row per exercise, run, hybrid circuit or recovery item. */
-export default function PlanBlocks({ blocks, compact = false }: { blocks: PlanBlock[]; compact?: boolean }) {
+export default function PlanBlocks({ blocks, compact = false, onSwap }: { blocks: PlanBlock[]; compact?: boolean; onSwap?: (index: number) => void }) {
   return (
     <View style={styles.list}>
       {blocks.map((block, index) => {
@@ -29,6 +29,12 @@ export default function PlanBlocks({ blocks, compact = false }: { blocks: PlanBl
                 </Text>
                 {!compact && block.note ? <Text style={styles.note}>{block.note}</Text> : null}
               </View>
+              {onSwap ? (
+                <Pressable onPress={() => onSwap(index)} hitSlop={8} style={styles.swap} testID={`plan-swap-${index}`} accessibilityLabel={`Swap ${block.exerciseName}`}>
+                  <Ionicons name="swap-horizontal-outline" size={16} color={colors.textSecondary} />
+                  <Text style={styles.swapText}>Swap</Text>
+                </Pressable>
+              ) : null}
             </View>
           );
         }
@@ -93,6 +99,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   body: { flex: 1 },
+  swap: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 6, paddingVertical: 4, alignSelf: 'flex-start' },
+  swapText: { color: colors.textSecondary, fontSize: fontSize.xs, fontFamily: fontFamily.semibold },
   title: { color: colors.textPrimary, fontSize: fontSize.md, fontFamily: fontFamily.semibold },
   meta: { color: colors.textSecondary, fontSize: fontSize.sm, marginTop: 2, fontFamily: fontFamily.regular },
   note: { color: colors.textMuted, fontSize: fontSize.xs, marginTop: 4, lineHeight: 17, fontFamily: fontFamily.regular },

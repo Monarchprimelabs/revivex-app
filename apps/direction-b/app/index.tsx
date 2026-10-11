@@ -186,17 +186,31 @@ export default function TodayScreen() {
 
                 {plan.blocks.length > 0 ? (
                   <View style={{ marginTop: spacing.lg }}>
-                    <PlanBlocks blocks={plan.blocks} compact />
+                    <PlanBlocks blocks={plan.blocks} compact onSwap={(index) => coach.swapPlanBlock(todayPlan.id, index)} />
                   </View>
                 ) : null}
 
                 <Text style={styles.whyTitle}>Why this today</Text>
-                {plan.rationale.slice(0, 3).map((line, index) => (
-                  <View key={index} style={styles.bullet}>
-                    <View style={styles.bulletDot} />
-                    <Text style={styles.bulletText}>{line}</Text>
+                {plan.rationale
+                  .filter((line) => !line.includes('at your request'))
+                  .slice(0, 3)
+                  .map((line, index) => (
+                    <View key={index} style={styles.bullet}>
+                      <View style={styles.bulletDot} />
+                      <Text style={styles.bulletText}>{line}</Text>
+                    </View>
+                  ))}
+                {plan.rationale.some((line) => line.includes('at your request')) ? (
+                  <View style={styles.adjusted} testID="today-adjustments">
+                    {plan.rationale
+                      .filter((line) => line.includes('at your request'))
+                      .map((line, index) => (
+                        <Text key={index} style={styles.adjustedText}>
+                          {line}
+                        </Text>
+                      ))}
                   </View>
-                ))}
+                ) : null}
 
                 <View testID="today-complete">
                   <PrimaryButton
@@ -208,6 +222,9 @@ export default function TodayScreen() {
                 <View style={styles.actionsRow}>
                   <Pressable onPress={() => coach.skipPlan(todayPlan.id)} hitSlop={8} testID="today-skip">
                     <Text style={styles.link}>Skip today</Text>
+                  </Pressable>
+                  <Pressable onPress={() => coach.shortenTodayPlan(todayPlan.id)} hitSlop={8} testID="today-shorten">
+                    <Text style={styles.link}>Shorten</Text>
                   </Pressable>
                   <Pressable onPress={() => coach.regeneratePlan()} hitSlop={8} testID="today-rebuild">
                     <Text style={styles.link}>Rebuild</Text>
@@ -299,7 +316,9 @@ const styles = StyleSheet.create({
   bullet: { flexDirection: 'row', gap: 8, marginTop: 4 },
   bulletDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: colors.accentTeal, marginTop: 7 },
   bulletText: { flex: 1, color: colors.textSecondary, fontSize: fontSize.sm, lineHeight: 19, fontFamily: fontFamily.regular },
-  actionsRow: { flexDirection: 'row', gap: spacing.xl, marginTop: spacing.xs },
+  actionsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg, marginTop: spacing.xs },
+  adjusted: { marginTop: spacing.sm, paddingLeft: 13, borderLeftWidth: 2, borderLeftColor: colors.accentLime },
+  adjustedText: { color: colors.textSecondary, fontSize: fontSize.xs, lineHeight: 17, fontFamily: fontFamily.regular, marginTop: 2 },
   week: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   weekNote: { color: colors.textMuted, fontSize: fontSize.xs, marginTop: spacing.md, lineHeight: 17, fontFamily: fontFamily.regular },
 });
