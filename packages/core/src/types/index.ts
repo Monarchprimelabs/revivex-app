@@ -57,6 +57,9 @@ export interface Exercise {
   equipment?: string;
 }
 
+/** Set type. Absent means a normal working set, which keeps older saved workouts valid. */
+export type WorkoutSetType = 'normal' | 'warmup' | 'drop' | 'failure';
+
 /** A single set inside a workout exercise. */
 export interface WorkoutSet {
   id: string;
@@ -65,6 +68,10 @@ export interface WorkoutSet {
   reps: number;
   notes?: string;
   completed?: boolean;
+  /** Warm-up sets never count toward volume or records. */
+  setType?: WorkoutSetType;
+  /** Rating of perceived exertion, 6 to 10, optional. */
+  rpe?: number;
 }
 
 /** An exercise that's part of a workout, with its sets. */

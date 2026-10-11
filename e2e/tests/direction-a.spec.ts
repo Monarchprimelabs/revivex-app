@@ -57,6 +57,14 @@ test.describe('Direction A', () => {
     // Train's library preview also lists Bench Press underneath the picker; the picker's copy is last.
     await page.getByText('Bench Press', { exact: true }).last().click();
 
+    // Set types cycle by tapping the set number: 1 -> W -> D -> F -> 1.
+    await page.getByTestId('set-type-1').click();
+    await expect(page.getByTestId('set-type-1')).toHaveText('W');
+    await page.getByTestId('set-type-1').click();
+    await page.getByTestId('set-type-1').click();
+    await page.getByTestId('set-type-1').click();
+    await expect(page.getByTestId('set-type-1')).toHaveText('1');
+
     await page.getByTestId('set-weight-1').fill('185');
     await page.getByTestId('set-reps-1').fill('8');
     await page.getByTestId('set-done-1').click();

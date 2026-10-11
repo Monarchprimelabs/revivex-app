@@ -16,13 +16,13 @@ npm run e2e:full      # export both apps for web and run Playwright at phone wid
 | Suite | What it covers | Result |
 | --- | --- | --- |
 | Typecheck | 7 workspaces (2 apps, 5 packages) | Clean |
-| `packages/core` | Plate math, weekly summary, last performance, GPS engine, workout-to-routine, achievements, route projection, HYROX plan | 70 checks pass |
+| `packages/core` | Plate math, weekly summary, last performance, GPS engine, workout-to-routine, achievements, route projection, HYROX plan, set types | 74 checks pass |
 | `packages/backend` | Row mappers round trip for every mirrored table, outbox reconcile, flush, failure and retry, pull and last-write-wins merge, delete protection | 49 checks pass |
 | `packages/coach` | Readiness bands, week templates, slot selection, fatigue skip, readiness gates, progressive overload, run prescriptions, determinism, plan-to-activity conversion, swap and shorten adjustments | 56 checks pass |
 | `apps/direction-a` | Health import mapping | 12 checks pass |
 | `db/tests` | RLS as three users, an anonymous client and the service role, idempotent schema | 69 checks pass |
 | `supabase/tests` | Strava payload mapping, GPX building, token refresh timing, scopes, return-link allowlist | 19 checks pass |
-| Playwright, Direction A | Fresh install starts onboarding; log a workout through start, add exercise, set entry, finish, detail, history, detail again; profile to account screen with cloud status | 3 scenarios pass |
+| Playwright, Direction A | Fresh install starts onboarding; log a workout through start, add exercise, set-type cycling, set entry, finish, detail, history, detail again; profile to account screen with cloud status | 3 scenarios pass |
 | Playwright, Direction B | First launch asks for setup; setup, check-in, plan, swap an exercise, shorten, complete, history, detail; skip and rebuild; account screen | 4 scenarios pass |
 | Metro export, iOS | Both apps bundle | Pass |
 | Metro export, web | Both apps bundle | Pass |

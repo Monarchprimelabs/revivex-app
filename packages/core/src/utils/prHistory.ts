@@ -52,6 +52,7 @@ export function estimateOneRepMax(weight: number, reps: number): number {
 
 function isCountableSet(set: WorkoutSet): boolean {
   if (set.completed === false) return false;
+  if (set.setType === 'warmup') return false;
   return safeNumber(set.weight) > 0 && Math.floor(safeNumber(set.reps)) > 0;
 }
 

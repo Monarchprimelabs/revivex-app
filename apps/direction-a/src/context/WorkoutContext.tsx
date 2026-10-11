@@ -53,7 +53,7 @@ interface WorkoutContextValue {
   updateSet: (
     workoutExerciseId: string,
     setId: string,
-    patch: Partial<Pick<WorkoutSet, 'weight' | 'reps' | 'notes' | 'completed'>>
+    patch: Partial<Pick<WorkoutSet, 'weight' | 'reps' | 'notes' | 'completed' | 'setType' | 'rpe'>>
   ) => void;
   removeSet: (workoutExerciseId: string, setId: string) => void;
 
@@ -137,8 +137,8 @@ function computeWorkoutTotals(exercises: WorkoutExercise[]) {
   for (const ex of exercises) {
     for (const s of ex.sets) {
       totalSets += 1;
-      // Only count completed sets in volume — feels right for "what you actually did"
-      if (s.completed) {
+      // Only completed working sets count toward volume; warm-ups never do.
+      if (s.completed && s.setType !== 'warmup') {
         totalVolume += s.weight * s.reps;
       }
     }
@@ -489,7 +489,7 @@ export function WorkoutProvider({ children }: ProviderProps) {
     (
       workoutExerciseId: string,
       setId: string,
-      patch: Partial<Pick<WorkoutSet, 'weight' | 'reps' | 'notes' | 'completed'>>
+      patch: Partial<Pick<WorkoutSet, 'weight' | 'reps' | 'notes' | 'completed' | 'setType' | 'rpe'>>
     ) => {
       setActiveWorkout((current) => {
         if (!current) return current;

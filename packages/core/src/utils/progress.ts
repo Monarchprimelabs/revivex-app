@@ -99,6 +99,7 @@ function isCompletedSet(set: WorkoutSet): boolean {
 }
 
 function getSetVolume(set: WorkoutSet): number {
+  if (set.setType === 'warmup') return 0;
   if (!isCompletedSet(set)) return 0;
 
   const weight = Math.max(0, safeNumber(set.weight));

@@ -12,6 +12,7 @@ import { runPlateMathTests } from './plateMath.test';
 import { runRouteProjectionTests } from './routeProjection.test';
 import { runWeeklySummaryTests } from './weeklySummary.test';
 import { runWorkoutToRoutineTests } from './workoutToRoutine.test';
+import { runSetTypeTests } from './setTypes.test';
 
 runPlateMathTests();
 runWeeklySummaryTests();
@@ -21,5 +22,6 @@ runWorkoutToRoutineTests();
 runAchievementsTests();
 runRouteProjectionTests();
 runHyroxTests();
+runSetTypeTests();
 
 process.exit(report());

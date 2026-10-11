@@ -20,6 +20,7 @@ export * from './utils/routeProjection';
 export * from './utils/activityFeed';
 export * from './utils/dataExport';
 export * from './utils/gpsTracking';
+export * from './utils/setTypes';
 
 export * from './data/exerciseLibrary';
 export * from './data/hybridTemplates';

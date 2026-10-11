@@ -21,6 +21,7 @@ import {
   spacing,
 } from '@revivex/design-system';
 import type { PreferredWeightUnit, WorkoutExercise, WorkoutSet } from '@revivex/core';
+import { SET_TYPE_LABELS, nextSetType, setTypeOf } from '@revivex/core';
 
 // Enable LayoutAnimation on Android for smooth set add/remove
 if (
@@ -35,7 +36,7 @@ interface Props {
   onAddSet: () => void;
   onUpdateSet: (
     setId: string,
-    patch: Partial<Pick<WorkoutSet, 'weight' | 'reps' | 'notes' | 'completed'>>
+    patch: Partial<Pick<WorkoutSet, 'weight' | 'reps' | 'notes' | 'completed' | 'setType' | 'rpe'>>
   ) => void;
   onRemoveSet: (setId: string) => void;
   onRemoveExercise: () => void;
@@ -145,7 +146,7 @@ export default function ExerciseLogCard({
 interface SetRowProps {
   set: WorkoutSet;
   onUpdate: (
-    patch: Partial<Pick<WorkoutSet, 'weight' | 'reps' | 'notes' | 'completed'>>
+    patch: Partial<Pick<WorkoutSet, 'weight' | 'reps' | 'notes' | 'completed' | 'setType' | 'rpe'>>
   ) => void;
   onRemove: () => void;
 }
@@ -189,9 +190,22 @@ function SetRow({ set, onUpdate, onRemove }: SetRowProps) {
         set.completed && styles.setRowCompleted,
       ]}
     >
-      <Text style={[styles.colCell, styles.colSet, styles.setNumber]}>
-        {set.setNumber}
-      </Text>
+      <Pressable
+        onPress={() => {
+          tapLight();
+          onUpdate({ setType: nextSetType(set.setType) });
+        }}
+        hitSlop={8}
+        style={styles.colSet}
+        testID={`set-type-${set.setNumber}`}
+        accessibilityLabel={`Set ${set.setNumber}: ${SET_TYPE_LABELS[setTypeOf(set)].label}. Tap to change`}
+      >
+        <View style={[styles.typeBadge, setTypeOf(set) !== 'normal' && styles.typeBadgeActive]}>
+          <Text style={[styles.setNumber, setTypeOf(set) !== 'normal' && styles.typeBadgeText]}>
+            {setTypeOf(set) === 'normal' ? set.setNumber : SET_TYPE_LABELS[setTypeOf(set)].short}
+          </Text>
+        </View>
+      </Pressable>
 
       <TextInput
         style={[styles.input, styles.colWeight]}
@@ -373,5 +387,19 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     fontWeight: fontWeight.bold,
     letterSpacing: 0.3,
+  },
+  typeBadge: {
+    minWidth: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  typeBadgeActive: {
+    backgroundColor: 'rgba(0, 180, 179, 0.16)',
+  },
+  typeBadgeText: {
+    color: colors.accentTeal,
+    fontWeight: '800',
   },
 });

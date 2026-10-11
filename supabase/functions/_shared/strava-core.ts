@@ -14,7 +14,7 @@ export interface WorkoutLike {
   title: string;
   performed_at: string;
   duration_seconds: number;
-  exercises: { exerciseName?: string; sets?: { weight?: number; reps?: number; completed?: boolean }[] }[];
+  exercises: { exerciseName?: string; sets?: { weight?: number; reps?: number; completed?: boolean; setType?: string }[] }[];
   notes?: string | null;
 }
 
@@ -68,7 +68,7 @@ export function describeWorkout(workout: WorkoutLike): string {
   const lines = (workout.exercises ?? []).map((exercise) => {
     const sets = (exercise.sets ?? []).filter((set) => set.completed !== false);
     const summary = sets
-      .map((set) => (set.weight && set.weight > 0 ? `${set.weight}×${set.reps ?? 0}` : `${set.reps ?? 0} reps`))
+      .map((set) => `${set.setType === 'warmup' ? 'W ' : ''}${set.weight && set.weight > 0 ? `${set.weight}×${set.reps ?? 0}` : `${set.reps ?? 0} reps`}`)
       .join(', ');
     return `${exercise.exerciseName ?? 'Exercise'}: ${summary || 'no sets'}`;
   });

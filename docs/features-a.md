@@ -1,6 +1,6 @@
 # Direction A feature backlog (Revive X hybrid tracker)
 
-Priority: must, should, nice. Status: done, partial, todo. Updated 2026-10-11 after step 4c. The vertical slice in step 3 covers the rows marked "slice".
+Priority: must, should, nice. Status: done, partial, todo. Updated 2026-10-11 after step 4e. The vertical slice in step 3 covers the rows marked "slice".
 
 | Feature | Priority | Status | Notes |
 | --- | --- | --- | --- |
@@ -14,7 +14,7 @@ Priority: must, should, nice. Status: done, partial, todo. Updated 2026-10-11 af
 | Background-safe rest timer | must | partial | Timer exists. Needs a device check and a local notification at zero |
 | Privacy-safe sharing | must | partial | Schema rejects route points in posts. Client share flow still to build on the new tables |
 | Strava connect and push for runs, workouts, hybrid sessions | should | done | Edge Functions, connection screen, Post to Strava on detail screens. Needs the owner's Strava API app, subscription and secrets to run |
-| Set types (warm-up, drop, failure) and RPE | should | todo | Category table stakes per recon |
+| Set types (warm-up, drop, failure) and RPE | should | partial | Set types shipped: tap the set number to cycle, warm-ups excluded from volume and records, marked in Strava descriptions. RPE field exists in the model, no input yet |
 | Supersets | should | todo | Category table stakes per recon |
 | Custom exercises | should | todo | `exercise_templates` table exists |
 | Feed, likes, comments on the new visibility model | should | todo | Posts default to followers. Follow requests supported by schema |
