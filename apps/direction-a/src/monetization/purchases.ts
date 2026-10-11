@@ -48,9 +48,9 @@ function loadPurchases(): typeof import('react-native-purchases').default | null
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const mod = require('react-native-purchases');
-    purchasesModule = (mod.default ??
-      mod ??
-      null) as typeof import('react-native-purchases').default | null;
+    const candidate = (mod?.default ?? mod ?? null) as typeof import('react-native-purchases').default | null;
+    // An empty module (web stub) counts as unavailable.
+    purchasesModule = candidate && typeof candidate.configure === 'function' ? candidate : null;
   } catch {
     // Expo Go / web: native module unavailable.
     purchasesModule = null;

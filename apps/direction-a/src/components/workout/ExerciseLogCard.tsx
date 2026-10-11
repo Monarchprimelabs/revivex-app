@@ -201,6 +201,7 @@ function SetRow({ set, onUpdate, onRemove }: SetRowProps) {
         placeholder="0"
         placeholderTextColor={colors.textMuted}
         keyboardType="decimal-pad"
+        testID={`set-weight-${set.setNumber}`}
         returnKeyType="done"
         selectTextOnFocus
       />
@@ -213,11 +214,12 @@ function SetRow({ set, onUpdate, onRemove }: SetRowProps) {
         placeholder="0"
         placeholderTextColor={colors.textMuted}
         keyboardType="number-pad"
+        testID={`set-reps-${set.setNumber}`}
         returnKeyType="done"
         selectTextOnFocus
       />
 
-      <Pressable onPress={toggleComplete} hitSlop={6} style={styles.colDoneHeader}>
+      <Pressable onPress={toggleComplete} hitSlop={6} style={styles.colDoneHeader} testID={`set-done-${set.setNumber}`}>
         <View
           style={[
             styles.checkbox,

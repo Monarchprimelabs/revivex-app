@@ -31,7 +31,9 @@ function loadHealthKit(): HealthKitModule | null {
   if (cachedModule !== undefined) return cachedModule;
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    cachedModule = require('@kingstinct/react-native-healthkit') as HealthKitModule;
+    const loaded = require('@kingstinct/react-native-healthkit') as Partial<HealthKitModule> | undefined;
+    // An empty module (web stub) counts as unavailable.
+    cachedModule = loaded && typeof loaded.isHealthDataAvailableAsync === 'function' ? (loaded as HealthKitModule) : null;
   } catch {
     // Native module missing (Expo Go) — health sync stays dormant.
     cachedModule = null;

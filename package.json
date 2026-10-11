@@ -11,11 +11,15 @@
     "start:b": "npm run start --workspace apps/direction-b",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
-    "test:db": "npx tsx db/tests/rls.test.ts"
+    "test:db": "npx tsx db/tests/rls.test.ts",
+    "export:web": "npm run export:web --workspaces --if-present",
+    "e2e": "playwright test -c e2e/playwright.config.ts",
+    "e2e:full": "npm run export:web && npm run e2e"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.3.11",
     "tsx": "^4.23.12",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "@playwright/test": "1.56.1"
   }
 }

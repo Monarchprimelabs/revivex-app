@@ -30,7 +30,9 @@ function loadHealthConnect(): HealthConnectModule | null {
   if (cachedModule !== undefined) return cachedModule;
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    cachedModule = require('react-native-health-connect') as HealthConnectModule;
+    const loaded = require('react-native-health-connect') as Partial<HealthConnectModule> | undefined;
+    // An empty module (web stub) counts as unavailable.
+    cachedModule = loaded && Object.keys(loaded).length > 0 ? (loaded as HealthConnectModule) : null;
   } catch {
     cachedModule = null;
   }
