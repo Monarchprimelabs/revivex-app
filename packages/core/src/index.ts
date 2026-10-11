@@ -22,7 +22,6 @@ export * from './utils/dataExport';
 export * from './utils/gpsTracking';
 
 export * from './data/exerciseLibrary';
-export * from './data/exerciseImages';
 export * from './data/hybridTemplates';
 export * from './data/hyrox';
 export * from './data/profileOptions';

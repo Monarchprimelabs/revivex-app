@@ -147,14 +147,17 @@ comment on table public.runs is 'Runs without their GPS trace. Route points live
 create index if not exists runs_user_performed on public.runs (user_id, performed_at desc);
 
 create table if not exists public.run_routes (
-  run_id uuid primary key references public.runs (id) on delete cascade,
+  id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles (id) on delete cascade,
+  -- The device id of the run this trace belongs to (runs.client_id).
+  client_id text not null,
   points jsonb not null default '[]'::jsonb check (jsonb_typeof(points) = 'array'),
   point_count integer not null default 0 check (point_count >= 0),
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  unique (user_id, client_id)
 );
-comment on table public.run_routes is 'GPS traces. Owner-only, never joined into posts. Masking happens before any sharing.';
+comment on table public.run_routes is 'GPS traces, keyed by the run device id. Owner-only, never joined into posts. Masking happens before any sharing.';
 create index if not exists run_routes_user on public.run_routes (user_id);
 
 create table if not exists public.hybrid_sessions (
@@ -404,14 +407,14 @@ create table if not exists public.strava_pushes (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles (id) on delete cascade,
   activity_kind public.activity_kind not null,
-  activity_id uuid not null,
+  activity_client_id text not null,
   status public.strava_push_status not null default 'queued',
   strava_upload_id bigint,
   strava_activity_id bigint,
   error text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  unique (user_id, activity_kind, activity_id)
+  unique (user_id, activity_kind, activity_client_id)
 );
 comment on table public.strava_pushes is 'Outbox for activities the user asked to post to Strava. Clients enqueue; the Edge Function worker advances status.';
 create index if not exists strava_pushes_worker on public.strava_pushes (status, created_at) where status in ('queued', 'uploading', 'processing');
@@ -435,6 +438,7 @@ create trigger strava_pushes_set_updated_at before update on public.strava_pushe
 create table if not exists public.readiness_checkins (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles (id) on delete cascade,
+  client_id text not null,
   checkin_date date not null,
   sleep smallint not null check (sleep between 1 and 5),
   soreness smallint not null check (soreness between 1 and 5),
@@ -443,6 +447,7 @@ create table if not exists public.readiness_checkins (
   notes text check (char_length(notes) <= 280),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
+  unique (user_id, client_id),
   unique (user_id, checkin_date)
 );
 comment on table public.readiness_checkins is 'Three-tap daily check-in. score is computed by the rules engine in @revivex/core and stored for history.';
@@ -450,18 +455,21 @@ comment on table public.readiness_checkins is 'Three-tap daily check-in. score i
 create table if not exists public.daily_plans (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles (id) on delete cascade,
+  client_id text not null,
   plan_date date not null,
   kind public.plan_kind not null,
   title text not null default '',
   engine_version text not null,
-  readiness_checkin_id uuid references public.readiness_checkins (id) on delete set null,
+  -- Device id of the readiness check-in that shaped this plan, if any.
+  checkin_client_id text,
   plan jsonb not null default '{}'::jsonb check (jsonb_typeof(plan) = 'object'),
   status public.plan_status not null default 'planned',
   completed_activity_kind public.activity_kind,
-  completed_activity_id uuid,
+  completed_activity_client_id text,
   completed_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
+  unique (user_id, client_id),
   unique (user_id, plan_date),
   check ((status = 'completed') = (completed_at is not null))
 );

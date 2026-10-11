@@ -4,6 +4,7 @@
  */
 export * from './theme/theme';
 export * from './haptics';
+export * from './fonts';
 
 export { default as AppCard } from './components/AppCard';
 export * from './components/AppCard';

@@ -3,7 +3,8 @@ import { router, Stack, useRootNavigationState, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { colors } from '@revivex/design-system';
+import { colors, useRevivexFonts } from '@revivex/design-system';
+import { View } from 'react-native';
 import { WorkoutProvider } from '../src/context/WorkoutContext';
 import { RunProvider } from '../src/context/RunContext';
 import { HybridProvider } from '../src/context/HybridContext';
@@ -19,6 +20,10 @@ import { ProProvider } from '../src/context/ProContext';
  * Wraps everything in providers and renders the navigation stack.
  */
 export default function RootLayout() {
+  const fontsReady = useRevivexFonts();
+  if (!fontsReady) {
+    return <View style={{ flex: 1, backgroundColor: colors.background }} />;
+  }
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
       <SafeAreaProvider>

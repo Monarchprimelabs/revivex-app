@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, StyleProp, ViewStyle } from 'react-native';
-import { colors, fontSize, fontWeight, spacing } from '../theme/theme';
+import { colors, fontSize, spacing } from '../theme/theme';
+import { fontFamily } from '../fonts';
 
 interface BrandTaglineProps {
   style?: StyleProp<ViewStyle>;
@@ -24,7 +25,7 @@ const styles = StyleSheet.create({
   },
   word: {
     fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.semibold,
     fontStyle: 'italic',
     letterSpacing: 1.6,
   },

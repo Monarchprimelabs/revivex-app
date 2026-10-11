@@ -1,0 +1,18 @@
+{
+  "name": "@revivex/coach",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Revive X daily coach: a deterministic, versioned rules engine that turns history and readiness into one session per day. No LLM.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "test": "npx tsx tests/run-all.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@revivex/core": "1.0.0"
+  },
+  "devDependencies": {
+    "@revivex/test-utils": "1.0.0"
+  }
+}

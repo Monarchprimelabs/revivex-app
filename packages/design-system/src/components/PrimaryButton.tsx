@@ -8,7 +8,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, fontSize, fontWeight, gradients, radius, spacing } from '../theme/theme';
+import { colors, fontSize, gradients, radius, spacing } from '../theme/theme';
+import { fontFamily } from '../fonts';
 
 type Variant = 'primary' | 'accent' | 'tech' | 'outline';
 
@@ -99,7 +100,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.semibold,
     letterSpacing: 0.2,
   },
 });

@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@revivex/core": "1.0.0"
+    "@revivex/core": "1.0.0",
+    "@expo-google-fonts/inter": "^0.4.1"
   },
   "peerDependencies": {
     "@expo/vector-icons": "*",
@@ -18,6 +19,7 @@
     "react": "*",
     "react-native": "*",
     "react-native-safe-area-context": "*",
-    "react-native-svg": "*"
+    "react-native-svg": "*",
+    "expo-font": "*"
   }
 }

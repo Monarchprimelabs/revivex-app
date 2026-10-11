@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { colors, fontSize, fontWeight, spacing } from '../theme/theme';
+import { colors, fontSize, spacing } from '../theme/theme';
+import { fontFamily } from '../fonts';
 
 interface SectionHeaderProps {
   title: string;
@@ -41,11 +42,11 @@ const styles = StyleSheet.create({
   title: {
     color: colors.textPrimary,
     fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.bold,
   },
   action: {
     color: colors.primary,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.semibold,
   },
 });

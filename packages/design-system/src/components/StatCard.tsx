@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle, StyleProp } from 'react-native';
-import { colors, fontSize, fontWeight, radius, spacing, glow } from '../theme/theme';
+import { colors, fontSize, radius, spacing, glow } from '../theme/theme';
+import { fontFamily } from '../fonts';
 
 type AccentColor =
   | 'primary'
@@ -82,12 +83,12 @@ const styles = StyleSheet.create({
   label: {
     color: colors.textSecondary,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
+    fontFamily: fontFamily.medium,
     marginBottom: spacing.sm,
   },
   value: {
     fontSize: fontSize.xxl,
-    fontWeight: fontWeight.heavy,
+    fontFamily: fontFamily.extrabold,
     letterSpacing: -0.5,
   },
   hint: {

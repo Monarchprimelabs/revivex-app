@@ -305,3 +305,44 @@ export interface BodyWeightEntry {
   unit: PreferredWeightUnit;
   createdAt: string;
 }
+
+// =======================
+// Daily coach record types (Direction B)
+// =======================
+
+export type ReadinessLevel = 1 | 2 | 3 | 4 | 5;
+
+export interface ReadinessCheckin {
+  id: string;
+  /** Calendar day in YYYY-MM-DD, device local time. */
+  date: string;
+  sleep: ReadinessLevel;
+  soreness: ReadinessLevel;
+  energy: ReadinessLevel;
+  /** 0-100, computed by the coach engine. */
+  score: number;
+  notes?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export type DailyPlanKind = 'lift' | 'run' | 'hybrid' | 'recovery' | 'rest';
+export type DailyPlanStatus = 'planned' | 'completed' | 'skipped';
+
+export interface DailyPlanRecord {
+  id: string;
+  /** Calendar day in YYYY-MM-DD, device local time. */
+  date: string;
+  kind: DailyPlanKind;
+  title: string;
+  engineVersion: string;
+  checkinId?: string;
+  /** The generated plan payload (DayPlan from @revivex/coach), stored as JSON. */
+  plan: Record<string, unknown>;
+  status: DailyPlanStatus;
+  completedActivityKind?: ActivityFeedType;
+  completedActivityId?: string;
+  completedAt?: string;
+  createdAt: string;
+  updatedAt?: string;
+}

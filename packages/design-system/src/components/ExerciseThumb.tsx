@@ -1,7 +1,7 @@
 import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { exerciseImages } from '@revivex/core';
+import { exerciseImages } from '@revivex/core/images';
 import { colors, radius } from '../theme/theme';
 import type { MuscleGroup } from '@revivex/core';
 

@@ -129,7 +129,8 @@ async function main(): Promise<number> {
   check('exercises must be a json array', (await fails(alice, `insert into public.workouts (user_id, client_id, performed_at, exercises) values ($1, 'wk_bad', now(), '{"a":1}')`, [ALICE])) !== null, true);
 
   const run1 = await rows<{ id: string }>(alice, `insert into public.runs (user_id, client_id, performed_at, distance_m, duration_seconds, source) values ($1, 'run_1', now(), 5000, 1500, 'gps') returning id`, [ALICE]);
-  await run(alice, (tx) => tx.query(`insert into public.run_routes (run_id, user_id, points, point_count) values ($1, $2, '[{"lat":1,"lng":2,"t":3}]', 1)`, [run1[0].id, ALICE]));
+  await run(alice, (tx) => tx.query(`insert into public.run_routes (user_id, client_id, points, point_count) values ($1, 'run_1', '[{"lat":1,"lng":2,"t":3}]', 1)`, [ALICE]));
+  check('route cannot be written for another user', (await fails(bob, `insert into public.run_routes (user_id, client_id, points, point_count) values ($1, 'run_1', '[]', 0)`, [ALICE])) !== null, true);
   check('route owner reads route', (await rows(alice, 'select point_count from public.run_routes')).length, 1);
   check('other user cannot read route', (await rows(bob, 'select point_count from public.run_routes')).length, 0);
   check('negative distance rejected', (await fails(alice, `insert into public.runs (user_id, client_id, performed_at, distance_m, duration_seconds) values ($1, 'run_bad', now(), -1, 10)`, [ALICE])) !== null, true);
@@ -179,23 +180,22 @@ async function main(): Promise<number> {
   const status = await rows(alice, 'select athlete_id, scope from public.strava_connection_status');
   check('owner sees connection status without tokens', status, [{ athlete_id: 4242, scope: 'activity:write' }]);
   check('other user sees no connection status', (await rows(bob, 'select athlete_id from public.strava_connection_status')).length, 0);
-  const wk = await rows<{ id: string }>(alice, 'select id from public.workouts limit 1');
-  check('owner can enqueue a push', await fails(alice, `insert into public.strava_pushes (user_id, activity_kind, activity_id) values ($1, 'workout', $2)`, [ALICE, wk[0].id]), null);
-  check('duplicate push rejected', (await fails(alice, `insert into public.strava_pushes (user_id, activity_kind, activity_id) values ($1, 'workout', $2)`, [ALICE, wk[0].id])) !== null, true);
-  check('client cannot enqueue as done', (await fails(alice, `insert into public.strava_pushes (user_id, activity_kind, activity_id, status) values ($1, 'run', $2, 'done')`, [ALICE, run1[0].id])) !== null, true);
+  check('owner can enqueue a push', await fails(alice, `insert into public.strava_pushes (user_id, activity_kind, activity_client_id) values ($1, 'workout', 'wk_1')`, [ALICE]), null);
+  check('duplicate push rejected', (await fails(alice, `insert into public.strava_pushes (user_id, activity_kind, activity_client_id) values ($1, 'workout', 'wk_1')`, [ALICE])) !== null, true);
+  check('client cannot enqueue as done', (await fails(alice, `insert into public.strava_pushes (user_id, activity_kind, activity_client_id, status) values ($1, 'run', 'run_1', 'done')`, [ALICE])) !== null, true);
   check('client cannot advance push status', (await rows(alice, `update public.strava_pushes set status = 'done' where user_id = $1 returning id`, [ALICE])).length, 0);
   check('other user cannot see pushes', (await rows(bob, 'select id from public.strava_pushes')).length, 0);
   await run(service, (tx) => tx.query(`update public.strava_pushes set status = 'processing' where user_id = $1`, [ALICE]));
   check('owner cannot cancel once processing', (await rows(alice, `delete from public.strava_pushes where user_id = $1 returning id`, [ALICE])).length, 0);
 
   suite('daily coach tables');
-  check('owner logs a check-in', await fails(bob, `insert into public.readiness_checkins (user_id, checkin_date, sleep, soreness, energy, score) values ($1, current_date, 4, 2, 4, 78)`, [BOB]), null);
-  check('second check-in same day rejected', (await fails(bob, `insert into public.readiness_checkins (user_id, checkin_date, sleep, soreness, energy, score) values ($1, current_date, 3, 3, 3, 50)`, [BOB])) !== null, true);
-  check('out of range sleep rejected', (await fails(bob, `insert into public.readiness_checkins (user_id, checkin_date, sleep, soreness, energy, score) values ($1, current_date - 1, 6, 1, 1, 10)`, [BOB])) !== null, true);
+  check('owner logs a check-in', await fails(bob, `insert into public.readiness_checkins (user_id, client_id, checkin_date, sleep, soreness, energy, score) values ($1, 'ci_1', current_date, 4, 2, 4, 78)`, [BOB]), null);
+  check('second check-in same day rejected', (await fails(bob, `insert into public.readiness_checkins (user_id, client_id, checkin_date, sleep, soreness, energy, score) values ($1, 'ci_2', current_date, 3, 3, 3, 50)`, [BOB])) !== null, true);
+  check('check-in upsert by device id works', await fails(bob, `insert into public.readiness_checkins (user_id, client_id, checkin_date, sleep, soreness, energy, score) values ($1, 'ci_1', current_date, 5, 2, 4, 85) on conflict (user_id, client_id) do update set sleep = excluded.sleep, score = excluded.score`, [BOB]), null);
+  check('out of range sleep rejected', (await fails(bob, `insert into public.readiness_checkins (user_id, client_id, checkin_date, sleep, soreness, energy, score) values ($1, 'ci_3', current_date - 1, 6, 1, 1, 10)`, [BOB])) !== null, true);
   check('other user cannot read check-ins', (await rows(alice, 'select id from public.readiness_checkins')).length, 0);
-  const checkin = await rows<{ id: string }>(bob, 'select id from public.readiness_checkins');
-  check('owner stores a daily plan', await fails(bob, `insert into public.daily_plans (user_id, plan_date, kind, title, engine_version, readiness_checkin_id, plan) values ($1, current_date, 'lift', 'Upper push', 'coach-0.1', $2, '{"blocks":[]}')`, [BOB, checkin[0].id]), null);
-  check('one plan per day', (await fails(bob, `insert into public.daily_plans (user_id, plan_date, kind, engine_version) values ($1, current_date, 'rest', 'coach-0.1')`, [BOB])) !== null, true);
+  check('owner stores a daily plan', await fails(bob, `insert into public.daily_plans (user_id, client_id, plan_date, kind, title, engine_version, checkin_client_id, plan) values ($1, 'plan_1', current_date, 'lift', 'Upper push', 'coach-0.1', 'ci_1', '{"blocks":[]}')`, [BOB]), null);
+  check('one plan per day', (await fails(bob, `insert into public.daily_plans (user_id, client_id, plan_date, kind, engine_version) values ($1, 'plan_2', current_date, 'rest', 'coach-0.1')`, [BOB])) !== null, true);
   check('completed requires completed_at', (await rows(bob, `update public.daily_plans set status = 'completed' where user_id = $1 returning id`, [BOB]).catch(() => [])).length, 0);
   check('completion with timestamp accepted', await fails(bob, `update public.daily_plans set status = 'completed', completed_at = now(), completed_activity_kind = 'workout' where user_id = $1`, [BOB]), null);
   check('other user cannot read plans', (await rows(alice, 'select id from public.daily_plans')).length, 0);
