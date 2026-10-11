@@ -187,6 +187,8 @@ async function main(): Promise<number> {
   check('other user cannot see pushes', (await rows(bob, 'select id from public.strava_pushes')).length, 0);
   await run(service, (tx) => tx.query(`update public.strava_pushes set status = 'processing' where user_id = $1`, [ALICE]));
   check('owner cannot cancel once processing', (await rows(alice, `delete from public.strava_pushes where user_id = $1 returning id`, [ALICE])).length, 0);
+  await run(service, (tx) => tx.query(`update public.strava_pushes set status = 'failed', error = 'boom' where user_id = $1`, [ALICE]));
+  check('owner can clear a failed push to retry', (await rows(alice, `delete from public.strava_pushes where user_id = $1 returning id`, [ALICE])).length, 1);
 
   suite('daily coach tables');
   check('owner logs a check-in', await fails(bob, `insert into public.readiness_checkins (user_id, client_id, checkin_date, sleep, soreness, energy, score) values ($1, 'ci_1', current_date, 4, 2, 4, 78)`, [BOB]), null);

@@ -10,11 +10,12 @@
     "start:a": "npm run start --workspace apps/direction-a",
     "start:b": "npm run start --workspace apps/direction-b",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present && npm run test:functions",
     "test:db": "npx tsx db/tests/rls.test.ts",
     "export:web": "npm run export:web --workspaces --if-present",
     "e2e": "playwright test -c e2e/playwright.config.ts",
-    "e2e:full": "npm run export:web && npm run e2e"
+    "e2e:full": "npm run export:web && npm run e2e",
+    "test:functions": "npx tsx supabase/tests/strava-core.test.ts"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.3.11",

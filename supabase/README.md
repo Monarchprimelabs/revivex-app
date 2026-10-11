@@ -17,3 +17,27 @@ One backend serves both directions. Everything here runs from the owner's machin
 6. Strava functions arrive in a later step and will need `STRAVA_CLIENT_ID` and `STRAVA_CLIENT_SECRET` set with `supabase secrets set`.
 
 Policy tests run locally without a project: `npm run test:db`.
+
+## Strava (push-first)
+
+Owner prerequisites: a Strava API application (https://www.strava.com/settings/api) whose **Authorization Callback Domain** is your project's host, for example `abcdefghijkl.supabase.co`, and an active Strava subscription (required for Standard-tier developers since June 2026).
+
+```bash
+supabase secrets set STRAVA_CLIENT_ID=... STRAVA_CLIENT_SECRET=... STRAVA_WEBHOOK_VERIFY_TOKEN=$(openssl rand -hex 16)
+supabase functions deploy strava-connect
+supabase functions deploy strava-push
+supabase functions deploy strava-disconnect
+supabase functions deploy strava-callback --no-verify-jwt   # Strava's browser redirect carries no Supabase session
+supabase functions deploy strava-webhook --no-verify-jwt    # Strava calls it directly
+```
+
+Create the webhook subscription once (replace the placeholders):
+
+```bash
+curl -X POST https://www.strava.com/api/v3/push_subscriptions \
+  -F client_id=$STRAVA_CLIENT_ID -F client_secret=$STRAVA_CLIENT_SECRET \
+  -F callback_url=https://<ref>.supabase.co/functions/v1/strava-webhook \
+  -F verify_token=<the STRAVA_WEBHOOK_VERIFY_TOKEN you set>
+```
+
+What the functions do: `strava-connect` starts OAuth with `read,activity:write`; `strava-callback` exchanges the code and stores tokens in the server-only `strava_connections` table; `strava-push` drains the user's queue (GPX upload for runs with a trace, manual activities otherwise); `strava-webhook` marks a connection revoked when the athlete deauthorizes; `strava-disconnect` revokes and deletes. The app starts in Strava's single-player mode; raise the athlete cap from the Strava developer dashboard before inviting testers. Pure helpers are unit-tested with `npm run test:functions`.

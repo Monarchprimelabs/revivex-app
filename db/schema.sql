@@ -427,8 +427,10 @@ drop policy if exists "strava_pushes_enqueue_own" on public.strava_pushes;
 create policy "strava_pushes_enqueue_own" on public.strava_pushes for insert to authenticated
   with check (user_id = (select auth.uid()) and status = 'queued' and strava_upload_id is null and strava_activity_id is null);
 drop policy if exists "strava_pushes_cancel_queued_own" on public.strava_pushes;
-create policy "strava_pushes_cancel_queued_own" on public.strava_pushes for delete to authenticated
-  using (user_id = (select auth.uid()) and status = 'queued');
+drop policy if exists "strava_pushes_delete_retryable_own" on public.strava_pushes;
+-- Clients may remove a push that is still queued or that ended (failed, duplicate) so it can be retried.
+create policy "strava_pushes_delete_retryable_own" on public.strava_pushes for delete to authenticated
+  using (user_id = (select auth.uid()) and status in ('queued', 'failed', 'duplicate'));
 drop trigger if exists strava_pushes_set_updated_at on public.strava_pushes;
 create trigger strava_pushes_set_updated_at before update on public.strava_pushes for each row execute function public.set_updated_at();
 

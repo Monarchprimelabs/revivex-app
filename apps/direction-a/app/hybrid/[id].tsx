@@ -6,6 +6,7 @@ import { ScreenContainer } from '@revivex/design-system';
 import { AppCard } from '@revivex/design-system';
 import HealthMetricsCard from '../../src/components/HealthMetricsCard';
 import { PrimaryButton } from '@revivex/design-system';
+import StravaPostButton from '../../src/components/StravaPostButton';
 import { useHybridSessions } from '../../src/context/HybridContext';
 import { colors, fontSize, fontWeight, radius, spacing } from '@revivex/design-system';
 import { formatFullDate, formatRelativeDate } from '@revivex/core';
@@ -106,6 +107,8 @@ export default function HybridDetailScreen() {
         <DetailRow label="Session Type" value={session.sessionType} />
         {session.notes ? <DetailRow label="Notes" value={session.notes} multiline /> : null}
       </AppCard>
+
+      <StravaPostButton kind="hybrid" clientId={session.id} />
 
       <Text style={styles.sectionTitle}>Segment Breakdown</Text>
       <AppCard>

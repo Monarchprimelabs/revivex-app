@@ -181,6 +181,20 @@ export default function ProfileScreen() {
           </View>
         </AppCard>
       </Pressable>
+      <Pressable onPress={() => router.push('/profile/strava')} style={{ marginTop: spacing.md }} testID="profile-strava-card">
+        <AppCard>
+          <View style={styles.communityRow}>
+            <View style={styles.communityIcon}>
+              <Ionicons name="share-social-outline" size={20} color={colors.accentTeal} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.communityTitle}>Strava</Text>
+              <Text style={styles.communitySub}>Post the sessions you choose to Strava. Revive X never reads your Strava data.</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </View>
+        </AppCard>
+      </Pressable>
 
       <Text style={styles.sectionTitle}>Your Data</Text>
       <Pressable onPress={handleExportData}>

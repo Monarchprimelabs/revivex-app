@@ -7,6 +7,7 @@ import { AppCard } from '@revivex/design-system';
 import HealthMetricsCard from '../../src/components/HealthMetricsCard';
 import RouteMapView from '../../src/components/RouteMapView';
 import { PrimaryButton } from '@revivex/design-system';
+import StravaPostButton from '../../src/components/StravaPostButton';
 import { useRuns } from '../../src/context/RunContext';
 import { colors, fontSize, fontWeight, radius, spacing } from '@revivex/design-system';
 import { formatFullDate, formatRelativeDate } from '@revivex/core';
@@ -126,6 +127,8 @@ export default function RunDetailScreen() {
         {run.location ? <DetailRow label="Location" value={run.location} /> : null}
         {run.notes ? <DetailRow label="Notes" value={run.notes} multiline /> : null}
       </AppCard>
+
+      <StravaPostButton kind="run" clientId={run.id} />
 
       <PrimaryButton
         label="Edit Run"

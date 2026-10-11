@@ -8,6 +8,7 @@ import HealthMetricsCard from '../../src/components/HealthMetricsCard';
 import SyncBadge from '../../src/components/SyncBadge';
 import { ExerciseThumb } from '@revivex/design-system';
 import { PrimaryButton } from '@revivex/design-system';
+import StravaPostButton from '../../src/components/StravaPostButton';
 import { useProfile } from '../../src/context/ProfileContext';
 import { useWorkout } from '../../src/context/WorkoutContext';
 import { celebratePR } from '@revivex/design-system';
@@ -194,6 +195,7 @@ export default function WorkoutDetailScreen() {
         onPress={handleRepeat}
         style={{ marginTop: spacing.md }}
       />
+      <StravaPostButton kind="workout" clientId={workout.id} />
 
       <PrimaryButton
         label="Save as Routine"

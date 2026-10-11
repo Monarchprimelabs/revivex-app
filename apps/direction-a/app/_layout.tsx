@@ -15,6 +15,7 @@ import { BodyWeightProvider } from '../src/context/BodyWeightContext';
 import { SocialProvider } from '../src/context/SocialContext';
 import { ProProvider } from '../src/context/ProContext';
 import { SyncProvider } from '../src/sync/SyncContext';
+import { StravaProvider } from '../src/strava/StravaContext';
 
 /**
  * Root layout for the whole app.
@@ -38,6 +39,7 @@ export default function RootLayout() {
                   <SocialProvider>
                   <ProProvider>
                   <SyncProvider>
+                  <StravaProvider>
                   <StatusBar style="light" />
                   <OnboardingGate />
                   <Stack
@@ -209,6 +211,12 @@ export default function RootLayout() {
                     }}
                   />
                   <Stack.Screen
+                    name="profile/strava"
+                    options={{
+                      animation: 'slide_from_right',
+                    }}
+                  />
+                  <Stack.Screen
                     name="profile/weight"
                     options={{
                       animation: 'slide_from_right',
@@ -221,6 +229,7 @@ export default function RootLayout() {
                     }}
                   />
                   </Stack>
+                  </StravaProvider>
                   </SyncProvider>
                   </ProProvider>
                   </SocialProvider>

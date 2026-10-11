@@ -15,3 +15,4 @@ export * from './sync/fingerprint';
 export * from './sync/state';
 export * from './sync/remote';
 export * from './sync/engine';
+export * from './strava';
