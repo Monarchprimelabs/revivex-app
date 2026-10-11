@@ -14,6 +14,7 @@ import { HealthProvider } from '../src/context/HealthContext';
 import { BodyWeightProvider } from '../src/context/BodyWeightContext';
 import { SocialProvider } from '../src/context/SocialContext';
 import { ProProvider } from '../src/context/ProContext';
+import { SyncProvider } from '../src/sync/SyncContext';
 
 /**
  * Root layout for the whole app.
@@ -36,6 +37,7 @@ export default function RootLayout() {
                   <HealthProvider>
                   <SocialProvider>
                   <ProProvider>
+                  <SyncProvider>
                   <StatusBar style="light" />
                   <OnboardingGate />
                   <Stack
@@ -46,6 +48,12 @@ export default function RootLayout() {
                   >
                   <Stack.Screen name="(tabs)" />
                   <Stack.Screen name="onboarding" />
+                  <Stack.Screen
+                    name="account"
+                    options={{
+                      animation: 'slide_from_right',
+                    }}
+                  />
                   <Stack.Screen
                     name="profile/index"
                     options={{
@@ -213,6 +221,7 @@ export default function RootLayout() {
                     }}
                   />
                   </Stack>
+                  </SyncProvider>
                   </ProProvider>
                   </SocialProvider>
                   </HealthProvider>

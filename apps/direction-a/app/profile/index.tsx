@@ -13,6 +13,8 @@ import { useHybridSessions } from '../../src/context/HybridContext';
 import { useProfile } from '../../src/context/ProfileContext';
 import { useRuns } from '../../src/context/RunContext';
 import { useWorkout } from '../../src/context/WorkoutContext';
+import { useSocial } from '../../src/context/SocialContext';
+import { useSync } from '../../src/sync/SyncContext';
 import { formatWeeklyTarget } from '@revivex/core';
 import { colors, fontSize, fontWeight, radius, spacing } from '@revivex/design-system';
 import { buildExport, exportFileName } from '@revivex/core';
@@ -26,6 +28,17 @@ export default function ProfileScreen() {
   const { status: proStatus, isPro } = usePro();
   const { hybridSessions } = useHybridSessions();
   const { entries: bodyWeightEntries } = useBodyWeight();
+  const { session, status: cloudStatus } = useSocial();
+  const { pendingCount } = useSync();
+  const accountTitle = session?.user.email ?? 'Account & cloud backup';
+  const accountSub =
+    cloudStatus === 'unconfigured'
+      ? 'Cloud backup is not configured in this build.'
+      : session
+        ? pendingCount > 0
+          ? `${pendingCount} change${pendingCount === 1 ? '' : 's'} waiting to sync.`
+          : 'Your workouts are backed up and synced.'
+        : 'Sign in to back up your training and pick it up on any phone.';
 
   const handleExportData = async () => {
     try {
@@ -182,6 +195,22 @@ export default function ProfileScreen() {
                 Save everything — workouts, runs, hybrid sessions, routines, weight — as a
                 JSON file. Your data is yours.
               </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </View>
+        </AppCard>
+      </Pressable>
+
+      <Text style={styles.sectionTitle}>Account</Text>
+      <Pressable onPress={() => router.push('/account')} testID="profile-account-card">
+        <AppCard>
+          <View style={styles.communityRow}>
+            <View style={styles.communityIcon}>
+              <Ionicons name="cloud-outline" size={20} color={colors.accentTeal} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.communityTitle}>{accountTitle}</Text>
+              <Text style={styles.communitySub}>{accountSub}</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </View>

@@ -61,6 +61,8 @@ interface WorkoutContextValue {
   history: Workout[];
   historyLoaded: boolean;
   deleteWorkout: (workoutId: string) => void;
+  /** Insert or replace workouts by id. Used by cloud sync when the server has newer versions. */
+  mergeWorkouts: (incoming: Workout[]) => void;
   updateWorkoutMetadata: (
     workoutId: string,
     patch: UpdateWorkoutMetadataInput
@@ -280,6 +282,15 @@ export function WorkoutProvider({ children }: ProviderProps) {
 
   const deleteWorkout = useCallback((workoutId: string) => {
     setHistory((prev) => prev.filter((workout) => workout.id !== workoutId));
+  }, []);
+
+  const mergeWorkouts = useCallback((incoming: Workout[]) => {
+    if (incoming.length === 0) return;
+    setHistory((prev) => {
+      const byId = new Map(prev.map((workout) => [workout.id, workout] as const));
+      for (const workout of incoming) byId.set(workout.id, workout);
+      return sortWorkouts([...byId.values()]);
+    });
   }, []);
 
   const updateWorkoutMetadata = useCallback(
@@ -619,6 +630,7 @@ export function WorkoutProvider({ children }: ProviderProps) {
       history,
       historyLoaded,
       deleteWorkout,
+      mergeWorkouts,
       updateWorkoutMetadata,
       updateWorkoutDetails,
       getWorkoutById,
@@ -648,6 +660,7 @@ export function WorkoutProvider({ children }: ProviderProps) {
       history,
       historyLoaded,
       deleteWorkout,
+      mergeWorkouts,
       updateWorkoutMetadata,
       updateWorkoutDetails,
       getWorkoutById,

@@ -22,3 +22,7 @@ export { default as BrandTagline } from './components/BrandTagline';
 export * from './components/BrandTagline';
 export { default as ExerciseThumb } from './components/ExerciseThumb';
 export * from './components/ExerciseThumb';
+export { default as Chip } from './components/Chip';
+export * from './components/Chip';
+export { default as CloudStatusChip } from './components/CloudStatusChip';
+export * from './components/CloudStatusChip';

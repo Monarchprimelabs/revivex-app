@@ -5,6 +5,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { ScreenContainer } from '@revivex/design-system';
 import { AppCard } from '@revivex/design-system';
 import HealthMetricsCard from '../../src/components/HealthMetricsCard';
+import SyncBadge from '../../src/components/SyncBadge';
 import { ExerciseThumb } from '@revivex/design-system';
 import { PrimaryButton } from '@revivex/design-system';
 import { useProfile } from '../../src/context/ProfileContext';
@@ -145,8 +146,9 @@ export default function WorkoutDetailScreen() {
         <View style={styles.typePill}>
           <Text style={styles.typePillText}>Strength</Text>
         </View>
-        <Text style={styles.title}>{workout.title}</Text>
+        <Text style={styles.title} testID="workout-detail-title">{workout.title}</Text>
         <Text style={styles.subtitle}>{formatRelativeDate(workout.date)}</Text>
+        <SyncBadge table="workouts" clientId={workout.id} />
 
         <View style={styles.heroGrid}>
           <Metric label="Exercises" value={String(workout.exercises.length)} />

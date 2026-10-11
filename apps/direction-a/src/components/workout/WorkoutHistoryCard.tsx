@@ -10,6 +10,7 @@ import {
   formatVolume,
 } from '@revivex/core';
 import type { Workout } from '@revivex/core';
+import SyncBadge from '../SyncBadge';
 
 /**
  * WorkoutHistoryCard
@@ -22,12 +23,14 @@ export default function WorkoutHistoryCard({ workout }: { workout: Workout }) {
     <Pressable
       onPress={() => router.push({ pathname: '/workout/[id]', params: { id: workout.id } })}
       style={{ marginBottom: spacing.md }}
+      testID={`workout-card-${workout.id}`}
     >
       <AppCard>
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>{workout.title}</Text>
             <Text style={styles.date}>{dateLabel}</Text>
+            <SyncBadge table="workouts" clientId={workout.id} />
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
         </View>
