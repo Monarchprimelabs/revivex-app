@@ -11,7 +11,7 @@ export interface CompletionOptions {
   durationSeconds?: number;
 }
 
-function defaultPerformedAt(plan: DayPlan): string {
+export function defaultPerformedAt(plan: DayPlan): string {
   const [y, m, d] = plan.date.split('-').map(Number);
   return new Date(y, m - 1, d, 12, 0, 0).toISOString();
 }

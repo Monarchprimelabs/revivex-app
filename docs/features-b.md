@@ -1,6 +1,6 @@
 # Direction B feature backlog (Revive X daily coach)
 
-Priority: must, should, nice. Status: done, partial, todo. Updated 2026-10-11 after step 4c. The vertical slice in step 3 covers the rows marked "slice".
+Priority: must, should, nice. Status: done, partial, todo. Updated 2026-10-11 after step 4g. The vertical slice in step 3 covers the rows marked "slice".
 
 | Feature | Priority | Status | Notes |
 | --- | --- | --- | --- |
@@ -9,7 +9,8 @@ Priority: must, should, nice. Status: done, partial, todo. Updated 2026-10-11 af
 | Three-tap readiness check-in (sleep, soreness, energy) | must (slice) | done | One per day, stored locally and in `readiness_checkins` |
 | Rules engine package `@revivex/coach` with unit tests | must (slice) | done | Deterministic, versioned, no LLM. Rules in architecture section 8 |
 | Today screen: plan card with blocks and rationale | must (slice) | done | Single home screen |
-| Mark complete, saving a workout, run or hybrid session | must (slice) | done | Writes the same shapes as Direction A, mirrored to the shared tables |
+| Mark complete, saving a workout, run or hybrid session | must (slice) | done |
+| Completion editor: edit loads, reps, done flags, skip an exercise, distance and time before saving | must | done | Prefilled from the plan. Recovery and rest days complete in one tap | Writes the same shapes as Direction A, mirrored to the shared tables |
 | History list and plan detail screen | must (slice) | done | Reads local store, shows sync state |
 | Mirror check-ins, plans and sessions to Supabase | must (slice) | done | Same outbox pattern as Direction A |
 | Profile basics: focus, weekly target, experience, units | must | done | Inputs the engine needs. Captured on first launch |

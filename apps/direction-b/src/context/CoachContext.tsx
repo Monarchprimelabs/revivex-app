@@ -13,11 +13,12 @@ import type {
 } from '@revivex/core';
 import {
   COACH_ENGINE_VERSION,
+  buildHybridFromCompletion,
+  buildRunFromCompletion,
+  buildWorkoutFromCompletion,
+  defaultCompletion,
   generateDayPlan,
   localDateKey,
-  planToHybridSession,
-  planToRun,
-  planToWorkout,
   readinessScore,
   sessionsThisWeek,
   shortenPlan,
@@ -25,6 +26,7 @@ import {
   weekTemplateFor,
   type CoachProfile,
   type DayPlan,
+  type PlanCompletion,
   type ReadinessInput,
   type SlotKind,
 } from '@revivex/coach';
@@ -87,7 +89,7 @@ interface CoachContextValue {
   submitCheckin: (input: ReadinessInput, notes?: string) => DailyPlanRecord;
   planWithoutCheckin: () => DailyPlanRecord;
   regeneratePlan: () => DailyPlanRecord | undefined;
-  completePlan: (planId: string) => void;
+  completePlan: (planId: string, completion?: PlanCompletion) => void;
   skipPlan: (planId: string) => void;
   swapPlanBlock: (planId: string, blockIndex: number) => void;
   shortenTodayPlan: (planId: string) => void;
@@ -206,25 +208,26 @@ export function CoachProvider({ children }: { children: React.ReactNode }) {
   const dayPlanOf = useCallback((record: DailyPlanRecord): DayPlan => record.plan as unknown as DayPlan, []);
 
   const completePlan = useCallback(
-    (planId: string) => {
+    (planId: string, completion?: PlanCompletion) => {
       const record = plans.items.find((candidate) => candidate.id === planId);
       if (!record || record.status === 'completed') return;
       const plan = dayPlanOf(record);
       const now = new Date().toISOString();
+      const done = completion ?? defaultCompletion(plan);
       let completedActivityKind: DailyPlanRecord['completedActivityKind'];
       let completedActivityId: string | undefined;
-      if (plan.kind === 'lift') {
-        const workout = planToWorkout(plan, { id: makeId('wk'), performedAt: now });
+      if (plan.kind === 'lift' && done.kind === 'lift') {
+        const workout = buildWorkoutFromCompletion(plan, done, { id: makeId('wk'), performedAt: now });
         workouts.upsert(workout);
         completedActivityKind = 'workout';
         completedActivityId = workout.id;
-      } else if (plan.kind === 'run') {
-        const run = planToRun(plan, { id: makeId('run'), performedAt: now });
+      } else if (plan.kind === 'run' && done.kind === 'run') {
+        const run = buildRunFromCompletion(plan, done, { id: makeId('run'), performedAt: now });
         runs.upsert(run);
         completedActivityKind = 'run';
         completedActivityId = run.id;
-      } else if (plan.kind === 'hybrid') {
-        const session = planToHybridSession(plan, { id: makeId('hy'), performedAt: now });
+      } else if (plan.kind === 'hybrid' && done.kind === 'hybrid') {
+        const session = buildHybridFromCompletion(plan, done, { id: makeId('hy'), performedAt: now });
         hybridSessions.upsert(session);
         completedActivityKind = 'hybrid';
         completedActivityId = session.id;

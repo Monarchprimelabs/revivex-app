@@ -215,7 +215,7 @@ export default function TodayScreen() {
                 <View testID="today-complete">
                   <PrimaryButton
                     label={plan.kind === 'rest' ? 'Got it, resting' : 'Mark complete'}
-                    onPress={() => coach.completePlan(todayPlan.id)}
+                    onPress={() => (plan.kind === 'recovery' || plan.kind === 'rest' ? coach.completePlan(todayPlan.id) : router.push({ pathname: '/complete', params: { planId: todayPlan.id } }))}
                     style={{ marginTop: spacing.lg }}
                   />
                 </View>

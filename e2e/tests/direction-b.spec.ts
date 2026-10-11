@@ -46,8 +46,16 @@ test.describe('Direction B', () => {
     await page.getByTestId('today-shorten').click();
     await expect(page.getByTestId('today-adjustments')).toContainText('Shortened at your request');
 
+    // Completing opens the editor prefilled from the plan. Log what actually happened.
     await page.getByTestId('today-complete').click();
+    await expect(page.getByTestId('complete-save')).toBeVisible();
+    await page.getByTestId('complete-set-reps-0-0').fill('6');
+    await page.getByTestId('complete-set-done-0-1').click();
+    await page.getByTestId('complete-skip-3').click();
+    await page.getByTestId('complete-duration').fill('42');
+    await page.getByTestId('complete-save').click();
     await expect(page.getByTestId('today-done')).toBeVisible();
+    await expect(page.getByTestId('today-done').locator('..')).toContainText('3 exercises');
     await expect(page.getByTestId('today-week')).toContainText('✓ Upper');
 
     await page.getByTestId('today-history').click();

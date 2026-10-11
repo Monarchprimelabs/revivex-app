@@ -2,6 +2,10 @@ import { check, checkTrue, suite } from '@revivex/test-utils';
 import type { HybridSession, Run, Workout } from '@revivex/core';
 import {
   assessReadiness,
+  buildRunFromCompletion,
+  buildWorkoutFromCompletion,
+  completionHasWork,
+  defaultCompletion,
   generateDayPlan,
   planToHybridSession,
   planToRun,
@@ -14,6 +18,7 @@ import {
   swapExercise,
   weekTemplateFor,
   type CoachProfile,
+  type LiftCompletion,
   type StrengthBlock,
 } from '../src';
 
@@ -179,4 +184,44 @@ export function runAdjustTests(): void {
   check('hybrid plan to shorten', hybridPlan.kind, 'hybrid');
   const shorterHybrid = shortenPlan(hybridPlan);
   check('shorten swaps a one-round benchmark for the shorter circuit', (shorterHybrid.blocks[0] as { sessionType: string; rounds: number }).sessionType, 'Custom Hybrid');
+}
+
+export function runCompletionTests(): void {
+  suite('coach: completion');
+  const history = [workout('wk_a', new Date(2026, 9, 7, 18), 'bench-press', 'Chest', 185, [5, 5, 5, 5], 'Bench Press')];
+  const plan = generateDayPlan({ profile, history: { ...empty, workouts: history }, date: TODAY });
+  const asWritten = defaultCompletion(plan);
+  check('default completion mirrors the plan', asWritten.kind === 'lift' && asWritten.blocks.length === 5 && asWritten.blocks[0].sets.length === (plan.blocks[0] as StrengthBlock).sets, true);
+  const defaultWorkout = buildWorkoutFromCompletion(plan, asWritten as LiftCompletion, { id: 'wk_x', performedAt: '2026-10-14T17:00:00.000Z' });
+  const legacy = planToWorkout(plan, { id: 'wk_x', performedAt: '2026-10-14T17:00:00.000Z' });
+  check('default completion equals the as-written conversion', [defaultWorkout.exercises, defaultWorkout.totalSets, defaultWorkout.totalVolume], [legacy.exercises, legacy.totalSets, legacy.totalVolume]);
+
+  const edited: LiftCompletion = {
+    ...(asWritten as LiftCompletion),
+    blocks: (asWritten as LiftCompletion).blocks.map((block, index) =>
+      index === 4
+        ? { ...block, skipped: true }
+        : index === 0
+          ? { ...block, sets: block.sets.map((set, setIndex) => (setIndex === 0 ? { ...set, reps: 3 } : setIndex === block.sets.length - 1 ? { ...set, completed: false } : set)) }
+          : block
+    ),
+    durationSeconds: 2400,
+  };
+  const editedWorkout = buildWorkoutFromCompletion(plan, edited, { id: 'wk_y', performedAt: '2026-10-14T17:00:00.000Z' });
+  check('skipped exercise is left out', editedWorkout.exercises.length, 4);
+  check('edited reps are kept', editedWorkout.exercises[0].sets[0].reps, 3);
+  check('unfinished set is stored as not completed', editedWorkout.exercises[0].sets[editedWorkout.exercises[0].sets.length - 1].completed, false);
+  const firstSets = editedWorkout.exercises[0].sets;
+  const expectedVolume = firstSets.reduce((sum, set) => sum + (set.completed ? set.weight * set.reps : 0), 0);
+  check('volume counts completed sets only', editedWorkout.exercises[0].sets.reduce((sum, set) => sum + (set.completed ? set.weight * set.reps : 0), 0), expectedVolume);
+  check('duration comes from the completion', editedWorkout.duration, 2400);
+  check('all skipped means no work', completionHasWork({ kind: 'lift', blocks: edited.blocks.map((block) => ({ ...block, skipped: true })) }), false);
+
+  const runProfile: CoachProfile = { ...profile, trainingFocus: 'Run', weeklyTrainingTarget: 3 };
+  const runPlan = generateDayPlan({ profile: runProfile, history: empty, date: TODAY });
+  const runDefault = defaultCompletion(runPlan);
+  check('run default carries the planned distance', runDefault.kind === 'run' ? runDefault.distance : -1, 2.5);
+  const loggedRun = buildRunFromCompletion(runPlan, { kind: 'run', distance: 3.1, durationSeconds: 1800 }, { id: 'run_y', performedAt: '2026-10-14T07:00:00.000Z' });
+  check('run completion keeps the edited distance and pace', [loggedRun.distance, loggedRun.paceSecondsPerMile], [3.1, 581]);
+  check('zero distance is not work', completionHasWork({ kind: 'run', distance: 0, durationSeconds: 100 }), false);
 }

@@ -13,3 +13,4 @@ export * from './hybrid';
 export * from './generate';
 export * from './convert';
 export * from './adjust';
+export * from './completion';

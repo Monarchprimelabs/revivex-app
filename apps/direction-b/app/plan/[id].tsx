@@ -87,7 +87,7 @@ export default function PlanDetailScreen() {
       {isToday && record.status === 'planned' ? (
         <>
           <View testID="plan-complete">
-            <PrimaryButton label={plan.kind === 'rest' ? 'Got it, resting' : 'Mark complete'} onPress={() => coach.completePlan(record.id)} style={{ marginTop: spacing.xl }} />
+            <PrimaryButton label={plan.kind === 'rest' ? 'Got it, resting' : 'Mark complete'} onPress={() => (plan.kind === 'recovery' || plan.kind === 'rest' ? coach.completePlan(record.id) : router.push({ pathname: '/complete', params: { planId: record.id } }))} style={{ marginTop: spacing.xl }} />
           </View>
           <View style={styles.actions}>
             <Pressable onPress={() => coach.shortenTodayPlan(record.id)} hitSlop={8} testID="plan-shorten">

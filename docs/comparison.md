@@ -38,7 +38,7 @@ Direction A:
 
 Direction B:
 
-- **Thin logging.** Completing a plan assumes every set was done as written. Real users miss reps and change loads; the first breadth item is an inline "what I actually did" editor, which will pull in a fair amount of Direction A's logger.
+- **Thin logging.** The completion editor records loads, reps, unfinished sets and skipped exercises, but there is no live logger with a rest timer, no free-form sessions outside the plan, and no editing after the fact. Users who want to train off-plan still need Direction A's logger.
 - **Rules need calibration with real data.** Progression percentages, fatigue thresholds and run volume caps are reasonable defaults, not validated against users. The versioned engine makes revision cheap, but the first weeks need a feedback loop.
 - **Less to show today.** No charts, no PRs, no sharing. For a user who already logs in Hevy or Strava, Direction B asks them to trust a plan without seeing their history in it until they import or log for a few weeks.
 
@@ -48,13 +48,13 @@ Rough, in working sessions of the kind used so far. Shared items (Supabase proje
 
 | Work | Direction A | Direction B |
 | --- | --- | --- |
-| Logging completeness | 3 to 4 (set types, RPE, supersets, custom exercises, sync chips on remaining lists) | 3 (inline completion editor, actual loads and reps, partial completion) |
+| Logging completeness | 3 (RPE, supersets, custom exercises, sync chips on remaining lists) | 2 (live rest timer during a plan, off-plan sessions, edit after saving) |
 | Coaching | 0 (not in scope) | 2 (rule calibration, run pace guidance from check-ins, notifications for the check-in) |
 | Progress and history | 1 (polish) | 2 to 3 (per-exercise trends and PRs from the shared core utilities, weekly review) |
 | Integrations | 1 (Strava verification with the owner's app, Health regression) | 1 to 2 (Strava push reuse, Health read for sleep in a dev build) |
 | Visual finish | 2 to 3 (typography across 40 screens, consistency pass) | 1 |
 | Device testing and fixes | 2 | 1 |
-| **Total** | **9 to 11** | **10 to 12** |
+| **Total** | **8 to 10** | **9 to 11** |
 
 The totals are close because Direction B must grow a logger while Direction A must finish one. Direction A's remaining work is mostly known patterns; Direction B's includes product decisions (how much editing to allow before it becomes a second tracker).
 
@@ -69,6 +69,7 @@ The totals are close because Direction B must grow a logger while Direction A mu
 | Complaint: paywall nagging, pay to peek | Everything free, rails dark | Everything free |
 | Complaint: free caps on history | No caps | No caps |
 | Complaint: background rest timer | Timer exists, device check pending | No timer yet |
+| Complaint: lost logs after crashes | Logger keeps the in-progress session in memory only | Completion editor is a single save; plans and check-ins persist as they are made |
 | Complaint: rigid program days | Not applicable | Solved by design: next slot, skip, swap, shorten |
 | Complaint: "logs but doesn't coach" | Not addressed | The whole product |
 | API constraints: Strava push only, no AI on Strava data | Compliant by design | Compliant; the engine never sees Strava data |
@@ -78,6 +79,6 @@ The totals are close because Direction B must grow a logger while Direction A mu
 
 The two directions are not really competitors; they are two layers of one product. Direction B is the front door the category is missing and the strongest story for a new app. Direction A is the depth that keeps a serious athlete once they are in, and it already exists.
 
-If one has to lead, the evidence favors leading with Direction B's loop and letting it borrow Direction A's logger piece by piece as the "what I actually did" editor, rather than finishing Direction A's breadth and adding a coach tab later. The shared packages were built so that either order works. The decision that matters is which loop the home screen opens on, and that is the owner's call after a week of using both on a phone.
+If one has to lead, the evidence favors leading with Direction B's loop and letting it borrow Direction A's logger piece by piece (the completion editor is the first piece), rather than finishing Direction A's breadth and adding a coach tab later. The shared packages were built so that either order works. The decision that matters is which loop the home screen opens on, and that is the owner's call after a week of using both on a phone.
 
 Open questions the device week should answer: Does the three-tap check-in get done daily, or skipped? Does the plan feel right on days two to seven? Which Direction A screens does a Direction B user actually miss?
