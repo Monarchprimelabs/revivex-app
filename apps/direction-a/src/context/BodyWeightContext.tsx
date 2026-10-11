@@ -24,6 +24,8 @@ interface BodyWeightContextValue {
   entriesLoaded: boolean;
   addEntry: (weight: number, unit: PreferredWeightUnit, dateIso?: string) => BodyWeightEntry;
   deleteEntry: (entryId: string) => void;
+  /** Insert or replace entries by id (cloud sync). */
+  mergeEntries: (incoming: BodyWeightEntry[]) => void;
 }
 
 const BodyWeightContext = createContext<BodyWeightContextValue | undefined>(undefined);
@@ -81,9 +83,18 @@ export function BodyWeightProvider({ children }: { children: React.ReactNode }) 
     setEntries((prev) => prev.filter((entry) => entry.id !== entryId));
   }, []);
 
+  const mergeEntries = useCallback((incoming: BodyWeightEntry[]) => {
+    if (incoming.length === 0) return;
+    setEntries((prev) => {
+      const byId = new Map(prev.map((entry) => [entry.id, entry] as const));
+      for (const entry of incoming) byId.set(entry.id, entry);
+      return sortEntries([...byId.values()]);
+    });
+  }, []);
+
   const value = useMemo(
-    () => ({ entries, entriesLoaded, addEntry, deleteEntry }),
-    [entries, entriesLoaded, addEntry, deleteEntry]
+    () => ({ entries, entriesLoaded, addEntry, deleteEntry, mergeEntries }),
+    [entries, entriesLoaded, addEntry, deleteEntry, mergeEntries]
   );
 
   return <BodyWeightContext.Provider value={value}>{children}</BodyWeightContext.Provider>;

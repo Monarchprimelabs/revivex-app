@@ -1,36 +1,60 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { Workout } from '@revivex/core';
+import type { BodyWeightEntry, HybridSession, Routine, Run, Workout } from '@revivex/core';
 import {
   SupabaseRemoteStore,
+  bodyWeightToRow,
   emptySyncState,
   flushOutbox,
+  hybridSessionToRow,
   loadSyncState,
   pullTable,
   reconcileCollection,
+  routineToRow,
+  rowToBodyWeight,
+  rowToHybridSession,
+  rowToRoutine,
+  rowToRun,
+  rowToRunRoute,
   rowToWorkout,
+  runRouteToRow,
+  runRoutesOf,
+  runToRow,
   saveSyncState,
   statusFor as computeStatus,
   workoutToRow,
+  type AnySyncRow,
+  type BodyWeightRow,
+  type HybridSessionRow,
+  type RoutineRow,
+  type RunRouteRecord,
+  type RunRouteRow,
+  type RunRow,
   type SyncState,
   type SyncStatus,
   type SyncTable,
   type WorkoutRow,
 } from '@revivex/backend';
 import { getSupabase } from '../social/supabase';
+import { useBodyWeight } from '../context/BodyWeightContext';
+import { useHybridSessions } from '../context/HybridContext';
+import { useRuns } from '../context/RunContext';
 import { useSocial } from '../context/SocialContext';
 import { useWorkout } from '../context/WorkoutContext';
 
 /**
- * SyncContext: local-first cloud mirror.
+ * SyncContext: local-first cloud mirror for Direction A.
  *
  * The device stays the source of truth. Whenever a mirrored collection
  * changes, the diff is queued in an outbox and pushed to Supabase under the
  * signed-in user's id. On sign-in, app foreground and once a minute, newer
  * server rows are pulled and merged last-write-wins. Sync state is kept per
  * user under `revivex.sync.v1.<userId>` so switching accounts never mixes
- * tracking data. Slice scope: workouts. Other tables join in breadth.
+ * tracking data.
+ *
+ * Mirrored: workouts, routines, runs, GPS traces (own table), hybrid
+ * sessions, body weight.
  */
 
 const STORAGE_PREFIX = 'revivex.sync.v1';
@@ -49,21 +73,49 @@ interface SyncContextValue {
 
 const SyncContext = createContext<SyncContextValue | undefined>(undefined);
 
+type Item = { id: string; updatedAt?: string };
+
+interface TableSpec<T extends Item> {
+  table: SyncTable;
+  items: T[];
+  toRow: (userId: string, item: T) => AnySyncRow;
+  fromRow: (row: AnySyncRow) => T;
+  merge: (items: T[]) => void;
+}
+
 export function SyncProvider({ children }: { children: React.ReactNode }) {
   const supabase = useMemo(() => getSupabase(), []);
   const { session } = useSocial();
-  const { history, historyLoaded, mergeWorkouts } = useWorkout();
+  const { history, historyLoaded, mergeWorkouts, routines, routinesLoaded, mergeRoutines } = useWorkout();
+  const { runs, runsLoaded, mergeRuns, mergeRunRoutes } = useRuns();
+  const { hybridSessions, hybridSessionsLoaded, mergeHybridSessions } = useHybridSessions();
+  const { entries, entriesLoaded, mergeEntries } = useBodyWeight();
 
   const userId = session?.user.id ?? null;
   const remote = useMemo(() => (supabase ? new SupabaseRemoteStore(supabase) : null), [supabase]);
   const cloudState: CloudState = !supabase ? 'unconfigured' : userId ? 'active' : 'signedOut';
   const storageKey = userId ? `${STORAGE_PREFIX}.${userId}` : null;
 
+  const routes = useMemo(() => runRoutesOf(runs), [runs]);
+
+  const specs = useMemo<TableSpec<Item>[]>(
+    () =>
+      [
+        { table: 'workouts', items: history, toRow: (uid, item) => workoutToRow(uid, item as Workout), fromRow: (row) => rowToWorkout(row as WorkoutRow), merge: (items) => mergeWorkouts(items as Workout[]) },
+        { table: 'routines', items: routines, toRow: (uid, item) => routineToRow(uid, item as Routine), fromRow: (row) => rowToRoutine(row as RoutineRow), merge: (items) => mergeRoutines(items as Routine[]) },
+        { table: 'runs', items: runs, toRow: (uid, item) => runToRow(uid, item as Run), fromRow: (row) => rowToRun(row as RunRow), merge: (items) => mergeRuns(items as Run[]) },
+        { table: 'run_routes', items: routes, toRow: (uid, item) => runRouteToRow(uid, item as RunRouteRecord), fromRow: (row) => rowToRunRoute(row as RunRouteRow), merge: (items) => mergeRunRoutes(items as RunRouteRecord[]) },
+        { table: 'hybrid_sessions', items: hybridSessions, toRow: (uid, item) => hybridSessionToRow(uid, item as HybridSession), fromRow: (row) => rowToHybridSession(row as HybridSessionRow), merge: (items) => mergeHybridSessions(items as HybridSession[]) },
+        { table: 'body_weight_entries', items: entries, toRow: (uid, item) => bodyWeightToRow(uid, item as BodyWeightEntry), fromRow: (row) => rowToBodyWeight(row as BodyWeightRow), merge: (items) => mergeEntries(items as BodyWeightEntry[]) },
+      ] as TableSpec<Item>[],
+    [history, routines, runs, routes, hybridSessions, entries, mergeWorkouts, mergeRoutines, mergeRuns, mergeRunRoutes, mergeHybridSessions, mergeEntries]
+  );
+  const specsRef = useRef(specs);
+  specsRef.current = specs;
+
   const [state, setState] = useState<SyncState>(emptySyncState);
   const stateRef = useRef(state);
   const [loadedFor, setLoadedFor] = useState<string | null>(null);
-  const historyRef = useRef(history);
-  historyRef.current = history;
   const busyRef = useRef(false);
   const [syncing, setSyncing] = useState(false);
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
@@ -101,23 +153,17 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     [storageKey]
   );
 
-  const ready = cloudState === 'active' && loadedFor === userId && historyLoaded;
+  const collectionsLoaded = historyLoaded && routinesLoaded && runsLoaded && hybridSessionsLoaded && entriesLoaded;
+  const ready = cloudState === 'active' && loadedFor === userId && collectionsLoaded;
 
   // Queue local changes.
   useEffect(() => {
     if (!ready) return;
-    commit(reconcileCollection(stateRef.current, 'workouts', history, new Date().toISOString()));
-  }, [ready, history, commit]);
-
-  const getLocal = useCallback((table: SyncTable, clientId: string): unknown => {
-    if (table === 'workouts') return historyRef.current.find((workout) => workout.id === clientId);
-    return undefined;
-  }, []);
-
-  const toRow = useCallback((table: SyncTable, uid: string, item: unknown) => {
-    if (table === 'workouts') return workoutToRow(uid, item as Workout);
-    throw new Error(`No row mapper for ${table}`);
-  }, []);
+    const now = new Date().toISOString();
+    let next = stateRef.current;
+    for (const spec of specs) next = reconcileCollection(next, spec.table, spec.items, now);
+    commit(next);
+  }, [ready, specs, commit]);
 
   const runSync = useCallback(
     async (options: { pull: boolean }) => {
@@ -126,28 +172,29 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       setSyncing(true);
       try {
         if (options.pull) {
-          const full = !stateRef.current.lastPulledAt.workouts;
-          const pulled = await pullTable<Workout>(stateRef.current, 'workouts', {
-            remote,
-            userId,
-            local: historyRef.current,
-            fromRow: (row) => rowToWorkout(row as WorkoutRow),
-            full,
-          });
-          commit(pulled.state);
-          if (pulled.applied.length > 0) {
-            const applied = new Set(pulled.applied);
-            mergeWorkouts(pulled.items.filter((workout) => applied.has(workout.id)));
+          for (const spec of specsRef.current) {
+            const full = !stateRef.current.lastPulledAt[spec.table];
+            const pulled = await pullTable<Item>(stateRef.current, spec.table, { remote, userId, local: spec.items, fromRow: spec.fromRow, full });
+            commit(pulled.state);
+            if (pulled.applied.length > 0) {
+              const applied = new Set(pulled.applied);
+              spec.merge(pulled.items.filter((item) => applied.has(item.id)));
+            }
           }
         }
-        const flushed = await flushOutbox(stateRef.current, { remote, userId, getLocal, toRow });
+        const flushed = await flushOutbox(stateRef.current, {
+          remote,
+          userId,
+          getLocal: (table, clientId) => specsRef.current.find((spec) => spec.table === table)?.items.find((item) => item.id === clientId),
+          toRow: (table, uid, item) => {
+            const spec = specsRef.current.find((candidate) => candidate.table === table);
+            if (!spec) throw new Error(`No row mapper for ${table}`);
+            return spec.toRow(uid, item as Item);
+          },
+        });
         commit(flushed.state);
         setLastSyncAt(new Date().toISOString());
-        setLastError(
-          flushed.failed > 0
-            ? flushed.state.outbox.find((entry) => entry.lastError)?.lastError ?? 'Some changes did not sync.'
-            : null
-        );
+        setLastError(flushed.failed > 0 ? flushed.state.outbox.find((entry) => entry.lastError)?.lastError ?? 'Some changes did not sync.' : null);
       } catch (error) {
         setLastError(error instanceof Error ? error.message : String(error));
       } finally {
@@ -155,7 +202,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         setSyncing(false);
       }
     },
-    [remote, userId, commit, getLocal, toRow, mergeWorkouts]
+    [remote, userId, commit]
   );
 
   // First sync for this user: pull (everything the first time), then push.

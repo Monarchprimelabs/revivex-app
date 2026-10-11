@@ -7,7 +7,7 @@ import React, {
   useState,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { CreateRunInput, Run } from '@revivex/core';
+import type { CreateRunInput, RoutePoint, Run } from '@revivex/core';
 import { calculatePace, calculateRunStats, type RunStats } from '@revivex/core';
 
 const RUNS_STORAGE_KEY = 'revivex.runs.v1';
@@ -17,6 +17,10 @@ interface RunContextValue {
   runsLoaded: boolean;
   addRun: (input: CreateRunInput) => Run;
   deleteRun: (runId: string) => void;
+  /** Insert or replace runs by id (cloud sync). Local GPS traces are kept when the incoming run has none. */
+  mergeRuns: (incoming: Run[]) => void;
+  /** Attach cloud route points to runs that lack them. */
+  mergeRunRoutes: (routes: { id: string; points: RoutePoint[] }[]) => void;
   updateRun: (runId: string, input: Partial<CreateRunInput>) => Run | undefined;
   getRunById: (runId: string) => Run | undefined;
   getRuns: () => Run[];
@@ -115,6 +119,29 @@ export function RunProvider({ children }: { children: React.ReactNode }) {
     setRuns((prev) => prev.filter((run) => run.id !== runId));
   }, []);
 
+  const mergeRuns = useCallback((incoming: Run[]) => {
+    if (incoming.length === 0) return;
+    setRuns((prev) => {
+      const byId = new Map(prev.map((run) => [run.id, run] as const));
+      for (const run of incoming) {
+        const existing = byId.get(run.id);
+        byId.set(run.id, run.routePoints?.length ? run : { ...run, routePoints: existing?.routePoints });
+      }
+      return sortRuns([...byId.values()]);
+    });
+  }, []);
+
+  const mergeRunRoutes = useCallback((routes: { id: string; points: RoutePoint[] }[]) => {
+    if (routes.length === 0) return;
+    setRuns((prev) =>
+      prev.map((run) => {
+        const route = routes.find((candidate) => candidate.id === run.id);
+        if (!route || (run.routePoints && run.routePoints.length > 0)) return run;
+        return { ...run, routePoints: route.points };
+      })
+    );
+  }, []);
+
   const updateRun = useCallback((runId: string, input: Partial<CreateRunInput>) => {
     let updatedRun: Run | undefined;
     setRuns((prev) => {
@@ -152,12 +179,14 @@ export function RunProvider({ children }: { children: React.ReactNode }) {
       runsLoaded,
       addRun,
       deleteRun,
+      mergeRuns,
+      mergeRunRoutes,
       updateRun,
       getRunById,
       getRuns,
       calculateRunStats: getStats,
     }),
-    [runs, runsLoaded, addRun, deleteRun, updateRun, getRunById, getRuns, getStats]
+    [runs, runsLoaded, addRun, deleteRun, mergeRuns, mergeRunRoutes, updateRun, getRunById, getRuns, getStats]
   );
 
   return <RunContext.Provider value={value}>{children}</RunContext.Provider>;

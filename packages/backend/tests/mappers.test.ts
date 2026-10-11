@@ -12,7 +12,10 @@ import {
   rowToReadinessCheckin,
   rowToRoutine,
   rowToRun,
+  rowToRunRoute,
   rowToWorkout,
+  runRouteToRow,
+  runRoutesOf,
   runToRow,
   workoutToRow,
 } from '../src';
@@ -42,6 +45,14 @@ export function runMapperTests(): void {
   check('empty splits map to undefined', runBack.splits, undefined);
   const kmRun = makeRun({ id: 'run_2', distance: 5, distanceUnit: 'km' });
   check('km round trips', rowToRun({ ...runToRow(USER, kmRun), created_at: STAMP }).distance, 5);
+
+  const gpsRun = makeRun({ id: 'run_gps', source: 'gps', routePoints: [{ lat: 1, lng: 2, t: 3 }, { lat: 1.1, lng: 2.1, t: 4 }] });
+  const routes = runRoutesOf([run, gpsRun]);
+  check('only runs with a trace produce route records', routes.map((route) => route.id), ['run_gps']);
+  const routeRow = runRouteToRow(USER, routes[0]);
+  check('route row counts points and keeps the run id', [routeRow.client_id, routeRow.point_count], ['run_gps', 2]);
+  check('route round trips', rowToRunRoute({ ...routeRow, updated_at: STAMP }).points, gpsRun.routePoints);
+  check('run row never carries the trace', 'routePoints' in runToRow(USER, gpsRun) || 'route_points' in runToRow(USER, gpsRun), false);
 
   const hybrid = makeHybrid();
   const hybridBack = rowToHybridSession({ ...hybridSessionToRow(USER, hybrid), created_at: hybrid.createdAt, updated_at: STAMP });

@@ -26,6 +26,8 @@ interface HybridContextValue {
     input: UpdateHybridSessionInput
   ) => HybridSession | undefined;
   deleteHybridSession: (sessionId: string) => void;
+  /** Insert or replace sessions by id (cloud sync). */
+  mergeHybridSessions: (incoming: HybridSession[]) => void;
   getHybridSessionById: (sessionId: string) => HybridSession | undefined;
   getHybridSessions: () => HybridSession[];
   calculateHybridStats: () => HybridStats;
@@ -178,6 +180,15 @@ export function HybridProvider({ children }: { children: React.ReactNode }) {
     setHybridSessions((prev) => prev.filter((session) => session.id !== sessionId));
   }, []);
 
+  const mergeHybridSessions = useCallback((incoming: HybridSession[]) => {
+    if (incoming.length === 0) return;
+    setHybridSessions((prev) => {
+      const byId = new Map(prev.map((session) => [session.id, session] as const));
+      for (const session of incoming) byId.set(session.id, session);
+      return sortSessions([...byId.values()]);
+    });
+  }, []);
+
   const getHybridSessionById = useCallback(
     (sessionId: string) => hybridSessions.find((session) => session.id === sessionId),
     [hybridSessions]
@@ -197,6 +208,7 @@ export function HybridProvider({ children }: { children: React.ReactNode }) {
       addHybridSession,
       updateHybridSession,
       deleteHybridSession,
+      mergeHybridSessions,
       getHybridSessionById,
       getHybridSessions,
       calculateHybridStats: getStats,
@@ -207,6 +219,7 @@ export function HybridProvider({ children }: { children: React.ReactNode }) {
       addHybridSession,
       updateHybridSession,
       deleteHybridSession,
+      mergeHybridSessions,
       getHybridSessionById,
       getHybridSessions,
       getStats,

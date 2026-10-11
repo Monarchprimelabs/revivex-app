@@ -81,6 +81,8 @@ interface WorkoutContextValue {
   createRoutine: (input: CreateRoutineInput) => Routine;
   updateRoutine: (routineId: string, input: CreateRoutineInput) => Routine | undefined;
   deleteRoutine: (routineId: string) => void;
+  /** Insert or replace routines by id (cloud sync). */
+  mergeRoutines: (incoming: Routine[]) => void;
   getRoutineById: (routineId: string) => Routine | undefined;
   startWorkoutFromRoutine: (routineId: string) => boolean;
 }
@@ -567,6 +569,15 @@ export function WorkoutProvider({ children }: ProviderProps) {
     setRoutines((prev) => prev.filter((routine) => routine.id !== routineId));
   }, []);
 
+  const mergeRoutines = useCallback((incoming: Routine[]) => {
+    if (incoming.length === 0) return;
+    setRoutines((prev) => {
+      const byId = new Map(prev.map((routine) => [routine.id, routine] as const));
+      for (const routine of incoming) byId.set(routine.id, routine);
+      return [...byId.values()].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    });
+  }, []);
+
   const getRoutineById = useCallback(
     (routineId: string) => routines.find((routine) => routine.id === routineId),
     [routines]
@@ -641,6 +652,7 @@ export function WorkoutProvider({ children }: ProviderProps) {
       createRoutine,
       updateRoutine,
       deleteRoutine,
+      mergeRoutines,
       getRoutineById,
       startWorkoutFromRoutine,
     }),
@@ -671,6 +683,7 @@ export function WorkoutProvider({ children }: ProviderProps) {
       createRoutine,
       updateRoutine,
       deleteRoutine,
+      mergeRoutines,
       getRoutineById,
       startWorkoutFromRoutine,
     ]

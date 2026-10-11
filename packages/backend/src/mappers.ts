@@ -5,6 +5,7 @@ import type {
   HybridSessionType,
   ReadinessCheckin,
   ReadinessLevel,
+  RoutePoint,
   Routine,
   RoutineGoal,
   Run,
@@ -13,6 +14,7 @@ import type {
 } from '@revivex/core';
 import type {
   BodyWeightRow,
+  RunRouteRow,
   DailyPlanRow,
   HybridSessionRow,
   ReadinessCheckinRow,
@@ -257,4 +259,34 @@ export function rowToDailyPlan(row: DailyPlanRow): DailyPlanRecord {
     createdAt: row.created_at ?? `${row.plan_date}T00:00:00.000Z`,
     updatedAt: row.updated_at,
   };
+}
+
+// ---------- run routes (GPS traces, kept apart from runs) ----------
+
+export interface RunRouteRecord {
+  /** Same device id as the run it belongs to. */
+  id: string;
+  points: RoutePoint[];
+  updatedAt?: string;
+}
+
+export function runRouteToRow(userId: string, route: RunRouteRecord): RunRouteRow {
+  return {
+    user_id: userId,
+    client_id: route.id,
+    points: route.points,
+    point_count: route.points.length,
+  };
+}
+
+export function rowToRunRoute(row: RunRouteRow): RunRouteRecord {
+  const points = Array.isArray(row.points) ? row.points : [];
+  return { id: row.client_id, points, updatedAt: row.updated_at };
+}
+
+/** Derives the mirrored route collection from runs that carry a GPS trace. */
+export function runRoutesOf(runs: Run[]): RunRouteRecord[] {
+  return runs
+    .filter((run) => Array.isArray(run.routePoints) && run.routePoints.length > 0)
+    .map((run) => ({ id: run.id, points: run.routePoints as RoutePoint[], updatedAt: run.updatedAt }));
 }
