@@ -45,7 +45,7 @@ Previous Phase 6 recovery baseline remains available:
 
 ## Stack
 
-- Expo: `54.0.35`
+- Expo: `54.0.37`
 - React: `19.1.0`
 - React Native: `0.81.5`
 - Expo Router: `6.0.24`
