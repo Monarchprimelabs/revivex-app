@@ -12,8 +12,11 @@ import {
   rowToReadinessCheckin,
   rowToRoutine,
   rowToRun,
+  fingerprint,
+  readSupabaseConfig,
   rowToRunRoute,
   rowToWorkout,
+  runForSync,
   runRouteToRow,
   runRoutesOf,
   runToRow,
@@ -25,6 +28,12 @@ const USER = 'user_1';
 const STAMP = '2026-10-11T08:00:00.000Z';
 
 export function runMapperTests(): void {
+  suite('backend config');
+  check('https project urls are accepted', readSupabaseConfig({ supabaseUrl: 'https://abc.supabase.co', supabaseAnonKey: 'k' })?.url, 'https://abc.supabase.co');
+  check('local http urls are accepted for development', [readSupabaseConfig({ supabaseUrl: 'http://127.0.0.1:54321', supabaseAnonKey: 'k' }) !== null, readSupabaseConfig({ supabaseUrl: 'http://192.168.1.20:54321', supabaseAnonKey: 'k' }) !== null], [true, true]);
+  check('public http urls are rejected', readSupabaseConfig({ supabaseUrl: 'http://example.com', supabaseAnonKey: 'k' }), null);
+  check('missing values mean not configured', [readSupabaseConfig({ supabaseUrl: '', supabaseAnonKey: 'k' }), readSupabaseConfig(undefined)], [null, null]);
+
   suite('backend mappers');
 
   const workout = makeWorkout();
@@ -53,6 +62,8 @@ export function runMapperTests(): void {
   check('route row counts points and keeps the run id', [routeRow.client_id, routeRow.point_count], ['run_gps', 2]);
   check('route round trips', rowToRunRoute({ ...routeRow, updated_at: STAMP }).points, gpsRun.routePoints);
   check('run row never carries the trace', 'routePoints' in runToRow(USER, gpsRun) || 'route_points' in runToRow(USER, gpsRun), false);
+  check('a pulled route fingerprints like the route derived from its run', fingerprint(rowToRunRoute({ ...routeRow, updated_at: STAMP })), fingerprint(routes[0]));
+  check('attaching a trace does not change the run as mirrored', fingerprint(runForSync(gpsRun)), fingerprint(runForSync({ ...gpsRun, routePoints: undefined })));
 
   const hybrid = makeHybrid();
   const hybridBack = rowToHybridSession({ ...hybridSessionToRow(USER, hybrid), created_at: hybrid.createdAt, updated_at: STAMP });

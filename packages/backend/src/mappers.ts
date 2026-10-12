@@ -267,7 +267,6 @@ export interface RunRouteRecord {
   /** Same device id as the run it belongs to. */
   id: string;
   points: RoutePoint[];
-  updatedAt?: string;
 }
 
 export function runRouteToRow(userId: string, route: RunRouteRecord): RunRouteRow {
@@ -281,12 +280,23 @@ export function runRouteToRow(userId: string, route: RunRouteRecord): RunRouteRo
 
 export function rowToRunRoute(row: RunRouteRow): RunRouteRecord {
   const points = Array.isArray(row.points) ? row.points : [];
-  return { id: row.client_id, points, updatedAt: row.updated_at };
+  return { id: row.client_id, points };
 }
 
 /** Derives the mirrored route collection from runs that carry a GPS trace. */
 export function runRoutesOf(runs: Run[]): RunRouteRecord[] {
   return runs
     .filter((run) => Array.isArray(run.routePoints) && run.routePoints.length > 0)
-    .map((run) => ({ id: run.id, points: run.routePoints as RoutePoint[], updatedAt: run.updatedAt }));
+    .map((run) => ({ id: run.id, points: run.routePoints as RoutePoint[] }));
+}
+
+/**
+ * The run as mirrored to the `runs` table: GPS points travel in `run_routes`,
+ * so they are left out here. Keeps a run's fingerprint stable when its trace
+ * is attached or cleared, which would otherwise echo the run between devices.
+ */
+export function runForSync(run: Run): Run {
+  if (run.routePoints === undefined) return run;
+  const { routePoints: _routePoints, ...rest } = run;
+  return rest;
 }

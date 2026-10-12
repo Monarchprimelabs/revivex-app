@@ -23,8 +23,23 @@ export function readSupabaseConfig(extra: unknown): SupabaseConfig | null {
   const record = (extra ?? {}) as { supabaseUrl?: unknown; supabaseAnonKey?: unknown };
   const url = typeof record.supabaseUrl === 'string' ? record.supabaseUrl.trim() : '';
   const anonKey = typeof record.supabaseAnonKey === 'string' ? record.supabaseAnonKey.trim() : '';
-  if (!url || !anonKey || !url.startsWith('https://')) return null;
+  if (!url || !anonKey || !isAllowedSupabaseUrl(url)) return null;
   return { url, anonKey };
+}
+
+/** https anywhere; plain http only for local development hosts (Supabase CLI, LAN, test stand-ins). */
+export function isAllowedSupabaseUrl(url: string): boolean {
+  if (url.startsWith('https://')) return true;
+  const match = /^http:\/\/([^/:]+)(:\d+)?(\/|$)/.exec(url);
+  if (!match) return false;
+  const host = match[1];
+  return (
+    host === 'localhost' ||
+    host === '127.0.0.1' ||
+    /^10\.\d+\.\d+\.\d+$/.test(host) ||
+    /^192\.168\.\d+\.\d+$/.test(host) ||
+    /^172\.(1[6-9]|2\d|3[01])\.\d+\.\d+$/.test(host)
+  );
 }
 
 export function createRevivexSupabaseClient(config: SupabaseConfig, storage: KeyValueStorage): SupabaseClient {

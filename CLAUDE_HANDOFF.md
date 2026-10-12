@@ -22,6 +22,8 @@ Date: 2026-10-11
 
 ## Mac Checklist (first session on the Mac)
 
+If Codex runs this session for the owner, it follows `docs/codex-runbook.md` instead (same steps, written for an agent, with guardrails) and reports in `docs/mac-run-report.md`.
+
 1. Pull the branch and install.
 
    ```bash
@@ -30,7 +32,7 @@ Date: 2026-10-11
    npm run e2e:full
    ```
 
-2. Create the Supabase project and follow `supabase/README.md`: run `db/schema.sql`, turn off email confirmation for development, paste the URL and anon key into both `app.json` files, deploy `delete-account`.
+2. Create a new Supabase project (do not reuse one that ran the old Phase 39 schema) and follow `supabase/README.md`: run `db/schema.sql`, turn off email confirmation for development, put the URL and anon key in `apps/*/.env.local`, then `npm run e2e:live` to prove two-device sync against it. Deploying `delete-account` can wait.
 3. Direction A in Expo Go: `npm run start:a`. Profile → Account → Create account → sign in. Log a workout. The history card should show "Syncing" then "Synced". Check the row in the Supabase table editor (`workouts`, your user id). Sign in on a second device or the simulator and watch history arrive.
 4. Direction B in Expo Go: `npm run start:b`. Settings → Training history → Import the JSON you exported from Direction A (Profile → Your Data → Export) so the coach has your real history. Then Set up → Check in → plan → Mark complete (edit what you actually did) → History → detail. Account → sign in; check-ins, plans and the completed session should sync.
 5. Run the device checklist in `docs/TESTING.md` for the native-only paths (GPS, Health, maps). None of them changed in this phase, but the move to the monorepo deserves one pass.

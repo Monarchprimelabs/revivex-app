@@ -15,7 +15,9 @@
     "export:web": "npm run export:web --workspaces --if-present",
     "e2e": "playwright test -c e2e/playwright.config.ts",
     "e2e:full": "npm run export:web && npm run e2e",
-    "test:functions": "npx tsx supabase/tests/strava-core.test.ts"
+    "test:functions": "npx tsx supabase/tests/strava-core.test.ts",
+    "e2e:live": "npm run export:web && REVIVEX_LIVE=1 playwright test -c e2e/playwright.config.ts --project=live",
+    "e2e:mock": "REVIVEX_SUPABASE_URL=http://127.0.0.1:54329 REVIVEX_SUPABASE_ANON_KEY=mock-anon-key npm run export:web && REVIVEX_LIVE=1 REVIVEX_MOCK=1 playwright test -c e2e/playwright.config.ts --project=live"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.3.11",

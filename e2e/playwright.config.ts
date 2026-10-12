@@ -26,9 +26,15 @@ export default defineConfig({
   projects: [
     { name: 'direction-a', testMatch: /direction-a\.spec\.ts/, use: { baseURL: 'http://127.0.0.1:4311' } },
     { name: 'direction-b', testMatch: /direction-b\.spec\.ts/, use: { baseURL: 'http://127.0.0.1:4312' } },
+    // Real Supabase project; skipped unless REVIVEX_LIVE=1 (npm run e2e:live).
+    { name: 'live', testMatch: /live-sync\.spec\.ts/ },
   ],
   webServer: [
     { command: 'node serve.mjs .build/web-a 4311', url: 'http://127.0.0.1:4311', reuseExistingServer: true, timeout: 30_000 },
     { command: 'node serve.mjs .build/web-b 4312', url: 'http://127.0.0.1:4312', reuseExistingServer: true, timeout: 30_000 },
+    // Local Supabase stand-in for npm run e2e:mock (builds exported against http://127.0.0.1:54329).
+    ...(process.env.REVIVEX_MOCK === '1'
+      ? [{ command: 'node mock-supabase.mjs 54329', url: 'http://127.0.0.1:54329/health', reuseExistingServer: false, timeout: 30_000 }]
+      : []),
   ],
 });

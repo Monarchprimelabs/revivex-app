@@ -6,6 +6,7 @@ import {
   markDeleted,
   markFailed,
   markPulled,
+  markRemovedByServer,
   markSynced,
   trackedItem,
   type SyncState,
@@ -19,6 +20,8 @@ export interface FlushDeps {
   toRow: (table: SyncTable, userId: string, item: unknown) => AnySyncRow;
   /** Stop after this many entries per flush so the UI never waits on a huge backlog. */
   maxEntries?: number;
+  /** Skip entries that already failed once; they wait for the next full sync. Used for automatic pushes. */
+  onlyFresh?: boolean;
 }
 
 export interface FlushResult {
@@ -38,7 +41,8 @@ export async function flushOutbox(state: SyncState, deps: FlushDeps): Promise<Fl
   let pushed = 0;
   let deleted = 0;
   let failed = 0;
-  const entries = state.outbox.slice(0, deps.maxEntries ?? 50);
+  const candidates = deps.onlyFresh ? state.outbox.filter((entry) => !entry.lastError) : state.outbox;
+  const entries = candidates.slice(0, deps.maxEntries ?? 50);
   for (const entry of entries) {
     try {
       if (entry.op === 'delete') {
@@ -127,7 +131,7 @@ export function applyRemoteRows<T extends { id: string; updatedAt?: string }>(
       }
       byId.delete(clientId);
       removed.push(clientId);
-      next = markDeleted(next, table, clientId);
+      next = markRemovedByServer(next, table, clientId, serverUpdatedAt);
       continue;
     }
 

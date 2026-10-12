@@ -45,7 +45,7 @@ Do not add these unless the owner explicitly changes direction:
 - Shared logic goes in `packages/`. Apps depend on packages, design-system depends on core, nothing depends on an app, apps never import each other.
 - Prefer existing theme, components, context, and local storage patterns. Local-first stays: AsyncStorage on device, Supabase as a mirror.
 - Every database table has row-level security. Policies are granted to `authenticated` only. Server-only tables have no client policies and revoked privileges. `npm run test:db` must pass after any schema change.
-- No secrets in the client. `app.json` carries only publishable keys (Supabase URL and anon key, RevenueCat public SDK key). Strava secrets live in Supabase secrets.
+- No secrets in the client. Only publishable keys reach the app: the Supabase URL and anon key (preferably in untracked `apps/*/.env.local` as `REVIVEX_SUPABASE_URL` / `REVIVEX_SUPABASE_ANON_KEY`, read by `app.config.js`) and the RevenueCat public SDK key. Strava secrets live in Supabase secrets.
 - Preserve existing AsyncStorage keys unless implementing a safe migration.
 - Do not run broad package upgrades unless required to fix a confirmed issue.
 - Do not run `npm audit fix --force` casually.
@@ -65,6 +65,8 @@ After code changes, from the repo root:
 npm run typecheck
 npm test
 npm run test:db
+npm run e2e:full      # web builds + Playwright at phone width
+npm run e2e:mock      # two-device sync against a local Supabase stand-in
 ```
 
 For runtime verification, from `apps/direction-a` or `apps/direction-b`:
@@ -90,6 +92,6 @@ npx expo export --platform ios --output-dir /tmp/revivex-export-check
 
 ## Collaboration Workflow
 
-- Owner decision 2026-10-11: Claude implements both directions in this program, including verification and repo state. Codex may still be used for second opinions or device testing on the Mac.
+- Owner decision 2026-10-11: Claude implements both directions in this program, including verification and repo state. Codex may still be used for second opinions or device testing on the Mac. When Codex verifies on the Mac, it follows `docs/codex-runbook.md` and reports in `docs/mac-run-report.md`.
 - Keep `PROJECT_STATE.md`, `CLAUDE_HANDOFF.md`, and the `docs/` program files updated after each step.
 - Commit each completed step with a clear message.

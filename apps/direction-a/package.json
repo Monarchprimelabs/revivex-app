@@ -9,7 +9,7 @@
     "web": "expo start --web",
     "test": "npx tsx tests/run-all.ts",
     "typecheck": "tsc --noEmit",
-    "export:web": "expo export --platform web --output-dir ../../e2e/.build/web-a"
+    "export:web": "expo export --platform web --clear --output-dir ../../e2e/.build/web-a"
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",

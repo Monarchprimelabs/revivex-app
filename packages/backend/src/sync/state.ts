@@ -20,6 +20,14 @@ export interface TrackedItem {
   syncedFp?: string;
   /** Server `updated_at` we have seen for this item. */
   serverUpdatedAt?: string;
+  /**
+   * A pull applied a server version that has not yet been seen in the local
+   * collection. Until it is, the item's absence or an older local copy is
+   * never read as a user delete or edit.
+   */
+  awaitingLocal?: boolean;
+  /** A pull applied a server tombstone that has not yet been seen removed locally. */
+  awaitingRemoval?: boolean;
 }
 
 export type TableTracking = Record<string, TrackedItem>;
@@ -72,23 +80,63 @@ export function trackedItem(state: SyncState, table: SyncTable, clientId: string
   return state.tracking[table]?.[clientId];
 }
 
+function forgetPullCursor(state: SyncState, table: SyncTable): SyncState {
+  if (!state.lastPulledAt[table]) return state;
+  const lastPulledAt = { ...state.lastPulledAt };
+  delete lastPulledAt[table];
+  return { ...state, lastPulledAt };
+}
+
+export interface ReconcileOptions {
+  /**
+   * When a pulled change never landed locally (the app closed mid-sync), clear
+   * the table's pull cursor so the next sync fetches it again. Default true.
+   * Turn off for derived collections where some server rows can never land.
+   */
+  repull?: boolean;
+}
+
 /**
  * Compares a local collection against what we have tracked and queues the
  * differences: new or changed items become upserts, missing items become
  * deletes. Returns the same state object when nothing changed.
+ *
+ * Pulled changes are confirmed here before they count: an item a pull applied
+ * but that is not in the collection yet is never treated as deleted, an older
+ * local copy of a pulled item is never pushed back, and a pulled tombstone
+ * whose item is still here is never resurrected.
  */
 export function reconcileCollection(
   state: SyncState,
   table: SyncTable,
   items: ReadonlyArray<{ id: string }>,
-  now: string
+  now: string,
+  options: ReconcileOptions = {}
 ): SyncState {
+  const repull = options.repull !== false;
   let next = state;
   const seen = new Set<string>();
   for (const item of items) {
     seen.add(item.id);
     const fp = fingerprint(item);
     const tracked = trackedItem(next, table, item.id);
+    if (tracked?.awaitingRemoval) {
+      // A pulled tombstone has not landed: keep the copy out of the outbox and fetch the tombstone again.
+      next = setTracked(next, table, item.id, { fp, syncedFp: fp });
+      if (repull) next = forgetPullCursor(next, table);
+      continue;
+    }
+    if (tracked?.awaitingLocal) {
+      if (tracked.fp === fp) {
+        // The pulled version is in the collection now.
+        next = setTracked(next, table, item.id, { fp, syncedFp: tracked.syncedFp, serverUpdatedAt: tracked.serverUpdatedAt });
+        continue;
+      }
+      // An older local copy is here instead of the pulled version: do not push it, fetch the newer one again.
+      next = setTracked(next, table, item.id, { fp, syncedFp: fp });
+      if (repull) next = forgetPullCursor(next, table);
+      continue;
+    }
     if (tracked?.fp === fp) continue;
     next = setTracked(next, table, item.id, { ...tracked, fp });
     if (tracked?.syncedFp === fp) {
@@ -103,6 +151,12 @@ export function reconcileCollection(
     if (seen.has(clientId)) continue;
     const tracked = tracking[clientId];
     next = setTracked(next, table, clientId, undefined);
+    if (tracked.awaitingRemoval) continue; // The pulled tombstone landed.
+    if (tracked.awaitingLocal) {
+      // A pulled item never landed. It was not deleted here, so never push a delete; fetch it again.
+      if (repull) next = forgetPullCursor(next, table);
+      continue;
+    }
     if (tracked.syncedFp || tracked.serverUpdatedAt) {
       next = enqueue(next, table, clientId, 'delete', now);
     } else {
@@ -137,11 +191,18 @@ export function markFailed(state: SyncState, table: SyncTable, clientId: string,
   };
 }
 
-/** Records that a remote version of an item is now the local version. */
+/** Records that a pull applied a server version; reconcileCollection confirms it landed. */
 export function markPulled(state: SyncState, table: SyncTable, item: { id: string }, serverUpdatedAt: string | undefined): SyncState {
   const fp = fingerprint(item);
-  const next = setTracked(state, table, item.id, { fp, syncedFp: fp, serverUpdatedAt });
+  const next = setTracked(state, table, item.id, { fp, syncedFp: fp, serverUpdatedAt, awaitingLocal: true });
   return dequeue(next, table, item.id);
+}
+
+/** Records that a pull applied a server tombstone; reconcileCollection confirms the local removal. */
+export function markRemovedByServer(state: SyncState, table: SyncTable, clientId: string, serverUpdatedAt: string | undefined): SyncState {
+  const tracked = trackedItem(state, table, clientId);
+  const next = setTracked(state, table, clientId, { fp: tracked?.fp ?? '', syncedFp: tracked?.syncedFp, serverUpdatedAt, awaitingRemoval: true });
+  return dequeue(next, table, clientId);
 }
 
 export function statusFor(state: SyncState, table: SyncTable, clientId: string, cloudActive: boolean): SyncStatus {

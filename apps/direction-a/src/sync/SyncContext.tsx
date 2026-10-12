@@ -19,6 +19,7 @@ import {
   rowToRunRoute,
   rowToWorkout,
   runRouteToRow,
+  runForSync,
   runRoutesOf,
   runToRow,
   saveSyncState,
@@ -83,6 +84,8 @@ interface TableSpec<T extends Item> {
   merge: (items: T[]) => void;
   /** Apply tombstones pulled from the server. */
   remove: (ids: string[]) => void;
+  /** Re-fetch rows whose pull never landed locally (default true). */
+  repull?: boolean;
 }
 
 export function SyncProvider({ children }: { children: React.ReactNode }) {
@@ -99,18 +102,21 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const storageKey = userId ? `${STORAGE_PREFIX}.${userId}` : null;
 
   const routes = useMemo(() => runRoutesOf(runs), [runs]);
+  // GPS points travel in run_routes; mirroring runs without them keeps a run's
+  // fingerprint stable when its trace is attached, so devices never echo it.
+  const runsForSync = useMemo(() => runs.map(runForSync), [runs]);
 
   const specs = useMemo<TableSpec<Item>[]>(
     () =>
       [
         { table: 'workouts', items: history, toRow: (uid, item) => workoutToRow(uid, item as Workout), fromRow: (row) => rowToWorkout(row as WorkoutRow), merge: (items) => mergeWorkouts(items as Workout[]), remove: (ids) => ids.forEach(deleteWorkout) },
         { table: 'routines', items: routines, toRow: (uid, item) => routineToRow(uid, item as Routine), fromRow: (row) => rowToRoutine(row as RoutineRow), merge: (items) => mergeRoutines(items as Routine[]), remove: (ids) => ids.forEach(deleteRoutine) },
-        { table: 'runs', items: runs, toRow: (uid, item) => runToRow(uid, item as Run), fromRow: (row) => rowToRun(row as RunRow), merge: (items) => mergeRuns(items as Run[]), remove: (ids) => ids.forEach(deleteRun) },
-        { table: 'run_routes', items: routes, toRow: (uid, item) => runRouteToRow(uid, item as RunRouteRecord), fromRow: (row) => rowToRunRoute(row as RunRouteRow), merge: (items) => mergeRunRoutes(items as RunRouteRecord[]), remove: clearRunRoutes },
+        { table: 'runs', items: runsForSync, toRow: (uid, item) => runToRow(uid, item as Run), fromRow: (row) => rowToRun(row as RunRow), merge: (items) => mergeRuns(items as Run[]), remove: (ids) => ids.forEach(deleteRun) },
+        { table: 'run_routes', items: routes, toRow: (uid, item) => runRouteToRow(uid, item as RunRouteRecord), fromRow: (row) => rowToRunRoute(row as RunRouteRow), merge: (items) => mergeRunRoutes(items as RunRouteRecord[]), remove: clearRunRoutes, repull: false },
         { table: 'hybrid_sessions', items: hybridSessions, toRow: (uid, item) => hybridSessionToRow(uid, item as HybridSession), fromRow: (row) => rowToHybridSession(row as HybridSessionRow), merge: (items) => mergeHybridSessions(items as HybridSession[]), remove: (ids) => ids.forEach(deleteHybridSession) },
         { table: 'body_weight_entries', items: entries, toRow: (uid, item) => bodyWeightToRow(uid, item as BodyWeightEntry), fromRow: (row) => rowToBodyWeight(row as BodyWeightRow), merge: (items) => mergeEntries(items as BodyWeightEntry[]), remove: (ids) => ids.forEach(deleteEntry) },
       ] as TableSpec<Item>[],
-    [history, routines, runs, routes, hybridSessions, entries, mergeWorkouts, mergeRoutines, mergeRuns, mergeRunRoutes, mergeHybridSessions, mergeEntries, deleteWorkout, deleteRoutine, deleteRun, clearRunRoutes, deleteHybridSession, deleteEntry]
+    [history, routines, runsForSync, routes, hybridSessions, entries, mergeWorkouts, mergeRoutines, mergeRuns, mergeRunRoutes, mergeHybridSessions, mergeEntries, deleteWorkout, deleteRoutine, deleteRun, clearRunRoutes, deleteHybridSession, deleteEntry]
   );
   const specsRef = useRef(specs);
   specsRef.current = specs;
@@ -145,12 +151,26 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     };
   }, [storageKey, userId]);
 
+  const keyRef = useRef(storageKey);
+  keyRef.current = storageKey;
+  const pendingSaveKey = useRef<string | null>(null);
+
   const commit = useCallback(
     (next: SyncState) => {
       if (next === stateRef.current) return;
       stateRef.current = next;
       setState(next);
-      if (storageKey) saveSyncState(AsyncStorage, storageKey, next).catch(() => undefined);
+      if (!storageKey || pendingSaveKey.current === storageKey) return;
+      pendingSaveKey.current = storageKey;
+      // Save on the next tick, after the data providers above have written their
+      // collections. Sync bookkeeping must never be stored ahead of the data it
+      // describes, or an app closed mid-sync could misread what changed.
+      setTimeout(() => {
+        const key = pendingSaveKey.current;
+        pendingSaveKey.current = null;
+        if (!key || keyRef.current !== key) return;
+        saveSyncState(AsyncStorage, key, stateRef.current).catch(() => undefined);
+      }, 0);
     },
     [storageKey]
   );
@@ -163,12 +183,12 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     if (!ready) return;
     const now = new Date().toISOString();
     let next = stateRef.current;
-    for (const spec of specs) next = reconcileCollection(next, spec.table, spec.items, now);
+    for (const spec of specs) next = reconcileCollection(next, spec.table, spec.items, now, { repull: spec.repull !== false });
     commit(next);
   }, [ready, specs, commit]);
 
   const runSync = useCallback(
-    async (options: { pull: boolean }) => {
+    async (options: { pull: boolean; onlyFresh?: boolean }) => {
       if (!remote || !userId || busyRef.current) return;
       busyRef.current = true;
       setSyncing(true);
@@ -188,6 +208,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         const flushed = await flushOutbox(stateRef.current, {
           remote,
           userId,
+          onlyFresh: options.onlyFresh,
           getLocal: (table, clientId) => specsRef.current.find((spec) => spec.table === table)?.items.find((item) => item.id === clientId),
           toRow: (table, uid, item) => {
             const spec = specsRef.current.find((candidate) => candidate.table === table);
@@ -214,15 +235,18 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     void runSync({ pull: true });
   }, [ready, runSync]);
 
-  // Push shortly after local changes land in the outbox.
-  const outboxLength = state.outbox.length;
+  // Push shortly after local changes land in the outbox, and keep draining new
+  // changes after each sync finishes (large first syncs go 50 at a time).
+  // Entries that already failed wait for the minute timer, foreground or Sync
+  // now, so being offline never turns into a retry loop.
+  const freshCount = useMemo(() => state.outbox.filter((entry) => !entry.lastError).length, [state.outbox]);
   useEffect(() => {
-    if (!ready || outboxLength === 0) return;
+    if (!ready || freshCount === 0 || syncing) return;
     const timer = setTimeout(() => {
-      void runSync({ pull: false });
+      void runSync({ pull: false, onlyFresh: true });
     }, 1500);
     return () => clearTimeout(timer);
-  }, [ready, outboxLength, runSync]);
+  }, [ready, freshCount, syncing, runSync]);
 
   // Keep fresh while the app is open.
   useEffect(() => {

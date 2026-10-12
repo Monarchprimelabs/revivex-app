@@ -65,6 +65,8 @@ interface TableSpec<T extends Item> {
   merge: (items: T[]) => void;
   /** Apply tombstones pulled from the server. */
   remove: (ids: string[]) => void;
+  /** Re-fetch rows whose pull never landed locally (default true). */
+  repull?: boolean;
 }
 
 export function SyncProvider({ children }: { children: React.ReactNode }) {
@@ -118,12 +120,26 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     };
   }, [storageKey, userId]);
 
+  const keyRef = useRef(storageKey);
+  keyRef.current = storageKey;
+  const pendingSaveKey = useRef<string | null>(null);
+
   const commit = useCallback(
     (next: SyncState) => {
       if (next === stateRef.current) return;
       stateRef.current = next;
       setState(next);
-      if (storageKey) saveSyncState(AsyncStorage, storageKey, next).catch(() => undefined);
+      if (!storageKey || pendingSaveKey.current === storageKey) return;
+      pendingSaveKey.current = storageKey;
+      // Save on the next tick, after the data providers above have written their
+      // collections. Sync bookkeeping must never be stored ahead of the data it
+      // describes, or an app closed mid-sync could misread what changed.
+      setTimeout(() => {
+        const key = pendingSaveKey.current;
+        pendingSaveKey.current = null;
+        if (!key || keyRef.current !== key) return;
+        saveSyncState(AsyncStorage, key, stateRef.current).catch(() => undefined);
+      }, 0);
     },
     [storageKey]
   );
@@ -134,12 +150,12 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     if (!ready) return;
     const now = new Date().toISOString();
     let next = stateRef.current;
-    for (const spec of specs) next = reconcileCollection(next, spec.table, spec.items, now);
+    for (const spec of specs) next = reconcileCollection(next, spec.table, spec.items, now, { repull: spec.repull !== false });
     commit(next);
   }, [ready, specs, commit]);
 
   const runSync = useCallback(
-    async (options: { pull: boolean }) => {
+    async (options: { pull: boolean; onlyFresh?: boolean }) => {
       if (!remote || !userId || busyRef.current) return;
       busyRef.current = true;
       setSyncing(true);
@@ -159,6 +175,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         const flushed = await flushOutbox(stateRef.current, {
           remote,
           userId,
+          onlyFresh: options.onlyFresh,
           getLocal: (table, clientId) => specsRef.current.find((spec) => spec.table === table)?.items.find((item) => item.id === clientId),
           toRow: (table, uid, item) => {
             const spec = specsRef.current.find((candidate) => candidate.table === table);
@@ -184,14 +201,18 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     void runSync({ pull: true });
   }, [ready, runSync]);
 
-  const outboxLength = state.outbox.length;
+  // Push shortly after local changes land in the outbox, and keep draining new
+  // changes after each sync finishes (large first syncs go 50 at a time).
+  // Entries that already failed wait for the minute timer, foreground or Sync
+  // now, so being offline never turns into a retry loop.
+  const freshCount = useMemo(() => state.outbox.filter((entry) => !entry.lastError).length, [state.outbox]);
   useEffect(() => {
-    if (!ready || outboxLength === 0) return;
+    if (!ready || freshCount === 0 || syncing) return;
     const timer = setTimeout(() => {
-      void runSync({ pull: false });
+      void runSync({ pull: false, onlyFresh: true });
     }, 1500);
     return () => clearTimeout(timer);
-  }, [ready, outboxLength, runSync]);
+  }, [ready, freshCount, syncing, runSync]);
 
   useEffect(() => {
     if (!ready) return;
