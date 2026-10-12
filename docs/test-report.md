@@ -41,7 +41,21 @@ npm run e2e:full      # export both apps for web and run Playwright at phone wid
 7. **The web build kept a stale app config.** Metro's transform cache reused a bundle exported before the keys were set. Fix: `export:web` always clears the cache. Status: fixed.
 8. **Local Supabase URLs were rejected.** The config check required https, which also blocked the Supabase CLI's local stack. Fix: plain http is accepted for localhost and private LAN addresses only. Status: fixed.
 
-No other defects were found in the app logic exercised by the suites. The coach engine's fatigue rule was calibrated during testing: a single four-set accessory does not block a slot, a full session (six or more sets on the slot's muscle groups inside 48 hours) does.
+9. **Expo Doctor flagged three patch versions behind SDK 54.** Found on the Mac (the cloud sandbox cannot reach Expo's servers). Fix: expo 54.0.37, expo-constants 18.0.14, expo-file-system 19.0.24 in both apps; every Expo-pinned package was checked offline against the new release's bundled versions, and the full suite passed again. Status: fixed.
+
+No other defects were found in the app logic exercised by the suites.
+
+## Mac run 1 (Codex on the owner's Mac mini, 2026-10-12)
+
+| Check | Result |
+| --- | --- |
+| Install, typecheck, unit and policy suites | Pass, same counts as the cloud |
+| Expo Doctor | 17/18: three patch versions behind; fixed on the branch afterwards |
+| Web and iOS exports | Fail: Metro could not resolve `expo-router/build/qualified-entry` although the file exists |
+| Simulator | Fail: Expo CLI could not download Expo Go (`fetch failed`) |
+| Playwright browser install | Stalled during extraction |
+
+The export failure did not reproduce in the cloud with the same commit under Node 22 or Node 26 (the Mac runs 26.4). Codex's log shows watchman dropping events and recrawling the repository, and the clone sits on the Desktop, which macOS commonly syncs to iCloud. The second run uses a fresh clone outside the Desktop with watchman reset; `docs/codex-runbook.md` lists fallbacks for the Expo Go download and the Playwright browser. Live sync against the real project and the phone session are still pending. The coach engine's fatigue rule was calibrated during testing: a single four-set accessory does not block a slot, a full session (six or more sets on the slot's muscle groups inside 48 hours) does.
 
 ## Known limitations and what is not covered
 

@@ -20,6 +20,18 @@ Date: 2026-10-11
 - `db/schema.sql` is final for this phase and has not been applied to any Supabase project yet. `supabase/functions/*` (delete-account and the five Strava functions) are written and not deployed.
 - Verification: see `docs/test-report.md`. All unit, policy and end-to-end suites pass in the sandbox.
 
+## Mac Run 1 (Codex, 2026-10-12)
+
+- Clone used: `/Users/geo/Desktop/revivex-app`, which had uncommitted changes on top of an old `main` (`a82399c`). Codex preserved them on the local, unpushed branch `mac-local-changes-2026-10-12` (commit `4f030fc`) and left an older stash untouched.
+- Passed on the branch: install, typecheck, 257 unit checks, 73 policy checks.
+- Failed: Expo Doctor patch versions (fixed on the branch: expo 54.0.37, expo-constants 18.0.14, expo-file-system 19.0.24); both web and iOS exports could not resolve `expo-router/build/qualified-entry` although the file exists; Expo Go download for the simulator (`fetch failed`); Playwright browser install stalled.
+- Diagnosis: environmental. The same commit exports in the cloud under Node 22 and Node 26. Watchman kept recrawling the Desktop clone, which is likely iCloud-synced. Second run: fresh clone in `~/Developer/revivex-app` per the updated `docs/codex-runbook.md`.
+- The first run's report is uncommitted in the Desktop clone; the second run carries it over.
+
+## Open Decision: Bundle Identifier
+
+The Mac's preserved changes use iOS bundle ID `com.revivalfitnessathletics.revivex`, an App Store Connect app (`ascAppId` 6794328682) and an EAS project (`9c8f319d-e456-4e85-96cf-38382c7a51d4`) created while the slug was still `hybridtrack`. The branch, and `main` since Phase 48, use `com.monarchprimelabs.revivex` with slug `revivex`. An App Store Connect app's bundle ID cannot change after creation, so the owner must pick one. After the decision, port the rest of the Mac changes into `apps/direction-a`: `ITSAppUsesNonExemptEncryption: false`, Android location and foreground-service permissions, `expo-dev-client` (then start Expo Go sessions with `--go`), `ascAppId`, and the health adapters' own-bundle constants. The EAS project needs to match the `revivex` slug (`eas init` on the Mac at the next build).
+
 ## Mac Checklist (first session on the Mac)
 
 If Codex runs this session for the owner, it follows `docs/codex-runbook.md` instead (same steps, written for an agent, with guardrails) and reports in `docs/mac-run-report.md`.

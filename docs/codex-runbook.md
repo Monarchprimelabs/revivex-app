@@ -11,19 +11,28 @@ For Codex (or any agent) on the owner's Mac mini while the owner is away. Your j
 - When a step fails, record the exact command, the full error and what you tried, then continue with the next independent step. Do not fix code.
 - Stop every server you start before you finish, except a dev server the owner is still using.
 
+## Mac environment (lessons from the first run, 2026-10-12)
+
+- **Keep the clone out of the Desktop.** macOS often syncs the Desktop to iCloud. On the first run watchman kept dropping events and recrawling, and Metro failed to find files that existed on disk, while the same commit exported cleanly in the cloud under Node 22 and Node 26. Use `~/Developer/revivex-app`. To record whether the Desktop is synced: `ls -d ~/Library/Mobile\ Documents/com~apple~CloudDocs/Desktop` (it exists only when it is).
+- **Reset watchman** after switching from the old single-app layout: `watchman watch-del-all`.
+- **Node:** 20.19 or newer. Node 26 worked in the cloud. If something still looks Node-related, retry the command with an LTS release from an app folder, for example `npx -y node@22 ../../node_modules/expo/bin/cli export --platform ios --output-dir /tmp/revivex-export`.
+- **Playwright browser:** if `npx playwright install chromium` stalls, use Google Chrome instead by exporting `PLAYWRIGHT_CHROMIUM="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"` before the e2e commands.
+- **Expo Go in the simulator:** if Expo CLI prints `Fetching Expo Go` and then `fetch failed`, retry once with `NODE_OPTIONS=--dns-result-order=ipv4first`. If it still fails, install Expo Go yourself: read `data.sdkVersions["54.0.0"].iosClientUrl` from `https://api.expo.dev/v2/versions/latest`, download that file with curl, check its layout with `tar -tzf`, extract it so you have a folder ending in `.app`, run `xcrun simctl install booted <that folder>`, then start Expo again.
+
 ## 0. Repo and branch
 
 ```bash
-# The owner's existing clone (or: find ~ -maxdepth 5 -name AGENTS.md -path '*revivex*')
-cd <clone of github.com/Monarchprimelabs/revivex-app>
+git clone https://github.com/Monarchprimelabs/revivex-app.git ~/Developer/revivex-app   # skip if it exists
+cd ~/Developer/revivex-app
 git status --short            # must be empty; if not, stop and report what is modified
 git fetch origin
-git checkout claude/two-directions
+git switch claude/two-directions
 git pull --ff-only origin claude/two-directions
+watchman watch-del-all
 node --version                # 20.19 or newer
 ```
 
-No clone on the machine: `git clone https://github.com/Monarchprimelabs/revivex-app.git ~/Developer/revivex-app`, then the same commands.
+Do not work in `/Users/geo/Desktop/revivex-app`. That clone holds the owner's preserved local branch `mac-local-changes-2026-10-12` and the first run's report; leave both untouched.
 
 ## 1. Install and checks
 
@@ -51,7 +60,7 @@ What passed in the cloud sandbox on 2026-10-12 (counts may grow):
 | `npm run e2e:full` | 7 passed, 2 skipped |
 | `npm run e2e:mock` | 2 passed (two-device sync against a local Supabase stand-in) |
 | iOS exports | Both bundle |
-| `expo-doctor` | Never run with network access before; paste its output verbatim, fix nothing |
+| `expo-doctor` | 18/18 after the 2026-10-12 patch update (expo 54.0.37, expo-constants 18.0.14, expo-file-system 19.0.24); paste its output verbatim, fix nothing |
 
 ## 2. iOS Simulator smoke test (only if Xcode is installed)
 
@@ -100,6 +109,8 @@ Send the owner the `exp://…exp.direct` URL from the output. They open it in Ex
 If the tunnel fails, retry once, then report the error. Run one app at a time.
 
 ## 5. Report
+
+If `docs/mac-run-report.md` already exists from an earlier run (it may only exist in the Desktop clone, uncommitted), copy it and `docs/mac-run/` into this clone first and append a new dated section instead of rewriting the old one.
 
 Write `docs/mac-run-report.md`:
 

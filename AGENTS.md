@@ -54,7 +54,7 @@ Do not add these unless the owner explicitly changes direction:
 
 ## Current Stack
 
-- Expo SDK 54, Expo `54.0.35`, React `19.1.0`, React Native `0.81.5`, Expo Router `6.0.24`, TypeScript `~5.9`
+- Expo SDK 54, Expo `54.0.37`, React `19.1.0`, React Native `0.81.5`, Expo Router `6.0.24`, TypeScript `~5.9`
 - npm workspaces, AsyncStorage, Supabase (`@supabase/supabase-js`), PGlite for schema tests
 
 ## Verification
