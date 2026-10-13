@@ -750,3 +750,164 @@ All six images were visually inspected. Direction B font/layout checks are limit
 No real Supabase test accounts were created. The two passing mock sync tests used only the local stand-in. Supabase credentials remain requested; phone testing is explicitly on hold.
 
 All verification servers stopped; listener check found nothing on ports 8081, 8082, 4311, 4312, or 54329. Expo-generated app-level `.gitignore` files were removed only in the new clone after confirming they contained solely the generated `expo-env.d.ts` block already covered by the root ignore file. The Desktop clone was not cleaned or modified. Only this report and screenshots are included in the report commit.
+
+
+## Third run — 2026-10-13
+
+Clone: `/Users/geo/Developer/revivex-app`, branch `claude/two-directions`, tested commit `b15328b9b895182c285d0db4456d9c33feaa1cfc`. Run by Claude Code on the Mac mini in a Remote Control session. The owner asked for steps 0 to 2, left step 3 to the cloud session and held step 4.
+
+Environment: macOS 26.6.2 (25G83), Node v26.4.0, npm 11.17.0, Xcode 26.6 (17F113), iPhone 17 simulator on iOS 26.5 with Expo Go 54.0.7 (installed by hand in run 2). The Mac's screen was locked for the whole run. No code changes, dependency upgrades, EAS builds or pull requests.
+
+### Outcome
+
+- Every step 1 check passed with the expected counts.
+- Direction A opens in Expo Go with no red error screen. The NitroModules error from run 2 is gone (fix `a18574f`).
+- Direction B's Today, Check-in and Settings screenshots show the full screens this time. Expo Go's tutorial still covers the lower half of the screen on a normal open; a launch argument kept it away (see "Expo Go tutorial").
+- One environment failure: `expo start --ios` exits about two minutes after it opens the app, because a System Events query times out while the Mac is locked. The app has loaded by then. Starting the server without `--ios` and opening the app with `xcrun simctl openurl` avoids it.
+
+### Results
+
+| Step | Command | Result | Notes |
+| --- | --- | --- | --- |
+| 0 | `git status --short`; `git pull --ff-only origin claude/two-directions` | pass | Clean tree; already up to date at `b15328b`. |
+| 0 | `watchman watch-del-all`; `node --version` | pass | Watch on this clone removed; Node v26.4.0. |
+| 1 | `npm ci` | pass | 808 packages added; audit reports 48 vulnerabilities (17 moderate, 30 high, 1 critical). No audit fix or upgrades. npm printed an install-script notice, quoted under "Notes for the cloud session". |
+| 1 | `npm run typecheck` | pass | All seven workspaces, no errors. |
+| 1 | `npm test` | pass | 20 (direction-a), 80 (backend), 67 (coach), 79 (core) and 19 (Strava functions) checks passed, 265 in all; 0 failed. |
+| 1 | `npm run test:db` | pass | 73 passed, 0 failed. |
+| 1 | `(cd apps/direction-a && npx expo-doctor)` | pass | 18/18. |
+| 1 | `(cd apps/direction-b && npx expo-doctor)` | pass | 18/18. |
+| 1 | `npx playwright install chromium` | skipped | Owner's instruction; Chrome fallback used. |
+| 1 | `PLAYWRIGHT_CHROMIUM="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" npm run e2e:full` | pass | 7 passed, 2 live tests skipped. Both web exports built. |
+| 1 | `PLAYWRIGHT_CHROMIUM="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" npm run e2e:mock` | pass | 2 passed against the local stand-in. |
+| 1 | `(cd apps/direction-a && npx expo export --platform ios --output-dir /tmp/revivex-export-a)` | pass | Bundled; 6.15 MB Hermes bundle. |
+| 1 | `(cd apps/direction-b && npx expo export --platform ios --output-dir /tmp/revivex-export-b)` | pass | Bundled; 4.15 MB Hermes bundle. |
+| 2 | `xcrun simctl list devices available` | pass | iPhone 17 already booted with Expo Go 54.0.7. Expo CLI did not try to download Expo Go. |
+| 2 | Direction A: `npx expo start --ios --port 8081 --clear`, app opens | pass | Bundled 1770 modules. Onboarding page 1 of 6 rendered, no red error screen, no `ERROR` line in the Metro log. |
+| 2 | Same command, server stays up | fail | Expo CLI exited with code 7 about two minutes later on an `osascript` timeout. Environment, not app code. Details below. |
+| 2 | Direction A again: `npx expo start --port 8081 --clear`, Expo Go relaunched with the tutorial argument, `xcrun simctl openurl booted "exp://127.0.0.1:8081"` | pass | Second launch, also clean: onboarding with no red error screen and no tutorial; no errors in the Metro log. |
+| 2 | Direction B: `npx expo start --port 8082 --clear`, then `xcrun simctl openurl booted "exp://127.0.0.1:8082"` | pass | Started without `--ios` because of the failure above. Bundled 1589 modules; no errors in the Metro log. |
+| 2 | Direction B Today, Check-in and Settings screenshots | pass | Full screens visible, nothing wrong found. Checked as first rendered only; no tapping or scrolling. |
+| 3 | `npm run e2e:live` | skipped | Owner's instruction; the cloud session runs it. No `.env.local` files written. |
+| 4 | Phone session | skipped | Held until the owner asks. No tunnel started. |
+
+### Expo Doctor output (verbatim)
+
+Direction A: `(cd apps/direction-a && npx expo-doctor)`
+
+```text
+Running 18 checks on your project...
+18/18 checks passed. No issues detected!
+```
+
+Direction B: `(cd apps/direction-b && npx expo-doctor)`
+
+```text
+Running 18 checks on your project...
+18/18 checks passed. No issues detected!
+```
+
+### Failure details and fallbacks
+
+Command from `apps/direction-a`: `npx expo start --ios --port 8081 --clear`. Exit code 7. Complete output, leaving out seven pairs of `NO_COLOR` warnings from Metro's workers:
+
+```text
+Starting project at /Users/geo/Developer/revivex-app/apps/direction-a
+Starting Metro Bundler
+warning: Bundler cache is empty, rebuilding (this may take a minute)
+› Opening exp://192.168.1.209:8081 on iPhone 17
+Waiting on http://localhost:8081
+Logs for your project will appear below.
+iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 85.4% (1546/1673)
+iOS Bundled 4591ms node_modules/expo-router/entry.js (1770 modules)
+/Users/geo/Developer/revivex-app/node_modules/expo/node_modules/@expo/cli/build/src/utils/errors.js:130
+    throw error;
+    ^
+
+Error: osascript -e tell app "System Events" to count processes whose name is "Simulator" exited with non-zero code: 1
+    at ChildProcess.completionListener (/Users/geo/Developer/revivex-app/node_modules/@expo/spawn-async/src/spawnAsync.ts:167:13)
+    at Object.onceWrapper (node:events:631:12)
+    at ChildProcess.emit (node:events:509:20)
+    at maybeClose (node:internal/child_process:1125:16)
+    at Socket.<anonymous> (node:internal/child_process:497:11)
+    at Socket.emit (node:events:509:20)
+    at Pipe.<anonymous> (node:net:355:12)
+    ...
+    at spawnAsync (/Users/geo/Developer/revivex-app/node_modules/@expo/spawn-async/src/spawnAsync.ts:39:21)
+    at osascriptSpawnAsync (/Users/geo/Developer/revivex-app/node_modules/@expo/osascript/src/index.ts:36:26)
+    at Object.execAsync (/Users/geo/Developer/revivex-app/node_modules/@expo/osascript/src/index.ts:206:17)
+    at isSimulatorAppRunningAsync (/Users/geo/Developer/revivex-app/node_modules/expo/node_modules/@expo/cli/src/start/platforms/ios/ensureSimulatorAppRunning.ts:50:23)
+    at ensureSimulatorAppRunningAsync (/Users/geo/Developer/revivex-app/node_modules/expo/node_modules/@expo/cli/src/start/platforms/ios/ensureSimulatorAppRunning.ts:18:13)
+    at AppleDeviceManager.activateWindowAsync (/Users/geo/Developer/revivex-app/node_modules/expo/node_modules/@expo/cli/src/start/platforms/ios/AppleDeviceManager.ts:212:41)
+    at ApplePlatformManager.openProjectInExpoGoAsync (/Users/geo/Developer/revivex-app/node_modules/expo/node_modules/@expo/cli/src/start/platforms/PlatformManager.ts:120:19)
+    at async Promise.allSettled (index 1)
+    at openPlatformsAsync (/Users/geo/Developer/revivex-app/node_modules/expo/node_modules/@expo/cli/src/start/server/openPlatforms.ts:10:19)
+    at startAsync (/Users/geo/Developer/revivex-app/node_modules/expo/node_modules/@expo/cli/src/start/startAsync.ts:114:3) {
+  stdout: [Getter],
+  stderr: [Getter],
+  output: [Getter],
+  pid: 1684,
+  status: 1,
+  signal: null
+}
+
+Node.js v26.4.0
+```
+
+The app had already loaded when this happened: the screenshot `a-first-launch.png` was taken before the exit. The stack is Expo CLI's step that brings the Simulator window to the front (`activateWindowAsync`), not ReviveX code. Run 2 ended Direction A's server with the same stack.
+
+What was tried:
+
+1. The same query by hand, `osascript -e 'tell app "System Events" to count processes whose name is "Simulator"'`, failed after 120 seconds with `28:69: execution error: System Events got an error: AppleEvent timed out. (-1712)`.
+2. `ioreg -n Root -d1 -a` reported `CGSSessionScreenIsLocked` as true. The run was not repeated with the Mac unlocked, so an unanswered Automation permission prompt for System Events is also possible.
+3. Fallback used for the rest of step 2: start the server without `--ios`, then open the app with `xcrun simctl openurl booted "exp://127.0.0.1:<port>"`. Nothing calls `osascript` and the server stays up.
+
+### Expo Go tutorial
+
+On a normal open, Expo Go's tutorial ("This is the developer menu", with a Continue button) covers the lower half of the screen and dims the rest. It appeared on Direction A's first launch (`a-first-launch.png`) and on Direction B's first open in this run. Claude Code has no way to tap the simulator, and the Mac was locked, so Continue could not be pressed.
+
+Launching Expo Go with one argument keeps the tutorial away for that launch:
+
+```bash
+xcrun simctl terminate booted host.exp.Exponent
+xcrun simctl launch booted host.exp.Exponent -EXHomeIsNuxFinishedDefaultsKey YES
+xcrun simctl openurl booted "exp://127.0.0.1:8082"
+```
+
+`EXHomeIsNuxFinishedDefaultsKey` is the preference Expo Go 54.0.7 keeps for a finished tutorial; the name was read from its binary with `strings`. As a launch argument it applies to that process only: afterwards the simulator's `host.exp.Exponent.plist` still held no such key. `a-onboarding.png` and the three Direction B screenshots were taken this way. Whether this goes into runbook step 2 is the cloud session's call.
+
+### Screenshot review
+
+`a-onboarding.png`, `b-today.png`, `b-checkin.png` and `b-settings.png` use the runbook's fixed names, so they replace the run 2 files. The run 2 versions are in commit `83ccec3`, and the second run's descriptions above refer to those older images. `sips -Z 1000` was run on this run's five files only, which leaves the two older screenshots byte-identical.
+
+- [a-first-launch.png](mac-run/a-first-launch.png): Direction A straight after the runbook's `--ios` command. Onboarding page 1 of 6 behind the Expo Go tutorial; no red error screen.
+- [a-onboarding.png](mac-run/a-onboarding.png): Direction A onboarding page 1 of 6 without the tutorial. ReviveX wordmark, tagline, intro card and Continue button; no red error screen.
+- [b-today.png](mac-run/b-today.png): Direction B Today before setup. Header with the date and three icon buttons, then the "Tell the coach about your week" card with its Set up button.
+- [b-checkin.png](mac-run/b-checkin.png): Daily check-in. Sleep, soreness and energy choices, the readiness card at 50/100 with its explanation, and the "Build today's plan" button.
+- [b-settings.png](mac-run/b-settings.png): the `/settings` route, titled "Your week". Name field, training focus, primary goal, experience, days per week, units, and the top of the Training history card.
+- [a-nitromodules-error.png](mac-run/a-nitromodules-error.png) and [simulator-blocked.png](mac-run/simulator-blocked.png): unchanged from earlier runs.
+
+All five new images were inspected. Each has a dark background with teal and lime accents and text in Inter, the font the design system names. No missing text, clipped layout, light background or red error screen was found.
+
+Limits of this review: nothing could be tapped or scrolled, so each screen was checked only as it first rendered. In `b-settings.png` the Training history card runs past the bottom edge, which is the scroll position and not a clipped layout. The check-in opened from its deep link while Today still showed the Set up card; what "Build today's plan" does before setup was not tested.
+
+### Notes for the cloud session
+
+`npm ci` printed the notice below. Nothing was approved, and every check passed.
+
+```text
+npm warn allow-scripts 3 packages have install scripts not yet covered by allowScripts:
+npm warn allow-scripts   esbuild@0.28.2 (postinstall: node install.js)
+npm warn allow-scripts   fsevents@2.3.3 (install: (install scripts present))
+npm warn allow-scripts   fsevents@2.3.2 (install: (install scripts present))
+npm warn allow-scripts
+npm warn allow-scripts Run `npm approve-scripts --allow-scripts-pending` to review, or `npm approve-scripts <pkg>` to allow.
+```
+
+`expo start` again created an untracked `.gitignore` in each app folder, holding only Expo's generated `expo-env.d.ts` block. Both were removed, as in run 2, so the next run's clean-tree check passes; the root `.gitignore` already ignores `expo-env.d.ts`. A committed app-level `.gitignore` with that line would stop them coming back.
+
+### Accounts, phone session, and cleanup
+
+No Supabase test accounts were created: `e2e:live` did not run here, and `e2e:mock` uses the local stand-in. The phone session has not started.
+
+Both dev servers are stopped, and nothing listens on ports 8081, 8082, 4311, 4312 or 54329. Expo Go was closed in the simulator; the simulator itself was left booted, as it was found. The `caffeinate -dims -t 7200` started for step 2 was stopped. Only this report and the five screenshots are in the report commit.
