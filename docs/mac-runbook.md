@@ -18,8 +18,31 @@ For the agent on the owner's Mac mini while the owner is away: since 2026-10-13,
 - **Node:** 20.19 or newer. Node 26.4 works on this Mac. If something looks Node-related, retry the command with an LTS release from an app folder, for example `npx -y node@22 ../../node_modules/expo/bin/cli export --platform ios --output-dir /tmp/revivex-export`.
 - **Playwright browser:** on this Mac `npx playwright install chromium` stalls after the download. Skip it and use Google Chrome: export `PLAYWRIGHT_CHROMIUM="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"` before the e2e commands.
 - **Expo Go in the simulator:** Expo CLI's automatic download fails on this Mac (`Fetching Expo Go`, then `fetch failed`, also with `NODE_OPTIONS=--dns-result-order=ipv4first`). Expo Go 54.0.7 was installed by hand on the iPhone 17 simulator on 2026-10-13. If Expo CLI tries to download it again, or you use another simulator, install it yourself: read `data.sdkVersions["54.0.0"].iosClientUrl` from `https://api.expo.dev/v2/versions/latest`, download that file with curl, check its layout with `tar -tzf`, extract it into a folder ending in `.app`, run `xcrun simctl install booted <that folder>`, then start Expo again.
-- **Expo Go's first-run tutorial** covers the lower half of the screen the first time a project opens. Dismiss it before taking screenshots.
+- **Expo Go's first-run tutorial** covers the lower half of the screen the first time a project opens. Dismiss it before taking screenshots if you can control the simulator's UI. Claude Code in a terminal cannot tap the simulator: say so in the report and continue.
 - **Keep the Mac awake** for the simulator steps: run `caffeinate -dims -t 7200 &` before step 2 (it stops by itself after two hours). If the Mac is already locked, simulator UI control fails; record that and ask the owner to unlock it instead of waiting.
+
+## Starting Claude on the Mac
+
+One-time setup in Terminal, or by a helper agent with terminal access. From the official Claude Code docs (code.claude.com/docs/en/setup and /remote-control), checked 2026-10-13.
+
+```bash
+claude --version                    # if missing: curl -fsSL https://claude.ai/install.sh | bash  (native installer, no sudo, installs ~/.local/bin/claude)
+claude update                       # native installs also update themselves
+claude doctor                       # install health and Remote Control eligibility
+claude auth status --text           # exit 0 means signed in; Remote Control needs a claude.ai login (Pro, Max, Team or Enterprise), not an API key
+```
+
+If `claude` is not found after installing, add `~/.local/bin` to `PATH` in `~/.zshrc`. If it is not signed in, run `claude auth login`, open the URL it prints on any device, sign in with the owner's Claude account (the one on their phone), and paste the code the page shows back into the terminal.
+
+Start the session inside tmux so it survives the terminal closing, and keep the Mac awake while it runs:
+
+```bash
+tmux new-session -d -s revivex -c ~/Developer/revivex-app
+tmux send-keys -t revivex 'caffeinate -is claude remote-control --name "ReviveX Mac" --permission-mode default' Enter
+tmux capture-pane -pt revivex       # first run asks "Enable Remote Control? (y/n)" and "Trust <folder>? [y/N]"; answer with: tmux send-keys -t revivex y Enter
+```
+
+The pane then shows a session URL. The owner opens it, or opens the Claude app → Code → "ReviveX Mac" (green dot means online), and approves permission prompts from the phone. Never start it with `bypassPermissions` or `dontAsk`. If the process stops, run `claude remote-control --continue` in the same folder within about four hours to bring the last session back.
 
 ## 0. Repo and branch
 
