@@ -25,7 +25,7 @@ Date: 2026-10-13
 - Clone used: `/Users/geo/Desktop/revivex-app`, which had uncommitted changes on top of an old `main` (`a82399c`). Codex preserved them on the local, unpushed branch `mac-local-changes-2026-10-12` (commit `4f030fc`) and left an older stash untouched.
 - Passed on the branch: install, typecheck, 257 unit checks, 73 policy checks.
 - Failed: Expo Doctor patch versions (fixed on the branch: expo 54.0.37, expo-constants 18.0.14, expo-file-system 19.0.24); both web and iOS exports could not resolve `expo-router/build/qualified-entry` although the file exists; Expo Go download for the simulator (`fetch failed`); Playwright browser install stalled.
-- Diagnosis: environmental. The same commit exports in the cloud under Node 22 and Node 26. Watchman kept recrawling the Desktop clone, which is likely iCloud-synced. Second run: fresh clone in `~/Developer/revivex-app` per the updated `docs/codex-runbook.md`.
+- Diagnosis: environmental. The same commit exports in the cloud under Node 22 and Node 26. Watchman kept recrawling the Desktop clone, which is likely iCloud-synced. Second run: fresh clone in `~/Developer/revivex-app` per the updated `docs/mac-runbook.md`.
 - The first run's report is uncommitted in the Desktop clone; the second run carries it over.
 
 ## Mac Run 2 (Codex, 2026-10-12 and 2026-10-13)
@@ -43,7 +43,7 @@ The Mac's preserved changes use iOS bundle ID `com.revivalfitnessathletics.reviv
 
 ## Mac Checklist (first session on the Mac)
 
-If Codex runs this session for the owner, it follows `docs/codex-runbook.md` instead (same steps, written for an agent, with guardrails) and reports in `docs/mac-run-report.md`.
+If an agent runs this session for the owner (Claude Code on the Mac since 2026-10-13, Codex before), it follows `docs/mac-runbook.md` instead (same steps, written for an agent, with guardrails) and reports in `docs/mac-run-report.md`.
 
 1. Pull the branch and install.
 

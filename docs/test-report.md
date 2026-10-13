@@ -25,7 +25,7 @@ npm run e2e:full      # export both apps for web and run Playwright at phone wid
 | Playwright, Direction A | Fresh install starts onboarding; log a workout through start, add exercise, set-type cycling, set entry, finish, detail, history, detail again; profile to account screen with cloud status | 3 scenarios pass |
 | Playwright, Direction B | First launch asks for setup; setup, check-in, plan, swap an exercise, shorten, log what was actually done (edited reps, an unfinished set, a skipped exercise, time), history, detail; skip and rebuild; account screen | 4 scenarios pass |
 | Playwright, live sync against a local Supabase stand-in (`npm run e2e:mock`) | Two browser contexts as two devices: sign up, log or complete a session, see it reach Synced, sign in on the second device and find it there, for both apps | 2 scenarios pass |
-| Playwright, live sync against the real project (`npm run e2e:live`) | Same scenarios against the owner's Supabase project | Not run yet: needs the project. First item in `docs/codex-runbook.md` step 3 |
+| Playwright, live sync against the real project (`npm run e2e:live`) | Same scenarios against the owner's Supabase project | Not run yet: needs the project. Step 3 of `docs/mac-runbook.md`, or the cloud session |
 | Metro export, iOS | Both apps bundle | Pass |
 | Metro export, web | Both apps bundle | Pass |
 
@@ -56,7 +56,7 @@ No other defects were found in the app logic exercised by the suites.
 | Simulator | Fail: Expo CLI could not download Expo Go (`fetch failed`) |
 | Playwright browser install | Stalled during extraction |
 
-The export failure did not reproduce in the cloud with the same commit under Node 22 or Node 26 (the Mac runs 26.4). Codex's log shows watchman dropping events and recrawling the repository, and the clone sits on the Desktop, which macOS commonly syncs to iCloud. The second run uses a fresh clone outside the Desktop with watchman reset; `docs/codex-runbook.md` lists fallbacks for the Expo Go download and the Playwright browser. Live sync against the real project and the phone session are still pending. The coach engine's fatigue rule was calibrated during testing: a single four-set accessory does not block a slot, a full session (six or more sets on the slot's muscle groups inside 48 hours) does.
+The export failure did not reproduce in the cloud with the same commit under Node 22 or Node 26 (the Mac runs 26.4). Codex's log shows watchman dropping events and recrawling the repository, and the clone sits on the Desktop, which macOS commonly syncs to iCloud. The second run uses a fresh clone outside the Desktop with watchman reset; `docs/mac-runbook.md` lists fallbacks for the Expo Go download and the Playwright browser. Live sync against the real project and the phone session are still pending. The coach engine's fatigue rule was calibrated during testing: a single four-set accessory does not block a slot, a full session (six or more sets on the slot's muscle groups inside 48 hours) does.
 
 ## Mac run 2 (Codex, 2026-10-12 and 2026-10-13)
 

@@ -92,6 +92,7 @@ npx expo export --platform ios --output-dir /tmp/revivex-export-check
 
 ## Collaboration Workflow
 
-- Owner decision 2026-10-11: Claude implements both directions in this program, including verification and repo state. Codex may still be used for second opinions or device testing on the Mac. When Codex verifies on the Mac, it follows `docs/codex-runbook.md` and reports in `docs/mac-run-report.md`.
+- Owner decision 2026-10-11: Claude implements both directions in this program, including verification and repo state.
+- Owner decision 2026-10-13: Mac verification moves from Codex to Claude Code running on the Mac mini in a Remote Control session that the owner drives from the Claude app. That session follows `docs/mac-runbook.md`, reports in `docs/mac-run-report.md`, and does not change code. Codex may still be used for second opinions.
 - Keep `PROJECT_STATE.md`, `CLAUDE_HANDOFF.md`, and the `docs/` program files updated after each step.
 - Commit each completed step with a clear message.

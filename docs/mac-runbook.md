@@ -1,6 +1,6 @@
-# Codex runbook: verify the build on the Mac mini
+# Mac runbook: verify the build on the Mac mini
 
-For Codex (or any agent) on the owner's Mac mini while the owner is away. Your job is to verify and report. Claude implements; you test. Read `AGENTS.md` first.
+For the agent on the owner's Mac mini while the owner is away: since 2026-10-13, Claude Code in a Remote Control session the owner drives from the Claude app (Codex did runs 1 and 2). Your job is to verify and report. The cloud Claude session implements; you test. Read `AGENTS.md` first.
 
 ## Rules
 
@@ -84,7 +84,7 @@ Look at each screenshot and note anything wrong: missing text, wrong font, clipp
 
 ## 3. Real Supabase project (needs the owner)
 
-Ask the owner for the Project URL and the anon key (newer dashboards call it the publishable key). Then, from the repo root:
+The cloud Claude session can also run this step, because it can reach Supabase. Run it here only when the owner gives you the Project URL and the anon key (newer dashboards call it the publishable key). Then, from the repo root:
 
 ```bash
 printf 'REVIVEX_SUPABASE_URL=%s\nREVIVEX_SUPABASE_ANON_KEY=%s\n' '<url>' '<key>' > apps/direction-a/.env.local
