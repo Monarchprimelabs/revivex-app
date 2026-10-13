@@ -5,7 +5,13 @@
 
 import { report } from '@revivex/test-utils';
 import { runImportMappingTests } from './importMapping.test';
+import { runNativeModuleTests } from './nativeModules.test';
 
 runImportMappingTests();
-
-process.exit(report());
+runNativeModuleTests().then(
+  () => process.exit(report()),
+  (error) => {
+    console.error(error);
+    process.exit(1);
+  }
+);

@@ -1,6 +1,6 @@
 # ReviveX Handoff
 
-Date: 2026-10-11
+Date: 2026-10-13
 
 ## Read First
 
@@ -27,6 +27,15 @@ Date: 2026-10-11
 - Failed: Expo Doctor patch versions (fixed on the branch: expo 54.0.37, expo-constants 18.0.14, expo-file-system 19.0.24); both web and iOS exports could not resolve `expo-router/build/qualified-entry` although the file exists; Expo Go download for the simulator (`fetch failed`); Playwright browser install stalled.
 - Diagnosis: environmental. The same commit exports in the cloud under Node 22 and Node 26. Watchman kept recrawling the Desktop clone, which is likely iCloud-synced. Second run: fresh clone in `~/Developer/revivex-app` per the updated `docs/codex-runbook.md`.
 - The first run's report is uncommitted in the Desktop clone; the second run carries it over.
+
+## Mac Run 2 (Codex, 2026-10-12 and 2026-10-13)
+
+- Clone used: `~/Developer/revivex-app` (fresh, commit `40c078a`). The Desktop clone, its stash and `mac-local-changes-2026-10-12` are untouched. Report in `docs/mac-run-report.md` (commit `83ccec3`), screenshots in `docs/mac-run/`.
+- Passed: install, typecheck, 257 unit checks, 73 policy checks, Expo Doctor 18/18 in both apps, `e2e:full` (7 passed, 2 skipped) and `e2e:mock` (2 passed) with Google Chrome, both iOS exports.
+- Expo Go: the automatic download fails on this Mac. The manual install from the runbook worked, and Expo Go 54.0.7 is now on the iPhone 17 simulator.
+- Direction A raised a red NitroModules error on launch in Expo Go. Fixed on the branch afterwards (test report bug 10): the health adapters require their packages only when the native module is present. Needs a simulator confirmation.
+- Direction B loaded without errors. Its screenshots are partly covered by Expo Go's first-run tutorial, which could not be dismissed because the Mac locked.
+- Still waiting on the owner: the Supabase project (runbook step 3) and the phone session (step 4).
 
 ## Open Decision: Bundle Identifier
 

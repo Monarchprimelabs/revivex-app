@@ -1,6 +1,6 @@
 # Test report (step 5)
 
-Updated 2026-10-12 on branch `claude/two-directions`. Everything below ran in the cloud sandbox. Device runs, Expo Go, and sync against a live Supabase project have not happened yet and are the first items on the Mac checklist in `CLAUDE_HANDOFF.md`.
+Updated 2026-10-13 on branch `claude/two-directions`. The results table ran in the cloud sandbox; the two Mac runs by Codex are summarized at the end. A phone session and sync against a live Supabase project have not happened yet and are the first items on the Mac checklist in `CLAUDE_HANDOFF.md`.
 
 ## How to run
 
@@ -19,7 +19,7 @@ npm run e2e:full      # export both apps for web and run Playwright at phone wid
 | `packages/core` | Plate math, weekly summary, last performance, GPS engine, workout-to-routine, achievements, route projection, HYROX plan, set types, export parsing | 79 checks pass |
 | `packages/backend` | Config checks, row mappers for every mirrored table, outbox reconcile, flush, failure and retry, fresh-only automatic flushes, pull and last-write-wins merge, tombstones across devices, recovery when the app closes mid-sync | 80 checks pass |
 | `packages/coach` | Readiness bands, week templates, slot selection, fatigue skip, readiness gates, progressive overload, run prescriptions, determinism, plan-to-activity conversion, swap and shorten adjustments, completion builders | 67 checks pass |
-| `apps/direction-a` | Health import mapping | 12 checks pass |
+| `apps/direction-a` | Health import mapping; health adapters load their native package only when its native module is in the binary (Expo Go safety) | 20 checks pass |
 | `db/tests` | RLS as three users, an anonymous client and the service role, tombstones, idempotent schema | 73 checks pass |
 | `supabase/tests` | Strava payload mapping, GPX building, token refresh timing, scopes, return-link allowlist | 19 checks pass |
 | Playwright, Direction A | Fresh install starts onboarding; log a workout through start, add exercise, set-type cycling, set entry, finish, detail, history, detail again; profile to account screen with cloud status | 3 scenarios pass |
@@ -42,6 +42,7 @@ npm run e2e:full      # export both apps for web and run Playwright at phone wid
 8. **Local Supabase URLs were rejected.** The config check required https, which also blocked the Supabase CLI's local stack. Fix: plain http is accepted for localhost and private LAN addresses only. Status: fixed.
 
 9. **Expo Doctor flagged three patch versions behind SDK 54.** Found on the Mac (the cloud sandbox cannot reach Expo's servers). Fix: expo 54.0.37, expo-constants 18.0.14, expo-file-system 19.0.24 in both apps; every Expo-pinned package was checked offline against the new release's bundled versions, and the full suite passed again. Status: fixed.
+10. **Direction A showed a red error screen in Expo Go.** Found on the Mac in the iOS Simulator (Mac run 2). Steps: start Direction A in Expo Go (`npx expo start --ios` from `apps/direction-a`). On launch the health provider asks for HealthKit and the screen shows "NitroModules are not supported in Expo Go!" pointing at `appleHealthAdapter.ts`; dismissing it leaves the app usable. Cause: the HealthKit package creates its Nitro objects as soon as it loads, which throws in Expo Go. The adapter required it inside a try/catch, but Metro reports an error raised while a module loads as a fatal error and hands back `undefined`, so the catch never ran (reproduced with Metro's own require code). Health Connect has the same shape on Android: it calls `TurboModuleRegistry.getEnforcing` as it loads. Fix: both adapters check that their native module is in the app binary before requiring the package, and report "needs a development build" otherwise. The new suite `apps/direction-a/tests/nativeModules.test.ts` fails on the old adapters and passes on the new ones. Status: fixed; the next Mac run confirms it in the simulator.
 
 No other defects were found in the app logic exercised by the suites.
 
@@ -57,11 +58,28 @@ No other defects were found in the app logic exercised by the suites.
 
 The export failure did not reproduce in the cloud with the same commit under Node 22 or Node 26 (the Mac runs 26.4). Codex's log shows watchman dropping events and recrawling the repository, and the clone sits on the Desktop, which macOS commonly syncs to iCloud. The second run uses a fresh clone outside the Desktop with watchman reset; `docs/codex-runbook.md` lists fallbacks for the Expo Go download and the Playwright browser. Live sync against the real project and the phone session are still pending. The coach engine's fatigue rule was calibrated during testing: a single four-set accessory does not block a slot, a full session (six or more sets on the slot's muscle groups inside 48 hours) does.
 
+## Mac run 2 (Codex, 2026-10-12 and 2026-10-13)
+
+Fresh clone at `~/Developer/revivex-app`, commit `40c078a`, watchman reset, Node 26.4, Xcode 26.6, iPhone 17 simulator on iOS 26.5.
+
+| Check | Result |
+| --- | --- |
+| Install, typecheck, unit and policy suites | Pass, same counts as the cloud |
+| Expo Doctor, both apps | 18/18 |
+| `e2e:full` and `e2e:mock` | Pass (7 passed and 2 skipped; 2 passed), with Google Chrome because the Playwright Chromium install stalls on this Mac |
+| iOS exports, both apps | Pass |
+| Expo Go install | The automatic download fails (`fetch failed`), also with IPv4 first; the manual install from the runbook worked (Expo Go 54.0.7) |
+| Direction A in the simulator | Loads and onboarding renders dark with the accent colors, but a red NitroModules error appears on launch (bug 10, fixed afterwards) |
+| Direction B in the simulator | Loads with no runtime errors. Screenshots are partly covered by Expo Go's first-run tutorial, which could not be dismissed because the Mac locked |
+| Live sync and phone session | Not run: waiting on the Supabase project and the owner |
+
+The first run's export failure did not recur. Its cause was not isolated: the clone location, the watchman state and the Expo patch versions all changed between the runs, and the iCloud check was inconclusive (the iCloud Desktop folder exists, but Finder reports Desktop syncing off).
+
 ## Known limitations and what is not covered
 
 - Sync has not run against a live Supabase project. It has run end to end against a local stand-in that emulates the auth and REST endpoints the apps use (`npm run e2e:mock`); real-project behavior (RLS, triggers, PostgREST) is covered by `npm run e2e:live`, which needs the owner's project.
 - Native-only paths (GPS tracking, Health sync, maps, purchases) are excluded from the web suites and stay on the device checklist in `docs/TESTING.md`.
 - React Native's `Alert` is a no-op on web, which affects the discard-workout and finish-without-timer guards in Direction A on web only.
 - On web, screens below a modal stay mounted, so tests select the topmost match. Native behavior is unaffected.
-- Expo Go behavior and Inter font rendering on device have not been seen in this sandbox.
+- Expo Go has only been seen in the iOS Simulator on the Mac (Mac run 2). A phone, Android, and a full visual pass of Direction B are still pending.
 - The Direction B history import is unit-tested at the parser level; the file picker itself was not exercised in Playwright.

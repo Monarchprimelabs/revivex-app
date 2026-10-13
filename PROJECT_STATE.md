@@ -4,7 +4,9 @@ Last updated: 2026-07-05
 
 ## Current Master Direction
 
-Update 2026-10-11 (Phases 51 to 54, two-direction program): monorepo restructure, shared schema with tested RLS, sync engine and cloud mirror, coach engine and the Direction B app, web builds and Playwright suites, account deletion. See `CLAUDE_HANDOFF.md` for the current state and the Mac checklist. The repository is now a monorepo running a two-direction program. The Direction A app described below lives in `apps/direction-a/`, and its former `src/theme`, `src/types`, `src/utils`, `src/data`, and the generic components moved to `packages/`. Paths in the sections below are relative to `apps/direction-a/` unless they name a package. Program documents: `docs/recon.md` (step 1), `docs/architecture.md` (step 2, awaiting approval), `docs/features-a.md`, `docs/features-b.md`. The social schema in `docs/supabase/schema.sql` was replaced by `db/schema.sql`.
+Update 2026-10-11 (Phases 51 to 54, two-direction program): monorepo restructure, shared schema with tested RLS, sync engine and cloud mirror, coach engine and the Direction B app, web builds and Playwright suites, account deletion. See `CLAUDE_HANDOFF.md` for the current state and the Mac checklist. The repository is now a monorepo running a two-direction program. The Direction A app described below lives in `apps/direction-a/`, and its former `src/theme`, `src/types`, `src/utils`, `src/data`, and the generic components moved to `packages/`. Paths in the sections below are relative to `apps/direction-a/` unless they name a package. Program documents: `docs/recon.md` (step 1), `docs/architecture.md` (step 2, approved 2026-10-11), `docs/features-a.md`, `docs/features-b.md`. The social schema in `docs/supabase/schema.sql` was replaced by `db/schema.sql`.
+
+Update 2026-10-13: two Mac runs by Codex (`docs/mac-run-report.md`). Every automated check passes on the Mac. The health adapters no longer raise a red screen in Expo Go (test report bug 10).
 
 
 ReviveX is the rebranded SDK 54 master version of the former HybridTrack project.
@@ -644,7 +646,7 @@ Do not run EAS build unless explicitly requested.
 
 ## Health Sync Status
 
-- Health sync code is complete but dormant in Expo Go (native modules can't load there).
+- Health sync code is complete but dormant in Expo Go (native modules can't load there). The adapters check for the native module before loading the package, so Expo Go shows the "needs a development build" state instead of an error.
 - To activate on device: create a development build (`eas build --profile development`) — requires an Apple Developer account for HealthKit entitlements on iOS.
 - Storage key `revivex.health.v1` persists health sync settings and synced IDs.
 - Health Import v1 (Phase 18) reads watch/app-recorded sessions into the local log; like export, it activates in the dev build.

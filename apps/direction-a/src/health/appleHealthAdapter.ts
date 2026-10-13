@@ -9,6 +9,7 @@ import {
   type ImportedHealthSession,
   type ImportedSessionKind,
 } from './types';
+import { hasNativeModule } from './nativeModule';
 
 /** Our own bundle id — sessions we exported must not echo back as imports. */
 const OWN_BUNDLE_ID = 'com.monarchprimelabs.revivex';
@@ -18,9 +19,11 @@ const IMPORT_QUERY_LIMIT = 200;
 /**
  * Apple Health (HealthKit) adapter backed by @kingstinct/react-native-healthkit.
  *
- * The module is a Nitro native module, so importing it inside Expo Go throws.
- * It is only ever loaded lazily inside a try/catch; when it can't load we
- * report 'needs-dev-build' and every write becomes a no-op.
+ * The package is built on Nitro and creates its native objects as soon as it
+ * loads, which throws wherever Nitro is missing (Expo Go). Metro reports that
+ * throw as a fatal error before any catch runs, so the package is required
+ * only once the Nitro module is known to exist. When it can't load we report
+ * 'needs-dev-build' and every write becomes a no-op.
  */
 
 type HealthKitModule = typeof import('@kingstinct/react-native-healthkit');
@@ -29,6 +32,11 @@ let cachedModule: HealthKitModule | null | undefined;
 
 function loadHealthKit(): HealthKitModule | null {
   if (cachedModule !== undefined) return cachedModule;
+  if (!hasNativeModule('NitroModules')) {
+    // Expo Go: requiring the package would raise a fatal error.
+    cachedModule = null;
+    return cachedModule;
+  }
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const loaded = require('@kingstinct/react-native-healthkit') as Partial<HealthKitModule> | undefined;

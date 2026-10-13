@@ -11,13 +11,15 @@ For Codex (or any agent) on the owner's Mac mini while the owner is away. Your j
 - When a step fails, record the exact command, the full error and what you tried, then continue with the next independent step. Do not fix code.
 - Stop every server you start before you finish, except a dev server the owner is still using.
 
-## Mac environment (lessons from the first run, 2026-10-12)
+## Mac environment (lessons from runs 1 and 2, 2026-10-12 and 2026-10-13)
 
-- **Keep the clone out of the Desktop.** macOS often syncs the Desktop to iCloud. On the first run watchman kept dropping events and recrawling, and Metro failed to find files that existed on disk, while the same commit exported cleanly in the cloud under Node 22 and Node 26. Use `~/Developer/revivex-app`. To record whether the Desktop is synced: `ls -d ~/Library/Mobile\ Documents/com~apple~CloudDocs/Desktop` (it exists only when it is).
-- **Reset watchman** after switching from the old single-app layout: `watchman watch-del-all`.
-- **Node:** 20.19 or newer. Node 26 worked in the cloud. If something still looks Node-related, retry the command with an LTS release from an app folder, for example `npx -y node@22 ../../node_modules/expo/bin/cli export --platform ios --output-dir /tmp/revivex-export`.
-- **Playwright browser:** if `npx playwright install chromium` stalls, use Google Chrome instead by exporting `PLAYWRIGHT_CHROMIUM="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"` before the e2e commands.
-- **Expo Go in the simulator:** if Expo CLI prints `Fetching Expo Go` and then `fetch failed`, retry once with `NODE_OPTIONS=--dns-result-order=ipv4first`. If it still fails, install Expo Go yourself: read `data.sdkVersions["54.0.0"].iosClientUrl` from `https://api.expo.dev/v2/versions/latest`, download that file with curl, check its layout with `tar -tzf`, extract it so you have a folder ending in `.app`, run `xcrun simctl install booted <that folder>`, then start Expo again.
+- **Use the clone at `~/Developer/revivex-app`.** On the first run, the Desktop clone's exports could not find files that existed on disk while watchman kept recrawling. From the fresh clone in `~/Developer`, with watchman reset, everything passed. The cause was not isolated, so keep using that clone.
+- **Reset watchman** if it warns about recrawling: `watchman watch-del-all`.
+- **Node:** 20.19 or newer. Node 26.4 works on this Mac. If something looks Node-related, retry the command with an LTS release from an app folder, for example `npx -y node@22 ../../node_modules/expo/bin/cli export --platform ios --output-dir /tmp/revivex-export`.
+- **Playwright browser:** on this Mac `npx playwright install chromium` stalls after the download. Skip it and use Google Chrome: export `PLAYWRIGHT_CHROMIUM="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"` before the e2e commands.
+- **Expo Go in the simulator:** Expo CLI's automatic download fails on this Mac (`Fetching Expo Go`, then `fetch failed`, also with `NODE_OPTIONS=--dns-result-order=ipv4first`). Expo Go 54.0.7 was installed by hand on the iPhone 17 simulator on 2026-10-13. If Expo CLI tries to download it again, or you use another simulator, install it yourself: read `data.sdkVersions["54.0.0"].iosClientUrl` from `https://api.expo.dev/v2/versions/latest`, download that file with curl, check its layout with `tar -tzf`, extract it into a folder ending in `.app`, run `xcrun simctl install booted <that folder>`, then start Expo again.
+- **Expo Go's first-run tutorial** covers the lower half of the screen the first time a project opens. Dismiss it before taking screenshots.
+- **Keep the Mac awake** for the simulator steps: run `caffeinate -dims -t 7200 &` before step 2 (it stops by itself after two hours). If the Mac is already locked, simulator UI control fails; record that and ask the owner to unlock it instead of waiting.
 
 ## 0. Repo and branch
 
@@ -43,7 +45,7 @@ npm test
 npm run test:db
 (cd apps/direction-a && npx expo-doctor)
 (cd apps/direction-b && npx expo-doctor)
-npx playwright install chromium     # one-time browser download for the web tests
+npx playwright install chromium     # one-time browser download; skip on the owner's Mac mini (see Mac environment)
 npm run e2e:full
 npm run e2e:mock
 (cd apps/direction-a && npx expo export --platform ios --output-dir /tmp/revivex-export-a)
@@ -55,12 +57,12 @@ What passed in the cloud sandbox on 2026-10-12 (counts may grow):
 | Command | Expected |
 | --- | --- |
 | `npm run typecheck` | No errors |
-| `npm test` | Every suite reports `0 failed` (12, 80, 67, 79, 19 checks) |
+| `npm test` | Every suite reports `0 failed` (20, 80, 67, 79, 19 checks) |
 | `npm run test:db` | 73 passed |
 | `npm run e2e:full` | 7 passed, 2 skipped |
 | `npm run e2e:mock` | 2 passed (two-device sync against a local Supabase stand-in) |
 | iOS exports | Both bundle |
-| `expo-doctor` | 18/18 after the 2026-10-12 patch update (expo 54.0.37, expo-constants 18.0.14, expo-file-system 19.0.24); paste its output verbatim, fix nothing |
+| `expo-doctor` | 18/18 (confirmed on the Mac on 2026-10-12); paste its output verbatim, fix nothing |
 
 ## 2. iOS Simulator smoke test (only if Xcode is installed)
 
@@ -78,7 +80,7 @@ xcrun simctl io booted screenshot docs/mac-run/a-onboarding.png
 sips -Z 1000 docs/mac-run/*.png
 ```
 
-Look at each screenshot and note anything wrong: missing text, wrong font, clipped layout, light backgrounds, red error screens.
+Look at each screenshot and note anything wrong: missing text, wrong font, clipped layout, light backgrounds, red error screens. Direction A should no longer show a red error on launch (fixed 2026-10-13, test report bug 10). If any red screen appears, save it as `docs/mac-run/a-error.png` or `b-error.png` and paste the full message in the report.
 
 ## 3. Real Supabase project (needs the owner)
 

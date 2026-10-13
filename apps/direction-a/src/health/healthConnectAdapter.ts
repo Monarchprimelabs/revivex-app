@@ -9,6 +9,7 @@ import {
   type ImportedHealthSession,
   type ImportedSessionKind,
 } from './types';
+import { hasNativeModule } from './nativeModule';
 
 /** Our own package name — sessions we exported must not echo back as imports. */
 const OWN_PACKAGE_NAME = 'com.monarchprimelabs.revivex';
@@ -16,9 +17,9 @@ const OWN_PACKAGE_NAME = 'com.monarchprimelabs.revivex';
 /**
  * Google Health Connect adapter backed by react-native-health-connect.
  *
- * Like the HealthKit adapter, the native module cannot run inside Expo Go,
- * so it is loaded lazily inside a try/catch and reports 'needs-dev-build'
- * when missing.
+ * The package looks up its native module as soon as it loads, which throws
+ * inside Expo Go. Like the HealthKit adapter, it is required only once that
+ * module is known to exist, and reports 'needs-dev-build' when missing.
  */
 
 type HealthConnectModule = typeof import('react-native-health-connect');
@@ -28,6 +29,11 @@ let initialized = false;
 
 function loadHealthConnect(): HealthConnectModule | null {
   if (cachedModule !== undefined) return cachedModule;
+  if (!hasNativeModule('HealthConnect')) {
+    // Expo Go: requiring the package would raise a fatal error.
+    cachedModule = null;
+    return cachedModule;
+  }
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const loaded = require('react-native-health-connect') as Partial<HealthConnectModule> | undefined;
